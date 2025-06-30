@@ -1,0 +1,9 @@
+@import "https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap";
+@import "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined";
+@import "https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded";
+@import "https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp";
+@import "tailwindcss";
+
+html {
+  font-family: 'Nunito', 'Roboto', sans-serif;
+}
