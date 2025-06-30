@@ -5,6 +5,7 @@ import { ConfigService } from './common/config/config.service';
 import { JwtModule } from './common/jwt/jwt.module';
 import { MiddlewareModule } from './common/middleware/middleware.module';
 import { GuardModule } from './common/guards/guard.module';
+import { UserModule } from 'modules/user/user.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { GuardModule } from './common/guards/guard.module';
     }),
     JwtModule,
     MiddlewareModule,
-    GuardModule
+    GuardModule,
+    UserModule
   ],
   controllers: [],
   providers: [],

@@ -1,26 +1,39 @@
-import { Booking } from "modules/booking/entities/booking.entity";
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Booking } from 'modules/booking/entities/booking.entity';
+import {
+  Column,
+  Entity,
+  Index,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
-@Entity("user", { schema: "resort_booking" })
+@Index('phone_UNIQUE', ['phone'], { unique: true })
+@Entity('user', { schema: 'resort_booking' })
 export class User {
-  @PrimaryGeneratedColumn({ type: "int", name: "id" })
+  @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id: number;
 
-  @Column("varchar", { name: "name", length: 255 })
+  @Column('varchar', { name: 'name', length: 255 })
   name: string;
 
-  @Column("varchar", { name: "email", length: 255 })
-  email: string;
+  @Column('varchar', { name: 'phone', unique: true, length: 20 })
+  phone: string;
 
-  @Column("text", { name: "password_hash" })
+  @Column('date', { name: 'dob' })
+  dob: string;
+
+  @Column('enum', { name: 'gender', enum: ['male', 'female', 'other'] })
+  gender: 'male' | 'female' | 'other';
+
+  @Column('text', { name: 'password_hash' })
   passwordHash: string;
 
-  @Column("enum", { name: "role", enum: ["admin", "user"] })
-  role: "admin" | "user";
+  @Column('enum', { name: 'role', enum: ['admin', 'user'] })
+  role: 'admin' | 'user';
 
-  @Column("datetime", {
-    name: "created_at",
-    default: () => "CURRENT_TIMESTAMP",
+  @Column('datetime', {
+    name: 'created_at',
+    default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt: Date;
 

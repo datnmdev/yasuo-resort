@@ -17,7 +17,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode: status,
       isSucess: false,
       data: null,
-      error: exception.getResponse(),
+      error:
+        typeof exception.getResponse() === 'object'
+          ? {
+              code: (exception.getResponse() as any).error,
+              message: (exception.getResponse() as any).message,
+            }
+          : {
+              code: null,
+              message: exception.getResponse(),
+            },
     });
   }
 }
