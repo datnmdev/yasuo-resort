@@ -1,15 +1,18 @@
 import { Outlet } from "react-router";
+import Logo from "../../components/navigation/Logo";
+import Navbar from "../../components/navigation/navbar";
+import Footer from "../../components/footer/Footer";
 
 export default function UserLayout() {
   return (
-    <div>
-      <div>(User) Đây là Header</div>
-
+    <div className="">
+      <Logo/>
+      <Navbar/>
       <div>
         <Outlet />
       </div>
 
-      <div>(User) Đây là Footer</div>
+      <Footer/>
     </div>
   )
 }
