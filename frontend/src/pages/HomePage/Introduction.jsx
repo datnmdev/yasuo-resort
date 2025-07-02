@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router'
 
 const Introduction = () => {
   return (
@@ -60,7 +61,7 @@ const Introduction = () => {
                     We're here to turn that into a reality.
                 </p>
                 <p className='mt-16'>
-                    <a href='/' className='text-3xl font-bold text-[#007bff]'>Why not get for you a room</a>
+                    <Link to='/' className='text-3xl font-bold text-[#007bff]'>Why not get for you a room</Link>
                 </p>
             </div>
         </div>

@@ -6,6 +6,8 @@ import DashboardPage from "../pages/DasboardPage";
 import ErrorPage from "../pages/ErrorPage";
 import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
+import RoomPage from "../pages/Rooms";
+import RoomDetailPage from "../pages/Rooms/RoomDetailPage";
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -25,6 +27,13 @@ const router = createBrowserRouter([
       {
         path:'/signup',
         element: <SignUp />,
+      },
+      {
+        path:'/rooms',
+        element: <RoomPage />,
+      },
+      { path: '/rooms/:id', 
+        element: <RoomDetailPage /> 
       },
     ],
   },

@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
+import { Link } from 'react-router'
 
 const Login = () => {
 
@@ -82,9 +83,9 @@ const Login = () => {
 
             <p className="text-sm mt-6 text-center text-gray-600">
                 Don't have an account?{" "}
-                <a href="/signup" className="text-green-600 hover:underline">
+                <Link to="/signup" className="text-green-600 hover:underline">
                 Sign Up
-                </a>
+                </Link>
             </p>
             </div>
         </div>

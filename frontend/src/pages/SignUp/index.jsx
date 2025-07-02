@@ -1,4 +1,5 @@
 import React,  { useRef, useEffect } from 'react'
+import { Link } from 'react-router'
 
 const SignUp = () => {
     const signUpRef = useRef(null)
@@ -64,9 +65,9 @@ const SignUp = () => {
 
                 <p className="text-sm mt-6 text-center text-gray-600">
                     Already have an account?{" "}
-                    <a href="/login" className="text-green-600 hover:underline">
+                    <Link to="/login" className="text-green-600 hover:underline">
                     Log In
-                    </a>
+                    </Link>
                 </p>
             </div>
         </div>
