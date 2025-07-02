@@ -4,6 +4,8 @@ import UserLayout from "../layouts/UserLayout";
 import AdminLayout from "../layouts/AdminLayout";
 import DashboardPage from "../pages/DasboardPage";
 import ErrorPage from "../pages/ErrorPage";
+import Login from "../pages/Login";
+import SignUp from "../pages/SignUp";
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -15,6 +17,14 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <HomePage />,
+      },
+      {
+        path:'/login',
+        element: <Login />,
+      },
+      {
+        path:'/signup',
+        element: <SignUp />,
       },
     ],
   },
