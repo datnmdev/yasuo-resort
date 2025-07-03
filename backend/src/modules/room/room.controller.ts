@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, Put, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { RoomService } from "./room.service";
 import { AppResponse } from "common/http/wrapper.http";
 import { CreateRoomReqDto } from "./dtos/create-room.dto";
@@ -6,12 +6,20 @@ import { Roles } from "common/decorators/roles.decorator";
 import { Role } from "common/constants/user.constants";
 import { RolesGuard } from "common/guards/roles.guard";
 import { UpdateRoomReqDto } from "./dtos/update-room.dto";
+import { GetRoomsReqDto } from "./dtos/get-room.dto";
 
 @Controller('room')
 export class RoomController {
   constructor(
     private readonly roomService: RoomService
   ) {}
+
+  @Get()
+  async getRooms(
+    @Query() getRoomsQuery: GetRoomsReqDto
+  ) {
+    return AppResponse.ok(await this.roomService.getRooms(getRoomsQuery))
+  }
 
   @Post()
   @Roles(Role.ADMIN)

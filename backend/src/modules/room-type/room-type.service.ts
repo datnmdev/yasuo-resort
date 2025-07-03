@@ -23,7 +23,7 @@ export class RoomTypeService {
         }
       }))
       .skip((getRoomTypeQuery.page - 1) * getRoomTypeQuery.limit)
-      .limit(getRoomTypeQuery.limit)
+      .take(getRoomTypeQuery.limit)
       .getManyAndCount()
   }
 
