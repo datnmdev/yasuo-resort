@@ -53,6 +53,10 @@ export class AppModule implements NestModule {
             path: 'room',
             method: RequestMethod.POST
           },
+          {
+            path: 'room/:roomId',
+            method: RequestMethod.PUT
+          },
         )
   }
 }
