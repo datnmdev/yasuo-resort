@@ -24,12 +24,16 @@ export class Room {
 
   @Column("enum", {
     name: "status",
-    enum: ["available", "booked", "maintenance"],
+    enum: ["active", "inactive", "under_maintenance", "retired"],
   })
-  status: "available" | "booked" | "maintenance";
+  status: "active" | "inactive" | "under_maintenance" | "retired";
 
-  @Column("text", { name: "current_condition", nullable: true })
-  currentCondition: string | null;
+  @Column("enum", {
+    name: "current_condition",
+    enum: ["available", "booked"],
+    nullable: true
+  })
+  currentCondition: "available" | "booked";
 
   @Column("datetime", {
     name: "created_at",

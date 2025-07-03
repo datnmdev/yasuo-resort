@@ -8,6 +8,7 @@ import { GuardModule } from './common/guards/guard.module';
 import { UserModule } from 'modules/user/user.module';
 import { RoomTypeModule } from 'modules/room-type/room-type.module';
 import { AuthorizationMiddleware } from 'common/middleware/middleware.service';
+import { RoomModule } from 'modules/room/room.module';
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { AuthorizationMiddleware } from 'common/middleware/middleware.service';
     MiddlewareModule,
     GuardModule,
     UserModule,
-    RoomTypeModule
+    RoomTypeModule,
+    RoomModule
   ],
   controllers: [],
   providers: [],
@@ -46,7 +48,11 @@ export class AppModule implements NestModule {
           {
             path: 'room-type/:roomTypeId',
             method: RequestMethod.PUT
-          }
+          },
+          {
+            path: 'room',
+            method: RequestMethod.POST
+          },
         )
   }
 }
