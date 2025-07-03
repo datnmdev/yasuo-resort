@@ -1,9 +1,10 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RoomType } from './entities/room-type.entity';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { CreateRoomTypeReqDto } from './dtos/create-room-type.dto';
 import { UpdateRoomTypeReqDto } from './dtos/update-room-type.dto';
+import { GetRoomTypesReqDto } from './dtos/get-room-type.dto';
 
 @Injectable()
 export class RoomTypeService {
@@ -11,6 +12,20 @@ export class RoomTypeService {
     @InjectRepository(RoomType)
     private readonly roomTypeRepository: Repository<RoomType>,
   ) {}
+
+  async getRoomTypes(getRoomTypeQuery: GetRoomTypesReqDto) {
+    return this.roomTypeRepository.createQueryBuilder('roomType')
+      .where(new Brackets(qb => {
+        if (getRoomTypeQuery.name) {
+          qb.where('roomType.name = :name', {
+            name: getRoomTypeQuery.name
+          })
+        }
+      }))
+      .skip((getRoomTypeQuery.page - 1) * getRoomTypeQuery.limit)
+      .limit(getRoomTypeQuery.limit)
+      .getManyAndCount()
+  }
 
   async createRoomType(body: CreateRoomTypeReqDto) {
     // Kiểm tra room type name
