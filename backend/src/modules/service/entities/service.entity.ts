@@ -6,10 +6,10 @@ export class Service {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
 
-  @Column("varchar", { name: "name", length: 255 })
+  @Column("varchar", { name: "name", length: 255, unique: true })
   name: string;
 
-  @Column("decimal", { name: "price", precision: 18, scale: 0 })
+  @Column("decimal", { name: "price", precision: 18, scale: 2 })
   price: string;
 
   @Column("longtext", { name: "description", nullable: true })

@@ -16,7 +16,7 @@ export class Room {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
 
-  @Column("varchar", { name: "room_number", length: 255 })
+  @Column("varchar", { name: "room_number", length: 255, unique: true })
   roomNumber: string;
 
   @Column("int", { name: "type_id" })

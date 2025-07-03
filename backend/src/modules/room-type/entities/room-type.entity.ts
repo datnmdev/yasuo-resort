@@ -6,10 +6,10 @@ export class RoomType {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
 
-  @Column("varchar", { name: "name", length: 255 })
+  @Column("varchar", { name: "name", length: 255, unique: true })
   name: string;
 
-  @Column("decimal", { name: "price_per_day", precision: 18, scale: 0 })
+  @Column("decimal", { name: "price_per_day", precision: 18, scale: 2 })
   pricePerDay: string;
 
   @Column("longtext", { name: "description", nullable: true })

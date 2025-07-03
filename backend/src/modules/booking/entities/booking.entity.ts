@@ -37,7 +37,7 @@ export class Booking {
   })
   status: "pending" | "confirmed" | "cancelled";
 
-  @Column("decimal", { name: "total_price", precision: 18, scale: 0 })
+  @Column("decimal", { name: "total_price", precision: 18, scale: 2 })
   totalPrice: string;
 
   @Column("datetime", {

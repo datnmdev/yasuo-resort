@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from './common/config/config.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from './common/config/config.service';
@@ -6,6 +6,8 @@ import { JwtModule } from './common/jwt/jwt.module';
 import { MiddlewareModule } from './common/middleware/middleware.module';
 import { GuardModule } from './common/guards/guard.module';
 import { UserModule } from 'modules/user/user.module';
+import { RoomTypeModule } from 'modules/room-type/room-type.module';
+import { AuthorizationMiddleware } from 'common/middleware/middleware.service';
 
 @Module({
   imports: [
@@ -26,9 +28,21 @@ import { UserModule } from 'modules/user/user.module';
     JwtModule,
     MiddlewareModule,
     GuardModule,
-    UserModule
+    UserModule,
+    RoomTypeModule
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+      consumer
+        .apply(AuthorizationMiddleware)
+        .forRoutes(
+          {
+            path: 'room-type',
+            method: RequestMethod.POST
+          }
+        )
+  }
+}
