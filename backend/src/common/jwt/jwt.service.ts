@@ -13,7 +13,7 @@ export class JwtService {
     const newToken = plainToInstance(Token, {
       accessToken: jwt.sign(
         Object.assign({}, payload),
-        this.configService.getJwtConfig().tokenSecret,
+        this.configService.getJwtConfig().accessTokenSecret,
         {
           algorithm: 'HS256',
           jwtid: uuidv4(),
@@ -22,7 +22,7 @@ export class JwtService {
       ),
       refreshToken: jwt.sign(
         Object.assign({}, payload),
-        this.configService.getJwtConfig().tokenSecret,
+        this.configService.getJwtConfig().refreshTokenSecret,
         {
           algorithm: 'HS256',
           jwtid: uuidv4(),

@@ -22,7 +22,7 @@ export class AuthorizationMiddleware implements NestMiddleware {
         const payload = this.jwtService.decode(accessToken);
         this.jwtService.verify(
           accessToken,
-          this.configService.getJwtConfig().tokenSecret,
+          this.configService.getJwtConfig().accessTokenSecret,
         );
         req.user = payload;
         return next();

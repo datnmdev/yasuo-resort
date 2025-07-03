@@ -7,7 +7,8 @@ export class ConfigService {
 
   getJwtConfig() {
     return {
-      tokenSecret: this.nestConfigService.get('JWT_TOKEN_SECRET')
+      accessTokenSecret: this.nestConfigService.get('JWT_ACCESSTOKEN_SECRET'),
+      refreshTokenSecret: this.nestConfigService.get('JWT_REFRESHTOKEN_SECRET'),
     };
   }
 

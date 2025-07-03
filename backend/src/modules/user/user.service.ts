@@ -7,13 +7,16 @@ import { Role } from "common/constants/user.constants";
 import * as bcrypt from 'bcrypt';
 import { SignInReqDto } from "./dtos/sign-in.dto";
 import { JwtService } from "common/jwt/jwt.service";
+import { RefreshTokenReqDto } from "./dtos/refresh-token.dto";
+import { ConfigService } from "common/config/config.service";
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService
   ) {}
 
   async signUp(body: SignUpReqDto) {
@@ -52,9 +55,27 @@ export class AuthService {
         return this.jwtService.generateToken({
           id: user.id,
           role: user.role as Role,
+          iat: Date.now()
         })
       }
     }
     throw new UnauthorizedException('Incorrect phone number or password')
+  }
+
+  refreshToken(body: RefreshTokenReqDto) {
+    try {
+      // Xác thực refreshToken
+      this.jwtService.verify(body.refreshToken, this.configService.getJwtConfig().refreshTokenSecret)
+
+      // Tạo cặp token mới
+      const jwtPayload = this.jwtService.decode(body.refreshToken)
+      return this.jwtService.generateToken({
+        id: jwtPayload.id,
+        role: jwtPayload.role,
+        iat: Date.now()
+      })
+    } catch {
+      throw new UnauthorizedException('Refresh token is invalid or expired')
+    }
   }
 }
