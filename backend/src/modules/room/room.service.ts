@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Room } from './entities/room.entity';
-import { Brackets, DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, QueryFailedError, Repository } from 'typeorm';
 import { CreateRoomReqDto } from './dtos/create-room.dto';
 import { UpdateRoomReqDto } from './dtos/update-room.dto';
 import { GetRoomsReqDto } from './dtos/get-room.dto';
@@ -166,11 +166,11 @@ export class RoomService {
           // Cập nhật media
           const oldMedia = await queryRunner.manager.find(Media, {
             where: {
-              roomId
-            }
-          })
+              roomId,
+            },
+          });
           for (const item of oldMedia) {
-            const filePath = path.join(process.cwd(), item.path)
+            const filePath = path.join(process.cwd(), item.path);
             try {
               await access(filePath);
               await unlink(filePath);
@@ -199,6 +199,23 @@ export class RoomService {
       throw error;
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  async deleteRoom(roomId: number) {
+    try {
+      const deleteResult = await this.roomRepository.delete({
+        id: roomId,
+      });
+      return deleteResult;
+    } catch (error) {
+      if (error instanceof QueryFailedError) {
+        throw new ConflictException({
+          error: 'DeleteConflict',
+          message: 'Cannot delete because the data is being used elsewhere',
+        });
+      }
+      throw error;
     }
   }
 }

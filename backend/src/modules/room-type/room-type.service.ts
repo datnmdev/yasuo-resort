@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RoomType } from './entities/room-type.entity';
 import { Brackets, QueryFailedError, Repository } from 'typeorm';
@@ -14,17 +18,20 @@ export class RoomTypeService {
   ) {}
 
   async getRoomTypes(getRoomTypeQuery: GetRoomTypesReqDto) {
-    return this.roomTypeRepository.createQueryBuilder('roomType')
-      .where(new Brackets(qb => {
-        if (getRoomTypeQuery.name) {
-          qb.where('roomType.name = :name', {
-            name: getRoomTypeQuery.name
-          })
-        }
-      }))
+    return this.roomTypeRepository
+      .createQueryBuilder('roomType')
+      .where(
+        new Brackets((qb) => {
+          if (getRoomTypeQuery.name) {
+            qb.where('roomType.name = :name', {
+              name: getRoomTypeQuery.name,
+            });
+          }
+        }),
+      )
       .skip((getRoomTypeQuery.page - 1) * getRoomTypeQuery.limit)
       .take(getRoomTypeQuery.limit)
-      .getManyAndCount()
+      .getManyAndCount();
   }
 
   async createRoomType(body: CreateRoomTypeReqDto) {
@@ -64,9 +71,12 @@ export class RoomTypeService {
         : false;
       if (!isValidName) {
         // Cập nhật thông tin room type vào CSDL
-        return this.roomTypeRepository.update({
-          id: roomTypeId
-        }, body);
+        return this.roomTypeRepository.update(
+          {
+            id: roomTypeId,
+          },
+          body,
+        );
       }
       throw new ConflictException('Room type name already exists');
     }
@@ -75,14 +85,15 @@ export class RoomTypeService {
 
   async deleteRoomType(roomTypeId: number) {
     try {
-      await this.roomTypeRepository.delete({
-        id: roomTypeId
-      })
+      const deleteResult = await this.roomTypeRepository.delete({
+        id: roomTypeId,
+      });
+      return deleteResult;
     } catch (error) {
       if (error instanceof QueryFailedError) {
         throw new ConflictException({
           error: 'DeleteConflict',
-          message: 'Cannot delete because the data is being used elsewhere'
+          message: 'Cannot delete because the data is being used elsewhere',
         });
       }
       throw error;

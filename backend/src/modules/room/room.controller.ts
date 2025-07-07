@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { RoomService } from "./room.service";
 import { AppResponse } from "common/http/wrapper.http";
 import { CreateRoomReqDto } from "./dtos/create-room.dto";
@@ -38,5 +38,14 @@ export class RoomController {
     @Body() updateRoomBody: UpdateRoomReqDto
   ) {
     return AppResponse.ok(await this.roomService.updateRoom(roomId, updateRoomBody))
+  }
+
+  @Delete(':roomId')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async deleteRoom(
+    @Param('roomId') roomId: number
+  ) {
+    return AppResponse.ok(await this.roomService.deleteRoom(roomId))
   }
 }
