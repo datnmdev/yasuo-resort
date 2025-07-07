@@ -11,6 +11,7 @@ import { plainToInstance } from 'class-transformer';
 import { VerifyForgotPasswordReqDto } from './dtos/verify-forgot-password.dto';
 import { ResetPasswordReqDto } from './dtos/reset-password.dto';
 import { User } from 'common/decorators/user.decorator';
+import { UpdateProfileReqDto } from './dtos/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -74,5 +75,10 @@ export class UserController {
   @Get('get-profile')
   async getProfile(@User('id') userId: number) {
     return AppResponse.ok(await this.userService.getProfile(userId))
+  }
+
+  @Put('update-profile')
+  async updateProfile(@User('id') userId: number, @Body() updateProfileBody: UpdateProfileReqDto) {
+    return AppResponse.ok(await this.userService.updateProfile(userId, updateProfileBody))
   }
 }
