@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Service } from './entities/service.entity';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { CreateServiceReqDto } from './dtos/create-service.dto';
 import { UpdateServiceReqDto } from './dtos/update-service.dto';
 
@@ -27,5 +27,22 @@ export class ServiceService {
       );
     }
     throw new BadRequestException('No data provided to update')
+  }
+
+  async deleteService(serviceId: number) {
+    try {
+      const deleteResult = await this.serviceRepository.delete({
+        id: serviceId,
+      });
+      return deleteResult;
+    } catch (error) {
+      if (error instanceof QueryFailedError) {
+        throw new ConflictException({
+          error: 'DeleteConflict',
+          message: 'Cannot delete because the data is being used elsewhere',
+        });
+      }
+      throw error;
+    }
   }
 }

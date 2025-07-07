@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { ServiceService } from './service.service';
 import { Roles } from 'common/decorators/roles.decorator';
 import { Role } from 'common/constants/user.constants';
@@ -29,6 +29,17 @@ export class ServiceController {
   ) {
     return AppResponse.ok(
       await this.serviceService.updateService(serviceId, updateServiceBody),
+    );
+  }
+
+  @Delete(':serviceId')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async deleteService(
+    @Param('serviceId') serviceId: number
+  ) {
+    return AppResponse.ok(
+      await this.serviceService.deleteService(serviceId),
     );
   }
 }
