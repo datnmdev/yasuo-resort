@@ -14,6 +14,7 @@ import { MailModule } from 'common/mail/mail.module';
 import { UploadModule } from 'modules/upload/upload.module';
 import * as path from 'path';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ServiceModule } from 'modules/service/service.module';
 
 @Module({
   imports: [
@@ -47,7 +48,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
     UploadModule,
     UserModule,
     RoomTypeModule,
-    RoomModule
+    RoomModule,
+    ServiceModule
   ],
   controllers: [],
   providers: [],
@@ -80,6 +82,18 @@ export class AppModule implements NestModule {
           },
           {
             path: 'room/:roomId',
+            method: RequestMethod.DELETE
+          },
+          {
+            path: 'service',
+            method: RequestMethod.POST
+          },
+          {
+            path: 'service/:serviceId',
+            method: RequestMethod.PUT
+          },
+          {
+            path: 'service/:serviceId',
             method: RequestMethod.DELETE
           },
         )
