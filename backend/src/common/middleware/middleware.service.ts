@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Inject,
   Injectable,
   NestMiddleware,
@@ -9,6 +10,7 @@ import { JwtService } from '../jwt/jwt.service';
 import { ConfigService } from '../config/config.service';
 import { REDIS_CLIENT } from 'common/redis/redis.constants';
 import { RedisClient } from 'common/redis/redis.type';
+import { UserStatus } from 'common/constants/user.constants';
 
 @Injectable()
 export class AuthorizationMiddleware implements NestMiddleware {
@@ -19,7 +21,7 @@ export class AuthorizationMiddleware implements NestMiddleware {
     private readonly redisClient: RedisClient
   ) {}
 
-  async use(req: Request, res: Response, next: NextFunction) {
+  async use(req: Request, _res: Response, next: NextFunction) {
     try {
       const authorization = req.headers['authorization'];
       if (authorization?.startsWith('Bearer ')) {
@@ -33,6 +35,12 @@ export class AuthorizationMiddleware implements NestMiddleware {
         if (isInTokenBlacklist) {
           return next(new UnauthorizedException());
         }
+        if (payload.status === UserStatus.INACTIVE) {
+          return next(new ForbiddenException({
+            message: 'Account not activated yet',
+            error: 'AccountNotActivated'
+          }));
+        } 
         req.user = payload;
         return next();
       }

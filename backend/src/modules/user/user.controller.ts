@@ -4,29 +4,23 @@ import { SignUpReqDto } from './dtos/sign-up.dto';
 import { AppResponse } from 'common/http/wrapper.http';
 import { SignInReqDto } from './dtos/sign-in.dto';
 import { RefreshTokenReqDto } from './dtos/refresh-token.dto';
-import { MailService } from 'common/mail/mail.service';
-import * as randomstring from 'randomstring';
 import { SignOutReqDto } from './dtos/sign-out.dto';
+import { VerifyAccountReqDto } from './dtos/verify-account.dto';
+import { SendOtpReqDto } from './dtos/send-otp.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly mailService: MailService,
   ) {}
 
   @Post('sign-up')
   async signUp(@Body() signUpBody: SignUpReqDto) {
     const newUser = await this.authService.signUp(signUpBody);
-
-    // Gửi email thông báo xác thực tài khoản
-    await this.mailService.sendOtpToVerifyAccount(
-      randomstring.generate({
-        length: 6,
-        charset: 'numeric',
-      }),
-      newUser.email,
-    );
+    await this.sendOtp(plainToInstance(SendOtpReqDto, {
+      email: newUser.email
+    }))
     return AppResponse.ok(newUser);
   }
 
@@ -45,5 +39,15 @@ export class AuthController {
   @Post('sign-out')
   async signOut(@Body() signOutBody: SignOutReqDto) {
     return AppResponse.ok(await this.authService.signOut(signOutBody));
+  }
+
+  @Post('verify-account')
+  async verifyAccount(@Body() verifyAccountBody: VerifyAccountReqDto) {
+    return AppResponse.ok(await this.authService.verifyAccount(verifyAccountBody));
+  }
+
+  @Post('/send-otp')
+  async sendOtp(@Body() sendOtpBody: SendOtpReqDto) {
+    return AppResponse.ok(await this.authService.sendOtp(sendOtpBody));
   }
 }

@@ -1,9 +1,9 @@
-import { ConflictException, ForbiddenException, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "./entities/user.entity";
 import { Repository } from "typeorm";
 import { SignUpReqDto } from "./dtos/sign-up.dto";
-import { Role } from "common/constants/user.constants";
+import { Role, UserStatus } from "common/constants/user.constants";
 import * as bcrypt from 'bcrypt';
 import { SignInReqDto } from "./dtos/sign-in.dto";
 import { JwtService } from "common/jwt/jwt.service";
@@ -12,6 +12,11 @@ import { ConfigService } from "common/config/config.service";
 import { REDIS_CLIENT } from "common/redis/redis.constants";
 import { RedisClient } from "common/redis/redis.type";
 import { SignOutReqDto } from "./dtos/sign-out.dto";
+import { VerifyAccountReqDto } from "./dtos/verify-account.dto";
+import { SendOtpReqDto } from "./dtos/send-otp.dto";
+import * as randomString from 'randomstring';
+import { MailService } from "common/mail/mail.service";
+import { plainToInstance } from "class-transformer";
 
 @Injectable()
 export class AuthService {
@@ -21,7 +26,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @Inject(REDIS_CLIENT)
-    private readonly redisClient: RedisClient
+    private readonly redisClient: RedisClient,
+    private readonly mailService: MailService
   ) {}
 
   async signUp(body: SignUpReqDto) {
@@ -63,10 +69,13 @@ export class AuthService {
           return this.jwtService.generateToken({
             id: user.id,
             role: user.role as Role,
-            iat: Date.now()
+            status: user.status as UserStatus
           })
         }
       }
+      await this.sendOtp(plainToInstance(SendOtpReqDto, {
+        email: user.email
+      }))
       throw new ForbiddenException({
         message: 'Account not activated yet',
         error: 'AccountNotActivated'
@@ -95,7 +104,7 @@ export class AuthService {
       return this.jwtService.generateToken({
         id: jwtPayload.id,
         role: jwtPayload.role,
-        iat: Date.now()
+        status: jwtPayload.status
       })
     } catch {
       throw new UnauthorizedException('Refresh token is invalid or expired')
@@ -113,5 +122,53 @@ export class AuthService {
       .setEx(`TOKEN_BLACKLIST_${refreshTokenPayload.jti}`, refreshTokenExpireIn > 0 ? refreshTokenExpireIn : 1, "1")
       .exec()
     return null;
+  }
+
+  async verifyAccount(body: VerifyAccountReqDto) {
+    const user = await this.userRepository.findOne({
+      where: {
+        email: body.email
+      }
+    })
+    if (user) {
+      if (body.otp === await this.redisClient.get(`otp::${user.id}`)) {
+        await this.userRepository.update({
+          id: user.id
+        }, {
+          status: UserStatus.ACTIVE
+        })
+        await this.redisClient.del(`otp::${user.id}`)
+        return null;
+      }
+      throw new UnauthorizedException({
+        error: 'OtpInvalid',
+        message: 'The OTP code is incorrect'
+      })
+    }
+    throw new NotFoundException({
+      error: 'UserNotFound',
+      message: 'User with this email does not exist'
+    }) 
+  }
+
+  async sendOtp(body: SendOtpReqDto) {
+    const user = await this.userRepository.findOne({
+      where: {
+        email: body.email
+      }
+    })
+    if (user) {
+      const otp = randomString.generate({
+        length: 6,
+        charset: 'numeric'
+      })
+      await this.redisClient.setEx(`otp::${user.id}`, 5 *60, otp)
+      await this.mailService.sendOtp(otp, user.email)
+      return null;
+    }
+    throw new NotFoundException({
+      error: 'UserNotFound',
+      message: 'User with this email does not exist'
+    })
   }
 }
