@@ -16,6 +16,9 @@ export class User {
   @Column('varchar', { name: 'name', length: 255 })
   name: string;
 
+  @Column('varchar', { name: 'email', unique: true, length: 255 })
+  email: string;
+
   @Column('varchar', { name: 'phone', unique: true, length: 20 })
   phone: string;
 
@@ -27,6 +30,9 @@ export class User {
 
   @Column('text', { name: 'password_hash' })
   passwordHash: string;
+
+  @Column('enum', { name: 'status', enum: ['inactive', 'active'] })
+  status: 'inactive' | 'active';
 
   @Column('enum', { name: 'role', enum: ['admin', 'user'] })
   role: 'admin' | 'user';

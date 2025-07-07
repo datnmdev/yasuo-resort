@@ -24,4 +24,21 @@ export class ConfigService {
       synchronize: false,
     };
   }
+
+  getRedisConfig() {
+    return {
+      host: this.nestConfigService.get('REDIS_HOST'),
+      port: Number(this.nestConfigService.get('REDIS_PORT')),
+      password: this.nestConfigService.get('REDIS_PASSWORD'),
+    };
+  }
+
+  getMailerConfig() {
+    return {
+      host: this.nestConfigService.get('MAILER_HOST'),
+      port: Number(this.nestConfigService.get('MAILER_PORT')),
+      user: this.nestConfigService.get('MAILER_USER'),
+      password: this.nestConfigService.get('MAILER_PASS'),
+    };
+  }
 }

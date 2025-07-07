@@ -9,6 +9,8 @@ import { UserModule } from 'modules/user/user.module';
 import { RoomTypeModule } from 'modules/room-type/room-type.module';
 import { AuthorizationMiddleware } from 'common/middleware/middleware.service';
 import { RoomModule } from 'modules/room/room.module';
+import { RedisModule } from 'common/redis/redis.module';
+import { MailModule } from 'common/mail/mail.module';
 
 @Module({
   imports: [
@@ -26,6 +28,12 @@ import { RoomModule } from 'modules/room/room.module';
       }),
       inject: [ConfigService],
     }),
+    RedisModule.forRoot({
+      host: process.env.REDIS_HOST,
+      port: Number(process.env.REDIS_PORT),
+      password: process.env.REDIS_PASSWORD,
+    }),
+    MailModule,
     JwtModule,
     MiddlewareModule,
     GuardModule,

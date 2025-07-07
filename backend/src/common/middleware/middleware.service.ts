@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   NestMiddleware,
   UnauthorizedException,
@@ -6,12 +7,16 @@ import {
 import { NextFunction, Request, Response } from 'express';
 import { JwtService } from '../jwt/jwt.service';
 import { ConfigService } from '../config/config.service';
+import { REDIS_CLIENT } from 'common/redis/redis.constants';
+import { RedisClient } from 'common/redis/redis.type';
 
 @Injectable()
 export class AuthorizationMiddleware implements NestMiddleware {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Inject(REDIS_CLIENT)
+    private readonly redisClient: RedisClient
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
@@ -24,6 +29,10 @@ export class AuthorizationMiddleware implements NestMiddleware {
           accessToken,
           this.configService.getJwtConfig().accessTokenSecret,
         );
+        const isInTokenBlacklist = (await this.redisClient.get(`TOKEN_BLACKLIST_${payload.jti}`)) === null ? false : true
+        if (isInTokenBlacklist) {
+          return next(new UnauthorizedException());
+        }
         req.user = payload;
         return next();
       }

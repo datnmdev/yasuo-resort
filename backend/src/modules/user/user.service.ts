@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, ForbiddenException, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "./entities/user.entity";
 import { Repository } from "typeorm";
@@ -9,6 +9,8 @@ import { SignInReqDto } from "./dtos/sign-in.dto";
 import { JwtService } from "common/jwt/jwt.service";
 import { RefreshTokenReqDto } from "./dtos/refresh-token.dto";
 import { ConfigService } from "common/config/config.service";
+import { REDIS_CLIENT } from "common/redis/redis.constants";
+import { RedisClient } from "common/redis/redis.type";
 
 @Injectable()
 export class AuthService {
@@ -16,14 +18,16 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    @Inject(REDIS_CLIENT)
+    private readonly redisClient: RedisClient
   ) {}
 
   async signUp(body: SignUpReqDto) {
-    // Kiểm tra số điện thoại đã được đăng ký với tài khoản nào hay chưa
+    // Kiểm tra email đã được đăng ký với tài khoản nào hay chưa
     const user = await this.userRepository.findOne({
       where: {
-        phone: body.phone
+        email: body.email
       }
     })
     if (user) {
@@ -33,9 +37,11 @@ export class AuthService {
     // Tạo tài khoản mới
     const userEntity = this.userRepository.create({
       name: body.name,
+      email: body.email,
       phone: body.phone,
       gender: body.gender,
       dob: body.dob,
+      status: 'inactive',
       role: Role.USER,
       passwordHash: await bcrypt.hash(body.password, 10)
     });
@@ -45,27 +51,46 @@ export class AuthService {
   async signIn(body: SignInReqDto) {
     const user = await this.userRepository.findOne({
       where: {
-        phone: body.phone
+        email: body.email
       }
     })
     // Kiểm tra xem thông tin đăng nhập chính xác hay không
     if (user) {
-      const isCorrectPassword = await bcrypt.compare(body.password, user.passwordHash);
-      if (isCorrectPassword) {
-        return this.jwtService.generateToken({
-          id: user.id,
-          role: user.role as Role,
-          iat: Date.now()
-        })
+      if (user.status === 'active') {
+        const isCorrectPassword = await bcrypt.compare(body.password, user.passwordHash);
+        if (isCorrectPassword) {
+          return this.jwtService.generateToken({
+            id: user.id,
+            role: user.role as Role,
+            iat: Date.now()
+          })
+        }
       }
+      throw new ForbiddenException({
+        message: 'Account not activated yet',
+        error: 'AccountNotActivated'
+      })
     }
     throw new UnauthorizedException('Incorrect phone number or password')
   }
 
-  refreshToken(body: RefreshTokenReqDto) {
+  async refreshToken(body: RefreshTokenReqDto) {
     try {
       // Xác thực refreshToken
       this.jwtService.verify(body.refreshToken, this.configService.getJwtConfig().refreshTokenSecret)
+
+      // Đưa cặp token cũ vào blacklist
+      const accessTokenPayload = this.jwtService.decode(body.accessToken)
+      const refreshTokenPayload = this.jwtService.decode(body.refreshToken)
+
+      console.log(accessTokenPayload.jti, refreshTokenPayload.jti);
+      
+      const accessTokenExpireIn = accessTokenPayload.exp - Math.ceil(Date.now() / 1000)
+      const refreshTokenExpireIn = refreshTokenPayload.exp - Math.ceil(Date.now() / 1000)
+      await this.redisClient.multi()
+        .setEx(`TOKEN_BLACKLIST_${accessTokenPayload.jti}`, accessTokenExpireIn > 0 ? accessTokenExpireIn : 1, "1")
+        .setEx(`TOKEN_BLACKLIST_${refreshTokenPayload.jti}`, refreshTokenExpireIn > 0 ? refreshTokenExpireIn : 1, "1")
+        .exec()
 
       // Tạo cặp token mới
       const jwtPayload = this.jwtService.decode(body.refreshToken)

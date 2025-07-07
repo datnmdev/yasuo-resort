@@ -1,7 +1,11 @@
-import { IsDateString, IsNotEmpty, IsPhoneNumber, IsString } from "class-validator";
+import { IsDateString, IsEmail, IsNotEmpty, IsPhoneNumber, IsString } from "class-validator";
 import { OneOf } from "common/decorators/validation.decorator";
 
 export class SignUpReqDto {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
   @IsNotEmpty()
   @IsPhoneNumber()
   phone: string;
