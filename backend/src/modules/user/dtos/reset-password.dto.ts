@@ -7,7 +7,7 @@ export class ResetPasswordReqDto {
 
   @IsNotEmpty()
   @IsString()
-  @Length(32)
+  @Length(32, 32)
   code: string;
 
   @IsNotEmpty()

@@ -11,9 +11,16 @@ import { AuthorizationMiddleware } from 'common/middleware/middleware.service';
 import { RoomModule } from 'modules/room/room.module';
 import { RedisModule } from 'common/redis/redis.module';
 import { MailModule } from 'common/mail/mail.module';
+import { UploadModule } from 'modules/upload/upload.module';
+import * as path from 'path';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: path.join(__dirname, '..', 'uploads'),
+      serveRoot: '/api/v1/uploads',
+    }),
     ConfigModule,
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
@@ -37,6 +44,7 @@ import { MailModule } from 'common/mail/mail.module';
     JwtModule,
     MiddlewareModule,
     GuardModule,
+    UploadModule,
     UserModule,
     RoomTypeModule,
     RoomModule

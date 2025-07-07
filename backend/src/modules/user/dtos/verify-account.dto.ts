@@ -7,6 +7,6 @@ export class VerifyAccountReqDto {
 
   @IsNotEmpty()
   @IsNumberString()
-  @Length(6)
+  @Length(6, 6)
   otp: string;
 }

@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { ArrayMinSize, IsArray, IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { RoomCurrentCondition, RoomStatus } from "common/constants/room.constants";
 import { OneOf } from "common/decorators/validation.decorator";
 
@@ -10,6 +10,10 @@ export class CreateRoomReqDto {
   @IsNotEmpty()
   @IsInt()
   typeId: number;
+
+  @IsOptional()
+  @IsString()
+  description: string;
 
   @IsNotEmpty()
   @OneOf([
@@ -25,4 +29,10 @@ export class CreateRoomReqDto {
     RoomCurrentCondition.AVAILABLE
   ])
   currentCondition: 'available';
+
+  @IsNotEmpty()
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMinSize(1)
+  media: string[];
 }
