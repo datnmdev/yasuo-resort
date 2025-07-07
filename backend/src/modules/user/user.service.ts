@@ -17,6 +17,8 @@ import { SendOtpReqDto } from "./dtos/send-otp.dto";
 import * as randomString from 'randomstring';
 import { MailService } from "common/mail/mail.service";
 import { plainToInstance } from "class-transformer";
+import { VerifyForgotPasswordReqDto } from "./dtos/verify-forgot-password.dto";
+import { ResetPasswordReqDto } from "./dtos/reset-password.dto";
 
 @Injectable()
 export class AuthService {
@@ -63,23 +65,23 @@ export class AuthService {
     })
     // Kiểm tra xem thông tin đăng nhập chính xác hay không
     if (user) {
-      if (user.status === 'active') {
-        const isCorrectPassword = await bcrypt.compare(body.password, user.passwordHash);
-        if (isCorrectPassword) {
+      const isCorrectPassword = await bcrypt.compare(body.password, user.passwordHash);
+      if (isCorrectPassword) {
+        if (user.status === 'active') {
           return this.jwtService.generateToken({
             id: user.id,
             role: user.role as Role,
             status: user.status as UserStatus
           })
         }
+        await this.sendOtp(plainToInstance(SendOtpReqDto, {
+          email: user.email
+        }))
+        throw new ForbiddenException({
+          message: 'Account not activated yet',
+          error: 'AccountNotActivated'
+        })
       }
-      await this.sendOtp(plainToInstance(SendOtpReqDto, {
-        email: user.email
-      }))
-      throw new ForbiddenException({
-        message: 'Account not activated yet',
-        error: 'AccountNotActivated'
-      })
     }
     throw new UnauthorizedException('Incorrect phone number or password')
   }
@@ -165,6 +167,65 @@ export class AuthService {
       await this.redisClient.setEx(`otp::${user.id}`, 5 *60, otp)
       await this.mailService.sendOtp(otp, user.email)
       return null;
+    }
+    throw new NotFoundException({
+      error: 'UserNotFound',
+      message: 'User with this email does not exist'
+    })
+  }
+
+  async verifyForgotPassword(body: VerifyForgotPasswordReqDto) {
+    const user = await this.userRepository.findOne({
+      where: {
+        email: body.email
+      }
+    })
+    if (user) {
+      if (body.otp === await this.redisClient.get(`otp::${user.id}`)) {
+        const code = randomString.generate({
+          length: 32,
+          charset: 'alphanumeric'
+        })
+        await this.redisClient.multi()
+          .setEx(`reset-password::${user.id}`, 30 * 60, code)
+          .del(`otp::${user.id}`)
+          .exec()
+        return {
+          email: user.email,
+          code
+        };
+      }
+      throw new UnauthorizedException({
+        error: 'OtpInvalid',
+        message: 'The OTP code is incorrect'
+      })
+    }
+    throw new NotFoundException({
+      error: 'UserNotFound',
+      message: 'User with this email does not exist'
+    })
+  }
+
+  async resetPassword(body: ResetPasswordReqDto) {
+    const user = await this.userRepository.findOne({
+      where: {
+        email: body.email
+      }
+    })
+    if (user) {
+      if (body.code === await this.redisClient.get(`reset-password::${user.id}`)) {
+        const updateResult = await this.userRepository.update({
+          id: user.id
+        }, {
+          passwordHash: await bcrypt.hash(body.password, 10)
+        })
+        await this.redisClient.del(`reset-password::${user.id}`)
+        return updateResult;
+      }
+      throw new ForbiddenException({
+        error: 'CsrfTokenInvalid',
+        message: 'Invalid or missing CSRF token'
+      })
     }
     throw new NotFoundException({
       error: 'UserNotFound',

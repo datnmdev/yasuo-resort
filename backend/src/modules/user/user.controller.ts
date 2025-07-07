@@ -8,6 +8,8 @@ import { SignOutReqDto } from './dtos/sign-out.dto';
 import { VerifyAccountReqDto } from './dtos/verify-account.dto';
 import { SendOtpReqDto } from './dtos/send-otp.dto';
 import { plainToInstance } from 'class-transformer';
+import { VerifyForgotPasswordReqDto } from './dtos/verify-forgot-password.dto';
+import { ResetPasswordReqDto } from './dtos/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -49,5 +51,15 @@ export class AuthController {
   @Post('/send-otp')
   async sendOtp(@Body() sendOtpBody: SendOtpReqDto) {
     return AppResponse.ok(await this.authService.sendOtp(sendOtpBody));
+  }
+
+  @Post('/verify-forgot-password')
+  async verifyForgotPassword(@Body() verifyForgotPasswordBody: VerifyForgotPasswordReqDto) {
+    return AppResponse.ok(await this.authService.verifyForgotPassword(verifyForgotPasswordBody));
+  }
+
+  @Put('/reset-password')
+  async resetPassword(@Body() resetPasswordBody: ResetPasswordReqDto) {
+    return AppResponse.ok(await this.authService.resetPassword(resetPasswordBody));
   }
 }
