@@ -1,9 +1,10 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Service } from './entities/service.entity';
-import { QueryFailedError, Repository } from 'typeorm';
+import { Brackets, QueryFailedError, Repository } from 'typeorm';
 import { CreateServiceReqDto } from './dtos/create-service.dto';
 import { UpdateServiceReqDto } from './dtos/update-service.dto';
+import { GetServiceReqDto } from './dtos/get-service.dto';
 
 @Injectable()
 export class ServiceService {
@@ -11,6 +12,20 @@ export class ServiceService {
     @InjectRepository(Service)
     private readonly serviceRepository: Repository<Service>,
   ) {}
+
+  getServices(query: GetServiceReqDto) {
+    return this.serviceRepository.createQueryBuilder('service')
+      .where(new Brackets((qb) => {
+        if (query.name) {
+          qb.where('MATCH(name) AGAINST (:name IN BOOLEAN MODE)', {
+            name: query.name,
+          });
+        }
+      }))
+      .skip((query.page - 1) * query.limit)
+      .take(query.limit)
+      .getManyAndCount()
+  }
 
   createService(body: CreateServiceReqDto) {
     const serviceEntity = this.serviceRepository.create(body);

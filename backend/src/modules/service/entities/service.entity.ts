@@ -1,12 +1,19 @@
 import { BookingService } from "modules/booking/entities/booking-service.entity";
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  Index,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 
+@Index("FTS_service__name", ["name"], { fulltext: true })
 @Entity("service", { schema: "resort_booking" })
 export class Service {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
 
-  @Column("varchar", { name: "name", length: 255, unique: true })
+  @Column("varchar", { name: "name", length: 255 })
   name: string;
 
   @Column("decimal", { name: "price", precision: 18, scale: 2 })
