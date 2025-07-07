@@ -11,6 +11,7 @@ import { RefreshTokenReqDto } from "./dtos/refresh-token.dto";
 import { ConfigService } from "common/config/config.service";
 import { REDIS_CLIENT } from "common/redis/redis.constants";
 import { RedisClient } from "common/redis/redis.type";
+import { SignOutReqDto } from "./dtos/sign-out.dto";
 
 @Injectable()
 export class AuthService {
@@ -82,9 +83,6 @@ export class AuthService {
       // Đưa cặp token cũ vào blacklist
       const accessTokenPayload = this.jwtService.decode(body.accessToken)
       const refreshTokenPayload = this.jwtService.decode(body.refreshToken)
-
-      console.log(accessTokenPayload.jti, refreshTokenPayload.jti);
-      
       const accessTokenExpireIn = accessTokenPayload.exp - Math.ceil(Date.now() / 1000)
       const refreshTokenExpireIn = refreshTokenPayload.exp - Math.ceil(Date.now() / 1000)
       await this.redisClient.multi()
@@ -102,5 +100,18 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Refresh token is invalid or expired')
     }
+  }
+
+  async signOut(body: SignOutReqDto) {
+    // Đưa cặp token vào blacklist
+    const accessTokenPayload = this.jwtService.decode(body.accessToken)
+    const refreshTokenPayload = this.jwtService.decode(body.refreshToken)
+    const accessTokenExpireIn = accessTokenPayload.exp - Math.ceil(Date.now() / 1000)
+    const refreshTokenExpireIn = refreshTokenPayload.exp - Math.ceil(Date.now() / 1000)
+    await this.redisClient.multi()
+      .setEx(`TOKEN_BLACKLIST_${accessTokenPayload.jti}`, accessTokenExpireIn > 0 ? accessTokenExpireIn : 1, "1")
+      .setEx(`TOKEN_BLACKLIST_${refreshTokenPayload.jti}`, refreshTokenExpireIn > 0 ? refreshTokenExpireIn : 1, "1")
+      .exec()
+    return null;
   }
 }

@@ -6,6 +6,7 @@ import { SignInReqDto } from './dtos/sign-in.dto';
 import { RefreshTokenReqDto } from './dtos/refresh-token.dto';
 import { MailService } from 'common/mail/mail.service';
 import * as randomstring from 'randomstring';
+import { SignOutReqDto } from './dtos/sign-out.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -39,5 +40,10 @@ export class AuthController {
     return AppResponse.ok(
       await this.authService.refreshToken(refreshTokenBody),
     );
+  }
+
+  @Post('sign-out')
+  async signOut(@Body() signOutBody: SignOutReqDto) {
+    return AppResponse.ok(await this.authService.signOut(signOutBody));
   }
 }
