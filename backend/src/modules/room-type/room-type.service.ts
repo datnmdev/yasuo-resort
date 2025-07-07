@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RoomType } from './entities/room-type.entity';
-import { Brackets, Repository } from 'typeorm';
+import { Brackets, QueryFailedError, Repository } from 'typeorm';
 import { CreateRoomTypeReqDto } from './dtos/create-room-type.dto';
 import { UpdateRoomTypeReqDto } from './dtos/update-room-type.dto';
 import { GetRoomTypesReqDto } from './dtos/get-room-type.dto';
@@ -71,5 +71,21 @@ export class RoomTypeService {
       throw new ConflictException('Room type name already exists');
     }
     throw new NotFoundException('Room type not found');
+  }
+
+  async deleteRoomType(roomTypeId: number) {
+    try {
+      await this.roomTypeRepository.delete({
+        id: roomTypeId
+      })
+    } catch (error) {
+      if (error instanceof QueryFailedError) {
+        throw new ConflictException({
+          error: 'DeleteConflict',
+          message: 'Cannot delete because the data is being used elsewhere'
+        });
+      }
+      throw error;
+    }
   }
 }
