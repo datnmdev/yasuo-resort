@@ -57,6 +57,7 @@ export class AppModule implements NestModule {
       consumer
         .apply(AuthorizationMiddleware)
         .forRoutes(
+          'user',
           {
             path: 'room-type',
             method: RequestMethod.POST

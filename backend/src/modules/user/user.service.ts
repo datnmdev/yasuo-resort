@@ -19,6 +19,7 @@ import { MailService } from "common/mail/mail.service";
 import { plainToInstance } from "class-transformer";
 import { VerifyForgotPasswordReqDto } from "./dtos/verify-forgot-password.dto";
 import { ResetPasswordReqDto } from "./dtos/reset-password.dto";
+import * as _ from 'lodash';
 
 @Injectable()
 export class AuthService {
@@ -231,5 +232,22 @@ export class AuthService {
       error: 'UserNotFound',
       message: 'User with this email does not exist'
     })
+  }
+}
+
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>
+  ) {}
+
+  async getProfile(userId: number) {
+    const user = await this.userRepository.findOne({
+      where: {
+        id: userId
+      }
+    })
+    return _.omit(user, 'passwordHash')
   }
 }

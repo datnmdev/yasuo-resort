@@ -1,5 +1,5 @@
-import { Body, Controller, Post, Put } from '@nestjs/common';
-import { AuthService } from './user.service';
+import { Body, Controller, Get, Post, Put } from '@nestjs/common';
+import { AuthService, UserService } from './user.service';
 import { SignUpReqDto } from './dtos/sign-up.dto';
 import { AppResponse } from 'common/http/wrapper.http';
 import { SignInReqDto } from './dtos/sign-in.dto';
@@ -10,6 +10,7 @@ import { SendOtpReqDto } from './dtos/send-otp.dto';
 import { plainToInstance } from 'class-transformer';
 import { VerifyForgotPasswordReqDto } from './dtos/verify-forgot-password.dto';
 import { ResetPasswordReqDto } from './dtos/reset-password.dto';
+import { User } from 'common/decorators/user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -61,5 +62,17 @@ export class AuthController {
   @Put('/reset-password')
   async resetPassword(@Body() resetPasswordBody: ResetPasswordReqDto) {
     return AppResponse.ok(await this.authService.resetPassword(resetPasswordBody));
+  }
+}
+
+@Controller('user')
+export class UserController {
+  constructor(
+    private readonly userService: UserService
+  ) {}
+
+  @Get('get-profile')
+  async getProfile(@User('id') userId: number) {
+    return AppResponse.ok(await this.userService.getProfile(userId))
   }
 }

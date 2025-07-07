@@ -28,6 +28,9 @@ export class User {
   @Column('enum', { name: 'gender', enum: ['male', 'female', 'other'] })
   gender: 'male' | 'female' | 'other';
 
+  @Column('text', { name: 'avatar', nullable: true })
+  avatar: string | null;
+
   @Column('text', { name: 'password_hash' })
   passwordHash: string;
 
