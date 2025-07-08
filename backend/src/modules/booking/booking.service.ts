@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Booking } from "./entities/booking.entity";
 import { DataSource, Repository } from "typeorm";
@@ -89,5 +89,27 @@ export class BookingService {
     } finally {
       await queryRunner.release()
     }
+  }
+
+  async cancelRoomBooking(userId: number, bookingId: number) {
+    const booking = await this.bookingRepository.findOne({
+      where: {
+        userId,
+        id: bookingId
+      }
+    })
+    if (booking) {
+      if (booking.status === 'pending') {
+        return await this.bookingRepository.update({
+          id: bookingId
+        }, {
+          status: 'cancelled'
+        })
+      } else if (booking.status === 'confirmed') {
+        throw new ForbiddenException('Cannot cancel a confirmed booking');
+      }
+      throw new BadRequestException('This booking has already been canceled');
+    }
+    throw new ForbiddenException('You are not allowed to modify this resource')
   }
 }

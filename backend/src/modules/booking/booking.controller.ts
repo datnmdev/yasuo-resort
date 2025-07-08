@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Param, Post, Put, UseGuards } from "@nestjs/common";
 import { BookingService } from "./booking.service";
 import { Roles } from "common/decorators/roles.decorator";
 import { Role } from "common/constants/user.constants";
@@ -21,5 +21,15 @@ export class BookingController {
     @Body() bookingRoomBody: BookingRoomReqDto
   ) {
     return AppResponse.ok(await this.bookingService.bookingRoom(userId, bookingRoomBody))
+  }
+
+  @Put(':bookingId/cancel-room-booking')
+  @Roles(Role.USER)
+  @UseGuards(RolesGuard)
+  async cancelRoomBooking(
+    @User('id') userId: number,
+    @Param('bookingId') bookingId: number
+  ) {
+    return AppResponse.ok(await this.bookingService.cancelRoomBooking(userId, bookingId))
   }
 }
