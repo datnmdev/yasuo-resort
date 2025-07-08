@@ -148,6 +148,11 @@ export class BookingService {
         relations: ['room', 'user', 'room.type'],
       });
       if (booking) {
+        if (booking.status === 'cancelled') {
+          throw new ConflictException(
+            'Cannot create contract for a cancelled booking',
+          );
+        }
         const contract = await queryRunner.manager.findOne(Contract, {
           where: {
             bookingId,
@@ -274,6 +279,14 @@ export class BookingService {
           error: 'BadRequest',
           message: 'Invalid booking ID',
         });
+      }
+
+      // Kiểm tra phòng đã đặt bởi khách hàng có bị huỷ không
+      if (booking.status === 'cancelled') {
+        await fs.unlink(signaturePath);
+        throw new ConflictException(
+          'Cannot create contract for a cancelled booking',
+        );
       }
 
       // Kiểm tra hợp đồng đã ký chưa
