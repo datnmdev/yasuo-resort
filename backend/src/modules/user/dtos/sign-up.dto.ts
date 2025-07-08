@@ -1,7 +1,32 @@
-import { IsDateString, IsEmail, IsNotEmpty, IsPhoneNumber, IsString } from "class-validator";
-import { OneOf } from "common/decorators/validation.decorator";
+import {
+  IsDateString,
+  IsEmail,
+  IsNotEmpty,
+  IsNumberString,
+  IsPhoneNumber,
+  IsString,
+  Length,
+} from 'class-validator';
+import { OneOf } from 'common/decorators/validation.decorator';
 
 export class SignUpReqDto {
+  @IsNotEmpty()
+  @IsNumberString()
+  @Length(12, 12)
+  cccd: string;
+
+  @IsNotEmpty()
+  @IsDateString()
+  identityIssuedAt: string;
+
+  @IsNotEmpty()
+  @IsString()
+  identityIssuedPlace: string;
+
+  @IsNotEmpty()
+  @IsString()
+  permanentAddress: string;
+
   @IsNotEmpty()
   @IsEmail()
   email: string;
@@ -20,11 +45,7 @@ export class SignUpReqDto {
 
   @IsNotEmpty()
   @IsString()
-  @OneOf([
-    'male',
-    'female',
-    'other'
-  ])
+  @OneOf(['male', 'female', 'other'])
   gender: 'male' | 'female' | 'other';
 
   @IsNotEmpty()

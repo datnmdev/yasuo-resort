@@ -46,6 +46,17 @@ export class BookingController {
     );
   }
 
+  @Put(':bookingId/create-contract')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async createContract(
+    @Param('bookingId') bookingId: number,
+  ) {
+    return AppResponse.ok(
+      await this.bookingService.createContract(bookingId)
+    );
+  }
+
   @Post('service')
   @Roles(Role.USER)
   @UseGuards(RolesGuard)

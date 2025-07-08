@@ -56,11 +56,7 @@ export class AuthService {
 
     // Tạo tài khoản mới
     const userEntity = this.userRepository.create({
-      name: body.name,
-      email: body.email,
-      phone: body.phone,
-      gender: body.gender,
-      dob: body.dob,
+      ...body,
       status: 'inactive',
       role: Role.USER,
       passwordHash: await bcrypt.hash(body.password, 10),

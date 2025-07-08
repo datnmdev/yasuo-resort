@@ -7,11 +7,24 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-@Index('phone_UNIQUE', ['phone'], { unique: true })
+@Index('email_UNIQUE', ['email'], { unique: true })
+@Index('cccd_UNIQUE', ['cccd'], { unique: true })
 @Entity('user', { schema: 'resort_booking' })
 export class User {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id: number;
+
+  @Column('nchar', { name: 'cccd', length: 12, unique: true })
+  cccd: string;
+
+  @Column('date', { name: 'identity_issued_at' })
+  identityIssuedAt: string;
+
+  @Column('text', { name: 'identity_issued_place' })
+  identityIssuedPlace: string;
+
+  @Column('text', { name: 'permanent_address' })
+  permanentAddress: string;
 
   @Column('varchar', { name: 'name', length: 255 })
   name: string;
@@ -19,7 +32,7 @@ export class User {
   @Column('varchar', { name: 'email', unique: true, length: 255 })
   email: string;
 
-  @Column('varchar', { name: 'phone', unique: true, length: 20 })
+  @Column('varchar', { name: 'phone', length: 20 })
   phone: string;
 
   @Column('date', { name: 'dob' })

@@ -14,6 +14,10 @@ import { Room } from 'modules/room/entities/room.entity';
 import { Service } from 'modules/service/entities/service.entity';
 import { BookingService as BookingServiceEntity } from './entities/booking-service.entity';
 import { BookingServicesReqDto } from './dtos/booking-service.dto';
+import * as ejs from 'ejs';
+import * as path from 'path';
+import * as fs from 'fs/promises';
+import { htmlToPdf } from 'utils/puppeteer.util';
 
 @Injectable()
 export class BookingService {
@@ -128,6 +132,110 @@ export class BookingService {
       throw new BadRequestException('This booking has already been canceled');
     }
     throw new ForbiddenException('You are not allowed to modify this resource');
+  }
+
+  async createContract(bookingId: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const booking = await queryRunner.manager.findOne(Booking, {
+        where: {
+          id: bookingId,
+        },
+        relations: ['room', 'user', 'room.type'],
+      });
+      if (booking) {
+        const contract = await queryRunner.manager.findOne(Contract, {
+          where: {
+            bookingId,
+          },
+        });
+        if (contract) {
+          throw new ConflictException(
+            'Contract already exists for this booking',
+          );
+        }
+
+        // Tạo file hợp đồng
+        const now = Date.now();
+        const contractHTML = await ejs.renderFile(
+          path.join(process.cwd(), 'src/assets/templates/contract.ejs'),
+          {
+            now: {
+              day: moment(now).format('DD'),
+              month: moment(now).format('MM'),
+              year: moment(now).format('YYYY'),
+            },
+            booking: {
+              ...booking,
+              startDate: {
+                day: moment(booking.startDate).format('DD'),
+                month: moment(booking.startDate).format('MM'),
+                year: moment(booking.startDate).format('YYYY'),
+              },
+              endDate: {
+                day: moment(booking.endDate).format('DD'),
+                month: moment(booking.endDate).format('MM'),
+                year: moment(booking.endDate).format('YYYY'),
+              },
+            },
+            user: {
+              ...booking.user,
+              dob: {
+                day: moment(booking.user.dob).format('DD'),
+                month: moment(booking.user.dob).format('MM'),
+                year: moment(booking.user.dob).format('YYYY'),
+              },
+              identityIssuedAt: {
+                day: moment(booking.user.identityIssuedAt).format('DD'),
+                month: moment(booking.user.identityIssuedAt).format('MM'),
+                year: moment(booking.user.identityIssuedAt).format('YYYY'),
+              },
+            },
+            adminSignature: `data:image/png;base64,${(await fs.readFile(path.join(process.cwd(), 'src/assets/images/director-signature.png'))).toString('base64')}`,
+          },
+          {
+            async: true,
+          },
+        );
+        const fileName = `${booking.id}_contract.html`;
+        const fileRelativePath = path.join('uploads', fileName);
+        await fs.writeFile(
+          path.join(process.cwd(), fileRelativePath),
+          contractHTML,
+        );
+        await htmlToPdf(
+          path.join(process.cwd(), fileRelativePath),
+          path.join(
+            process.cwd(),
+            path.join('uploads', `${booking.id}_contract.pdf`),
+          ),
+        );
+        await fs.unlink(path.join(process.cwd(), fileRelativePath));
+
+        // Lưu thông tin hợp đồng
+        const contractEntity = queryRunner.manager.create(Contract, {
+          bookingId,
+          signedByAdmin: 1,
+          signedByUser: 0,
+          contractUrl: path.join('uploads', `${booking.id}_contract.pdf`),
+        });
+        const newContract = await queryRunner.manager.save(contractEntity);
+
+        await queryRunner.commitTransaction();
+        return newContract;
+      }
+      throw new BadRequestException({
+        message: 'Invalid booking ID param',
+        error: 'BadRequest',
+      });
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async bookingServices(userId: number, body: BookingServicesReqDto) {

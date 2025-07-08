@@ -12,20 +12,21 @@ import { VerifyForgotPasswordReqDto } from './dtos/verify-forgot-password.dto';
 import { ResetPasswordReqDto } from './dtos/reset-password.dto';
 import { User } from 'common/decorators/user.decorator';
 import { UpdateProfileReqDto } from './dtos/update-profile.dto';
+import * as _ from 'lodash';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('sign-up')
   async signUp(@Body() signUpBody: SignUpReqDto) {
     const newUser = await this.authService.signUp(signUpBody);
-    await this.sendOtp(plainToInstance(SendOtpReqDto, {
-      email: newUser.email
-    }))
-    return AppResponse.ok(newUser);
+    await this.sendOtp(
+      plainToInstance(SendOtpReqDto, {
+        email: newUser.email,
+      }),
+    );
+    return AppResponse.ok(_.omit(newUser, 'passwordHash'));
   }
 
   @Post('sign-in')
@@ -47,7 +48,9 @@ export class AuthController {
 
   @Post('verify-account')
   async verifyAccount(@Body() verifyAccountBody: VerifyAccountReqDto) {
-    return AppResponse.ok(await this.authService.verifyAccount(verifyAccountBody));
+    return AppResponse.ok(
+      await this.authService.verifyAccount(verifyAccountBody),
+    );
   }
 
   @Post('/send-otp')
@@ -56,29 +59,38 @@ export class AuthController {
   }
 
   @Post('/verify-forgot-password')
-  async verifyForgotPassword(@Body() verifyForgotPasswordBody: VerifyForgotPasswordReqDto) {
-    return AppResponse.ok(await this.authService.verifyForgotPassword(verifyForgotPasswordBody));
+  async verifyForgotPassword(
+    @Body() verifyForgotPasswordBody: VerifyForgotPasswordReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.authService.verifyForgotPassword(verifyForgotPasswordBody),
+    );
   }
 
   @Put('/reset-password')
   async resetPassword(@Body() resetPasswordBody: ResetPasswordReqDto) {
-    return AppResponse.ok(await this.authService.resetPassword(resetPasswordBody));
+    return AppResponse.ok(
+      await this.authService.resetPassword(resetPasswordBody),
+    );
   }
 }
 
 @Controller('user')
 export class UserController {
-  constructor(
-    private readonly userService: UserService
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
   @Get('get-profile')
   async getProfile(@User('id') userId: number) {
-    return AppResponse.ok(await this.userService.getProfile(userId))
+    return AppResponse.ok(await this.userService.getProfile(userId));
   }
 
   @Put('update-profile')
-  async updateProfile(@User('id') userId: number, @Body() updateProfileBody: UpdateProfileReqDto) {
-    return AppResponse.ok(await this.userService.updateProfile(userId, updateProfileBody))
+  async updateProfile(
+    @User('id') userId: number,
+    @Body() updateProfileBody: UpdateProfileReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.userService.updateProfile(userId, updateProfileBody),
+    );
   }
 }

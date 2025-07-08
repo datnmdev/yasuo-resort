@@ -27,7 +27,10 @@ export class ValidationPipe implements PipeTransform<any> {
           }
           return newValue;
         }, []);
-      throw new BadRequestException(constraints);
+      throw new BadRequestException({
+        error: 'BadRequest',
+        message: constraints,
+      });
     }
     return object;
   }
