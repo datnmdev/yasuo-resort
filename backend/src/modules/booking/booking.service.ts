@@ -201,4 +201,47 @@ export class BookingService {
       await queryRunner.release();
     }
   }
+
+  async deleteService(bookingId: number, serviceId: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const deleteResult = await queryRunner.manager.delete(
+        BookingServiceEntity,
+        {
+          bookingId,
+          serviceId,
+        },
+      );
+
+      // Cập nhật lại tổng chi phí thuê phòng + dịch vụ
+      const booking = await queryRunner.manager.findOne(Booking, {
+        where: {
+          id: bookingId,
+        },
+        relations: ['bookingServices'],
+      });
+      let totalPrice = Number(booking.roomPrice);
+      for (const bookingService of booking.bookingServices) {
+        totalPrice += Number(bookingService.price) * bookingService.quantity;
+      }
+      await queryRunner.manager.update(
+        Booking,
+        {
+          id: booking.id,
+        },
+        {
+          totalPrice: totalPrice.toString(),
+        },
+      );
+      await queryRunner.commitTransaction();
+      return deleteResult;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
 }
