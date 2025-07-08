@@ -21,8 +21,11 @@ export class BookingService {
   @Column('int', { primary: true, name: 'service_id' })
   serviceId: number;
 
-  @Column('int', { name: 'quantity', nullable: true })
-  quantity: number | null;
+  @Column("decimal", { name: "price", precision: 18, scale: 2 })
+  price: string;
+
+  @Column('int', { name: 'quantity' })
+  quantity: number;
 
   @ManyToOne(() => Booking, (booking) => booking.bookingServices, {
     onDelete: 'NO ACTION',

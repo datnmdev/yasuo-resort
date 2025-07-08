@@ -1,13 +1,19 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Booking } from "./entities/booking.entity";
-import { DataSource, Repository } from "typeorm";
-import { Contract } from "./entities/contract.entity";
-import { BookingRoomReqDto } from "./dtos/booking-room.dto";
-import * as moment from "moment";
-import { Room } from "modules/room/entities/room.entity";
-import { Service } from "modules/service/entities/service.entity";
-import { BookingService as BookingServiceEntity } from "./entities/booking-service.entity";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Booking } from './entities/booking.entity';
+import { DataSource, Repository } from 'typeorm';
+import { Contract } from './entities/contract.entity';
+import { BookingRoomReqDto } from './dtos/booking-room.dto';
+import * as moment from 'moment';
+import { Room } from 'modules/room/entities/room.entity';
+import { Service } from 'modules/service/entities/service.entity';
+import { BookingService as BookingServiceEntity } from './entities/booking-service.entity';
+import { BookingServicesReqDto } from './dtos/booking-service.dto';
 
 @Injectable()
 export class BookingService {
@@ -18,76 +24,84 @@ export class BookingService {
     private readonly bookingServiceRepository: Repository<BookingServiceEntity>,
     @InjectRepository(Contract)
     private readonly contractRepository: Repository<Contract>,
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
   ) {}
 
   async bookingRoom(userId: number, bookingRoomBody: BookingRoomReqDto) {
-    const queryRunner = this.dataSource.createQueryRunner()
-    await queryRunner.connect()
-    await queryRunner.startTransaction()
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
     try {
       const roomInfo = await this.dataSource.manager.findOne(Room, {
         where: {
-          id: bookingRoomBody.roomId
+          id: bookingRoomBody.roomId,
         },
-        relations: [
-          'type'
-        ]
-      })
+        relations: ['type'],
+      });
 
       // Kiểm tra phòng này đã được ai đặt chưa
       if (roomInfo.currentCondition === 'booked') {
         throw new ConflictException('Room has already been booked');
       }
 
+      const services: Record<string, Service> = {};
       let totalPrice: number = Number(roomInfo.type.pricePerDay);
       for (const service of bookingRoomBody.services) {
         const serviceInfo = await this.dataSource.manager.findOne(Service, {
           where: {
-            id: service.serviceId
-          }
-        })
-        if (serviceInfo) {
-          totalPrice += Number(serviceInfo.price)
-        }
+            id: service.serviceId,
+          },
+        });
+        services[serviceInfo.id] = serviceInfo;
+        totalPrice += Number(serviceInfo.price) * service.quantity;
       }
-  
+
       // Lưu thông tin đặt phòng
       const bookingEntity = this.bookingRepository.create({
         ...bookingRoomBody,
-        startDate: moment(bookingRoomBody.startDate).format("YYYY-MM-DD"),
-        endDate: moment(bookingRoomBody.endDate).format("YYYY-MM-DD"),
+        roomPrice: roomInfo.type.pricePerDay,
+        startDate: moment(bookingRoomBody.startDate).format('YYYY-MM-DD'),
+        endDate: moment(bookingRoomBody.endDate).format('YYYY-MM-DD'),
         userId,
-        totalPrice: String(Math.ceil(totalPrice * 100) / 100)
-      })
-      const newBooking = await queryRunner.manager.save(bookingEntity)
-  
+        totalPrice: totalPrice.toString(),
+      });
+      const newBooking = await queryRunner.manager.save(bookingEntity);
+
       // Lưu thông tin dịch vụ kèm theo
-      const bookingServiceEntities = bookingRoomBody.services.map(item => this.bookingServiceRepository.create({
-        serviceId: item.serviceId,
-        bookingId: newBooking.id,
-        quantity: item.quantity
-      }))
-      const bookingServices = await queryRunner.manager.save(bookingServiceEntities)
+      const bookingServiceEntities = bookingRoomBody.services.map((item) =>
+        this.bookingServiceRepository.create({
+          serviceId: item.serviceId,
+          bookingId: newBooking.id,
+          quantity: item.quantity,
+          price: services[item.serviceId].price,
+        }),
+      );
+      const bookingServices = await queryRunner.manager.save(
+        bookingServiceEntities,
+      );
 
       // Cập nhật lại trạng thái phòng
-      await queryRunner.manager.update(Room, {
-        id: bookingRoomBody.roomId
-      }, {
-        currentCondition: 'booked'
-      })
-      await queryRunner.commitTransaction()
-      
+      await queryRunner.manager.update(
+        Room,
+        {
+          id: bookingRoomBody.roomId,
+        },
+        {
+          currentCondition: 'booked',
+        },
+      );
+      await queryRunner.commitTransaction();
+
       return {
         ...newBooking,
-        bookingServices
+        bookingServices,
       };
     } catch (error) {
-      await queryRunner.rollbackTransaction()
+      await queryRunner.rollbackTransaction();
       throw error;
     } finally {
-      await queryRunner.release()
+      await queryRunner.release();
     }
   }
 
@@ -95,21 +109,96 @@ export class BookingService {
     const booking = await this.bookingRepository.findOne({
       where: {
         userId,
-        id: bookingId
-      }
-    })
+        id: bookingId,
+      },
+    });
     if (booking) {
       if (booking.status === 'pending') {
-        return await this.bookingRepository.update({
-          id: bookingId
-        }, {
-          status: 'cancelled'
-        })
+        return await this.bookingRepository.update(
+          {
+            id: bookingId,
+          },
+          {
+            status: 'cancelled',
+          },
+        );
       } else if (booking.status === 'confirmed') {
         throw new ForbiddenException('Cannot cancel a confirmed booking');
       }
       throw new BadRequestException('This booking has already been canceled');
     }
-    throw new ForbiddenException('You are not allowed to modify this resource')
+    throw new ForbiddenException('You are not allowed to modify this resource');
+  }
+
+  async bookingServices(userId: number, body: BookingServicesReqDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const booking = await this.bookingRepository.findOne({
+        where: {
+          id: body.bookingId,
+          userId,
+        },
+      });
+      if (booking) {
+        const bookedServices = await this.bookingServiceRepository.find({
+          where: {
+            bookingId: booking.id,
+          },
+        });
+        const filteredServices = body.services.filter((service) =>
+          bookedServices.every(
+            (_service) => _service.serviceId != service.serviceId,
+          ),
+        );
+        const bookingServiceEntities: BookingServiceEntity[] = [];
+        for (const service of filteredServices) {
+          const serviceInfo = await this.dataSource.manager.findOne(Service, {
+            where: {
+              id: service.serviceId,
+            },
+          });
+          bookingServiceEntities.push(
+            this.bookingServiceRepository.create({
+              ...service,
+              bookingId: booking.id,
+              price: serviceInfo.price,
+            }),
+          );
+        }
+        const newBookingServices = await queryRunner.manager.save(
+          bookingServiceEntities,
+        );
+        // Cập nhật lại tổng chi phí thuê phòng + dịch vụ
+        let totalPrice = Number(booking.roomPrice);
+        for (const service of bookedServices) {
+          totalPrice += Number(service.price) * service.quantity;
+        }
+        for (const service of newBookingServices) {
+          totalPrice += Number(service.price) * service.quantity;
+        }
+        await queryRunner.manager.update(
+          Booking,
+          {
+            id: booking.id,
+          },
+          {
+            totalPrice: totalPrice.toString(),
+          },
+        );
+
+        await queryRunner.commitTransaction();
+        return newBookingServices;
+      }
+      throw new BadRequestException(
+        'Cannot book services without a room booking',
+      );
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

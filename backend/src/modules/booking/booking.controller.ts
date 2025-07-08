@@ -6,6 +6,7 @@ import { RolesGuard } from "common/guards/roles.guard";
 import { BookingRoomReqDto } from "./dtos/booking-room.dto";
 import { AppResponse } from "common/http/wrapper.http";
 import { User } from "common/decorators/user.decorator";
+import { BookingServicesReqDto } from "./dtos/booking-service.dto";
 
 @Controller('booking')
 export class BookingController {
@@ -31,5 +32,15 @@ export class BookingController {
     @Param('bookingId') bookingId: number
   ) {
     return AppResponse.ok(await this.bookingService.cancelRoomBooking(userId, bookingId))
+  }
+
+  @Post('service')
+  @Roles(Role.USER)
+  @UseGuards(RolesGuard)
+  async bookingServices(
+    @User('id') userId: number,
+    @Body() bookingServicesBody: BookingServicesReqDto
+  ) {
+    return AppResponse.ok(await this.bookingService.bookingServices(userId, bookingServicesBody))
   }
 }

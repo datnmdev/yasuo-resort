@@ -25,6 +25,9 @@ export class Booking {
   @Column("int", { primary: true, name: "room_id" })
   roomId: number;
 
+  @Column("decimal", { name: "room_price", precision: 18, scale: 2 })
+  roomPrice: string;
+
   @Column("date", { name: "start_date" })
   startDate: string;
 
