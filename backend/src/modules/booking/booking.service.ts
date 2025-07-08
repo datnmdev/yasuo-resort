@@ -18,6 +18,8 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { htmlToPdf } from 'utils/puppeteer.util';
+import { hasSignature } from 'utils/sharp.util';
+import { toPascalCase } from 'utils/string.util';
 
 @Injectable()
 export class BookingService {
@@ -199,18 +201,15 @@ export class BookingService {
             async: true,
           },
         );
-        const fileName = `${booking.id}_contract.html`;
-        const fileRelativePath = path.join('uploads', fileName);
+        const fileName = `${booking.id}_${toPascalCase(booking.user.name)}_Contract`;
+        const fileRelativePath = path.join('uploads', `${fileName}.html`);
         await fs.writeFile(
           path.join(process.cwd(), fileRelativePath),
           contractHTML,
         );
         await htmlToPdf(
           path.join(process.cwd(), fileRelativePath),
-          path.join(
-            process.cwd(),
-            path.join('uploads', `${booking.id}_contract.pdf`),
-          ),
+          path.join(process.cwd(), path.join('uploads', `${fileName}.pdf`)),
         );
         await fs.unlink(path.join(process.cwd(), fileRelativePath));
 
@@ -219,7 +218,7 @@ export class BookingService {
           bookingId,
           signedByAdmin: 1,
           signedByUser: 0,
-          contractUrl: path.join('uploads', `${booking.id}_contract.pdf`),
+          contractUrl: path.join('uploads', `${fileName}.pdf`),
         });
         const newContract = await queryRunner.manager.save(contractEntity);
 
@@ -230,6 +229,135 @@ export class BookingService {
         message: 'Invalid booking ID param',
         error: 'BadRequest',
       });
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async signContract(userId: number, bookingId: number, signatureUrl: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      // Kiểm tra chữ ký
+      const signaturePath = path.join(process.cwd(), signatureUrl);
+      try {
+        await fs.access(signaturePath);
+      } catch {
+        throw new BadRequestException({
+          error: 'InvalidSignature',
+          message: 'Invalid signature',
+        });
+      }
+      if (!(await hasSignature(signaturePath))) {
+        await fs.unlink(signaturePath);
+        throw new BadRequestException({
+          error: 'InvalidSignature',
+          message: 'Invalid signature',
+        });
+      }
+
+      // Kiểm tra thông tin người dùng
+      const booking = await queryRunner.manager.findOne(Booking, {
+        where: {
+          id: bookingId,
+          userId,
+        },
+        relations: ['contract', 'room', 'user', 'room.type'],
+      });
+      if (!booking) {
+        await fs.unlink(signaturePath);
+        throw new BadRequestException({
+          error: 'BadRequest',
+          message: 'Invalid booking ID',
+        });
+      }
+
+      // Kiểm tra hợp đồng đã ký chưa
+      if (booking.contract.signedByUser) {
+        await fs.unlink(signaturePath);
+        throw new ConflictException('The contract has already been signed');
+      }
+
+      // Áp dụng chữ ký lên hợp đồng
+      const contractHTML = await ejs.renderFile(
+        path.join(process.cwd(), 'src/assets/templates/contract.ejs'),
+        {
+          now: {
+            day: moment(booking.contract.createdAt).format('DD'),
+            month: moment(booking.contract.createdAt).format('MM'),
+            year: moment(booking.contract.createdAt).format('YYYY'),
+          },
+          booking: {
+            ...booking,
+            startDate: {
+              day: moment(booking.startDate).format('DD'),
+              month: moment(booking.startDate).format('MM'),
+              year: moment(booking.startDate).format('YYYY'),
+            },
+            endDate: {
+              day: moment(booking.endDate).format('DD'),
+              month: moment(booking.endDate).format('MM'),
+              year: moment(booking.endDate).format('YYYY'),
+            },
+          },
+          user: {
+            ...booking.user,
+            dob: {
+              day: moment(booking.user.dob).format('DD'),
+              month: moment(booking.user.dob).format('MM'),
+              year: moment(booking.user.dob).format('YYYY'),
+            },
+            identityIssuedAt: {
+              day: moment(booking.user.identityIssuedAt).format('DD'),
+              month: moment(booking.user.identityIssuedAt).format('MM'),
+              year: moment(booking.user.identityIssuedAt).format('YYYY'),
+            },
+          },
+          adminSignature: `data:image/png;base64,${(await fs.readFile(path.join(process.cwd(), 'src/assets/images/director-signature.png'))).toString('base64')}`,
+          userSignature: `data:image/png;base64,${(await fs.readFile(signaturePath)).toString('base64')}`,
+        },
+        {
+          async: true,
+        },
+      );
+      const fileName = `${booking.id}_${toPascalCase(booking.user.name)}_Contract`;
+      const fileRelativePath = path.join('uploads', `${fileName}.html`);
+      await fs.writeFile(
+        path.join(process.cwd(), fileRelativePath),
+        contractHTML,
+      );
+      await htmlToPdf(
+        path.join(process.cwd(), fileRelativePath),
+        path.join(process.cwd(), path.join('uploads', `${fileName}.pdf`)),
+      );
+      await fs.unlink(path.join(process.cwd(), fileRelativePath));
+      await fs.unlink(signaturePath);
+
+      // Cập nhật lại trạng thái hợp đồng
+      await queryRunner.manager.update(
+        Contract,
+        { bookingId },
+        {
+          signedByUser: 1,
+        },
+      );
+
+      // Cập nhật lại trạng thái đặt phòng
+      await queryRunner.manager.update(
+        Booking,
+        {
+          id: bookingId,
+        },
+        {
+          status: 'confirmed',
+        },
+      );
+      await queryRunner.commitTransaction();
+      return null;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

@@ -17,6 +17,7 @@ import { AppResponse } from 'common/http/wrapper.http';
 import { User } from 'common/decorators/user.decorator';
 import { BookingServicesReqDto } from './dtos/booking-service.dto';
 import { DeleteServiceReqDto } from './dtos/delete-service.dto';
+import { SignContractReqDto } from './dtos/sign-contract.dto';
 
 @Controller('booking')
 export class BookingController {
@@ -49,11 +50,24 @@ export class BookingController {
   @Put(':bookingId/create-contract')
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)
-  async createContract(
+  async createContract(@Param('bookingId') bookingId: number) {
+    return AppResponse.ok(await this.bookingService.createContract(bookingId));
+  }
+
+  @Put(':bookingId/sign-contract')
+  @Roles(Role.USER)
+  @UseGuards(RolesGuard)
+  async signContract(
+    @User('id') userId: number,
     @Param('bookingId') bookingId: number,
+    @Body() signContractBody: SignContractReqDto,
   ) {
     return AppResponse.ok(
-      await this.bookingService.createContract(bookingId)
+      await this.bookingService.signContract(
+        userId,
+        bookingId,
+        signContractBody.signatureUrl,
+      ),
     );
   }
 

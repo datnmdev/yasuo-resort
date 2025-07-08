@@ -226,7 +226,21 @@
                 "
               />
             </td>
-            <td style="text-align: center"></td>
+            <td style="text-align: center">
+              <% if (locals.userSignature) { %>
+                <img
+                  src="<%= locals.userSignature %>"
+                  alt="renter-signature"
+                  style="
+                    width: 132px;
+                    height: 66px;
+                    object-fit: cover;
+                    object-position: center;
+                    margin: 0 auto;
+                  "
+                />
+              <% } %>
+            </td>
           </tr>
           <tr>
             <td style="text-align: center">Nguyễn Duy Huy Hoàng</td>
