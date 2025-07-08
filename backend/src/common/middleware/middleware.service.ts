@@ -33,7 +33,7 @@ export class AuthorizationMiddleware implements NestMiddleware {
         );
         const isInTokenBlacklist = (await this.redisClient.get(`TOKEN_BLACKLIST_${payload.jti}`)) === null ? false : true
         if (isInTokenBlacklist) {
-          return next(new UnauthorizedException());
+          return next(new UnauthorizedException('Unauthorized'));
         }
         if (payload.status === UserStatus.INACTIVE) {
           return next(new ForbiddenException({
@@ -44,9 +44,9 @@ export class AuthorizationMiddleware implements NestMiddleware {
         req.user = payload;
         return next();
       }
-      return next(new UnauthorizedException());
+      return next(new UnauthorizedException('Unauthorized'));
     } catch (error) {
-      return next(new UnauthorizedException());
+      return next(new UnauthorizedException('Unauthorized'));
     }
   }
 }

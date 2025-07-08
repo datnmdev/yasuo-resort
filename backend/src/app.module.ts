@@ -15,6 +15,7 @@ import { UploadModule } from 'modules/upload/upload.module';
 import * as path from 'path';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ServiceModule } from 'modules/service/service.module';
+import { BookingModule } from 'modules/booking/booking.module';
 
 @Module({
   imports: [
@@ -49,7 +50,8 @@ import { ServiceModule } from 'modules/service/service.module';
     UserModule,
     RoomTypeModule,
     RoomModule,
-    ServiceModule
+    ServiceModule,
+    BookingModule
   ],
   controllers: [],
   providers: [],
@@ -96,6 +98,7 @@ export class AppModule implements NestModule {
             path: 'service/:serviceId',
             method: RequestMethod.DELETE
           },
+          'booking'
         )
   }
 }
