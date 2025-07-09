@@ -11,22 +11,59 @@ export default function axiosInstance() {
     withCredentials: true,
   });
 
-  axiosInstance.interceptors.response.use(
-    async (response) => response,
-    async (error) => {
-      if (
-        error.response &&
-        error.response.status === HttpStatusCode.Unauthorized
-      ) {
-        const refreshToken = (
-          await axios({
-            url: `${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`,
-            method: 'post',
-            withCredentials: true,
-          })
-        ).data;
+  // axiosInstance.interceptors.response.use(
+  //   async (response) => response,
+  //   async (error) => {
+  //     if (
+  //       error.response &&
+  //       error.response.status === HttpStatusCode.Unauthorized
+  //     ) {
+  //       const refreshToken = (
+  //         await axios({
+  //           url: `${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`,
+  //           method: 'post',
+  //           withCredentials: true,
+  //         })
+  //       ).data;
 
-        if (refreshToken) {
+  //       if (refreshToken) {
+  //         Cookies.set('accessToken', refreshToken.accessToken, {
+  //           httpOnly: false,
+  //           secure: true,
+  //           sameSite: 'None',
+  //           expires: 7200 / (60 * 60 * 24),
+  //         });
+  //         Cookies.set('refreshToken', refreshToken.refreshToken, {
+  //           httpOnly: false,
+  //           secure: true,
+  //           sameSite: 'None',
+  //           expires: 2592000 / (60 * 60 * 24),
+  //         });
+  //         error.config.headers.Authorization = `Bearer ${Cookies.get('accessToken')}`;
+  //         return await axios(error.config);
+  //       }
+  //     }
+  //     return await Promise.reject(error);
+  //   }
+  // );
+
+  axiosInstance.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
+  
+      // Nếu lỗi là 401 và KHÔNG phải từ login, mới thử refresh token
+      if (
+        error.response?.status === 401 &&
+        !originalRequest.url.includes('/auth/sign-in')
+      ) {
+        try {
+          const refreshRes = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`, {}, {
+            withCredentials: true,
+          });
+  
+          const { accessToken, refreshToken } = refreshRes.data;
+  
           Cookies.set('accessToken', refreshToken.accessToken, {
             httpOnly: false,
             secure: true,
@@ -39,11 +76,20 @@ export default function axiosInstance() {
             sameSite: 'None',
             expires: 2592000 / (60 * 60 * 24),
           });
-          error.config.headers.Authorization = `Bearer ${Cookies.get('accessToken')}`;
-          return await axios(error.config);
+  
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          return await axios(originalRequest);
+        } catch (refreshError) {
+          console.warn("Refresh token failed:", refreshError);
+          // clear cookies & redirect nếu cần
+          Cookies.remove("accessToken");
+          Cookies.remove("refreshToken");
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
         }
       }
-      return await Promise.reject(error);
+  
+      return Promise.reject(error);
     }
   );
 

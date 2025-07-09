@@ -15,6 +15,7 @@
     "axios": "^1.10.0",
     "classnames": "^2.5.1",
     "js-cookie": "^3.0.5",
+    "jwt-decode": "^4.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-redux": "^9.2.0",
