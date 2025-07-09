@@ -36,14 +36,15 @@ export class BookingController {
   }
 
   @Put(':bookingId/cancel-room-booking')
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.ADMIN)
   @UseGuards(RolesGuard)
   async cancelRoomBooking(
     @User('id') userId: number,
+    @User('role') role: Role,
     @Param('bookingId') bookingId: number,
   ) {
     return AppResponse.ok(
-      await this.bookingService.cancelRoomBooking(userId, bookingId),
+      await this.bookingService.cancelRoomBooking(role, userId, bookingId),
     );
   }
 

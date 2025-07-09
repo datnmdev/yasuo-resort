@@ -20,6 +20,7 @@ import * as fs from 'fs/promises';
 import { htmlToPdf } from 'utils/puppeteer.util';
 import { hasSignature } from 'utils/sharp.util';
 import { toPascalCase } from 'utils/string.util';
+import { Role } from 'common/constants/user.constants';
 
 @Injectable()
 export class BookingService {
@@ -111,13 +112,20 @@ export class BookingService {
     }
   }
 
-  async cancelRoomBooking(userId: number, bookingId: number) {
-    const booking = await this.bookingRepository.findOne({
+  async cancelRoomBooking(role: Role, userId: number, bookingId: number) {
+    let booking = await this.bookingRepository.findOne({
       where: {
         userId,
         id: bookingId,
       },
     });
+    if (role === Role.ADMIN) {
+      booking = await this.bookingRepository.findOne({
+        where: {
+          id: bookingId,
+        },
+      });
+    }
     if (booking) {
       if (booking.status === 'pending') {
         return await this.bookingRepository.update(
