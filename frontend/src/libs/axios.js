@@ -55,7 +55,8 @@ export default function axiosInstance() {
       // Nếu lỗi là 401 và KHÔNG phải từ login, mới thử refresh token
       if (
         error.response?.status === 401 &&
-        !originalRequest.url.includes('/auth/sign-in')
+        !originalRequest.url.includes('/auth/sign-in') &&
+        Cookies.get("accessToken") && Cookies.get("refreshToken")
       ) {
         try {
           const refreshRes = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`, {}, {
@@ -80,11 +81,12 @@ export default function axiosInstance() {
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return await axios(originalRequest);
         } catch (refreshError) {
-          console.warn("Refresh token failed:", refreshError);
-          // clear cookies & redirect nếu cần
+          const hadToken = Cookies.get('accessToken');
           Cookies.remove("accessToken");
           Cookies.remove("refreshToken");
-          window.location.href = '/login';
+          if (hadToken) {
+            window.location.href = '/login';
+          }
           return Promise.reject(refreshError);
         }
       }
