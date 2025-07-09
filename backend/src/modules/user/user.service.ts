@@ -95,7 +95,7 @@ export class AuthService {
         });
       }
     }
-    throw new UnauthorizedException('Incorrect phone number or password');
+    throw new UnauthorizedException('Incorrect email or password');
   }
 
   async refreshToken(body: RefreshTokenReqDto) {
