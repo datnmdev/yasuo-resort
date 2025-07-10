@@ -11,22 +11,22 @@ import { useLocation, useNavigate } from "react-router";
 const items = [
   { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
   {
-    key: "/admin/booking-requests",
+    key: "/admin/booking-request",
     icon: <FormOutlined />,
     label: "Booking Requests",
   },
   {
-    key: "/admin/rooms-management",
+    key: "/admin/room-management",
     icon: <BuildOutlined />,
     label: "Rooms Management",
   },
   {
-    key: "/admin/room-types-management",
+    key: "/admin/room-type-management",
     icon: <TagsOutlined />,
     label: "Room Types Management",
   },
   {
-    key: "/admin/services-management",
+    key: "/admin/service-management",
     icon: <CustomerServiceOutlined />,
     label: "Services Management",
   },

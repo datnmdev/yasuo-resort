@@ -9,6 +9,7 @@ import SignUp from "../pages/SignUp";
 import RoomPage from "../pages/Rooms";
 import RoomDetailPage from "../pages/Rooms/RoomDetailPage";
 import RoomTypeManagement from "../pages/RoomTypeManagement";
+import ServiceManagement from "../pages/ServiceManagement";
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -50,8 +51,12 @@ const router = createBrowserRouter([
         element: <DashboardPage />,
       },
       {
-        path: "room-types-management",
+        path: "room-type-management",
         element: <RoomTypeManagement />,
+      },
+      {
+        path: "service-management",
+        element: <ServiceManagement />,
       },
     ],
   },
