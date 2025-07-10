@@ -62,23 +62,13 @@ export class RoomTypeService {
       },
     });
     if (roomType) {
-      const isValidName = (await this.roomTypeRepository.findOne({
-        where: {
-          name: body.name,
+      // Cập nhật thông tin room type vào CSDL
+      return this.roomTypeRepository.update(
+        {
+          id: roomTypeId,
         },
-      }))
-        ? true
-        : false;
-      if (!isValidName) {
-        // Cập nhật thông tin room type vào CSDL
-        return this.roomTypeRepository.update(
-          {
-            id: roomTypeId,
-          },
-          body,
-        );
-      }
-      throw new ConflictException('Room type name already exists');
+        body,
+      );
     }
     throw new NotFoundException('Room type not found');
   }

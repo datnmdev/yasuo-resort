@@ -7,10 +7,10 @@ import { useAutoLogin } from "../../hooks/useAutoLogin";
 export default function UserLayout() {
   useAutoLogin();
   return (
-    <div className="">
+    <div className="shadow-[0_0_0_15px_#0D584D_inset]">
       <Logo/>
       <Navbar/>
-      <div>
+      <div className="p-[15px]">
         <Outlet />
       </div>
 

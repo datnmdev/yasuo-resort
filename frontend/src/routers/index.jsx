@@ -8,6 +8,7 @@ import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
 import RoomPage from "../pages/Rooms";
 import RoomDetailPage from "../pages/Rooms/RoomDetailPage";
+import RoomTypeManagement from "../pages/RoomTypeManagement";
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
       {
         path: "dashboard",
         element: <DashboardPage />,
+      },
+      {
+        path: "room-types-management",
+        element: <RoomTypeManagement />,
       },
     ],
   },
