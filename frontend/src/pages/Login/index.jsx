@@ -57,7 +57,7 @@ const Login = () => {
         
             // Điều hướng theo role
             if (user.role === 'admin') {
-                navigate('/admin/dashboard')
+                navigate('/admin/booking-request')
             } else {
                 navigate('/')
             }

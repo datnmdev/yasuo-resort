@@ -2,7 +2,7 @@ import { createBrowserRouter } from "react-router";
 import HomePage from "../pages/HomePage";
 import UserLayout from "../layouts/UserLayout";
 import AdminLayout from "../layouts/AdminLayout";
-import DashboardPage from "../pages/DasboardPage";
+// import DashboardPage from "../pages/DasboardPage";
 import ErrorPage from "../pages/ErrorPage";
 import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
@@ -53,10 +53,10 @@ const router = createBrowserRouter([
     element: <AdminLayout />,
     errorElement: <ErrorPage />,
     children: [
-      {
-        path: "dashboard",
-        element: <DashboardPage />,
-      },
+      // {
+      //   path: "dashboard",
+      //   element: <DashboardPage />,
+      // },
       {
         path: "room-type-management",
         element: <RoomTypeManagementPage />,

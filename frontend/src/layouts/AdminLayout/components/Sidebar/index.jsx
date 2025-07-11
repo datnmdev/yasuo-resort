@@ -9,7 +9,7 @@ import { Menu } from "antd";
 import { useLocation, useNavigate } from "react-router";
 
 const items = [
-  { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
+  // { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
   {
     key: "/admin/booking-request",
     icon: <FormOutlined />,
@@ -40,7 +40,7 @@ export default function Sidebar() {
     <div>
       <img className="w-40 mx-auto" src="/logo_resort_2.png" alt="logo" />
       <Menu
-        defaultSelectedKeys={["/admin/dashboard"]}
+        defaultSelectedKeys={["/admin/booking-request"]}
         selectedKeys={[location.pathname]}
         mode="inline"
         theme="light"
