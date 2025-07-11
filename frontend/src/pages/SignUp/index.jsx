@@ -24,7 +24,7 @@ const SignUp = () => {
     });
 
     const [otp, setOtp] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
 
     //lấy data từ form
     const handleChangeForm = (e) => {
@@ -37,12 +37,20 @@ const SignUp = () => {
 
     const handleSignUp = async (e) => {
         e.preventDefault();
+        console.log("SignUp formData:", formData);
         try {
             const res = await apis.user.signUp(formData);
+            console.log("SignUp response:", res);
             setStep(2)
         } catch (error) {
-            const messageApi = error.response.data?.error?.message
-            setSignUpError(messageApi)
+            let messageApi = "Đăng ký thất bại. Vui lòng thử lại.";
+            const errMsg = error?.response?.data?.error?.message;
+            if (Array.isArray(errMsg)) {
+                messageApi = errMsg.join(', ');
+            } else if (typeof errMsg === 'string') {
+                messageApi = errMsg;
+            }
+            setSignUpError(messageApi);
         }
     }
 
@@ -52,18 +60,25 @@ const SignUp = () => {
             const resOtp = await apis.user.verifyOtp(formData.email,otp);
             setStep(3)
         } catch (err) {
+            console.log("otp error:", err);
             const message = err.response?.data?.error?.message || "OTP verification failed.";
             setOtpError(message);
         }
     }
 
-    const handleResendOtp = async (e) =>{
+    const handleResendOtp = async (e) => {
         e.preventDefault();
-        await apis.user.sendOtp(formData.email);
+        setOtpLoading(true);
+        try {
+            await apis.user.sendOtp(formData.email);
+            setOtpError('OTP has been sent to your email');
+        } finally {
+            setOtpLoading(false);
+        }
     }
 
     useEffect(() => {
-    signUpRef.current?.scrollIntoView({ behavior: 'smooth' })
+        signUpRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [])
 
     return (
@@ -102,7 +117,6 @@ const SignUp = () => {
                                     type="text"
                                     placeholder="Full Name"
                                     name="name"
-                                    defaultValue=""
                                     value={formData.name}
                                     className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeForm}
@@ -111,7 +125,6 @@ const SignUp = () => {
                                     type="email"
                                     placeholder="Email"
                                     name="email"
-                                    defaultValue=""
                                     value={formData.email}
                                     className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeForm}
@@ -120,7 +133,6 @@ const SignUp = () => {
                                     type="password"
                                     placeholder="Password"
                                     name="password"
-                                    defaultValue=""
                                     value={formData.password}
                                     className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeForm}
@@ -129,7 +141,6 @@ const SignUp = () => {
                                     type="text"
                                     placeholder="Phone"
                                     name="phone"
-                                    defaultValue=""
                                     value={formData.phone}
                                     className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeForm}
@@ -138,7 +149,6 @@ const SignUp = () => {
                                     type="text"
                                     placeholder="CCCD/ID Number"
                                     name="cccd"
-                                    defaultValue=""
                                     value={formData.cccd}
                                     className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeForm}
@@ -147,14 +157,12 @@ const SignUp = () => {
                                     type="date"
                                     placeholder="Date of Birth"
                                     name="dob"
-                                    defaultValue=""
                                     value={formData.dob}
                                     className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeForm}
                                 />
                                 <select
                                     name="gender"
-                                    defaultValue=""
                                     value={formData.gender}
                                     className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeForm}
@@ -167,7 +175,6 @@ const SignUp = () => {
                                     type="text"
                                     placeholder="Identity Issued Place"
                                     name="identityIssuedPlace"
-                                    defaultValue=""
                                     value={formData.identityIssuedPlace}
                                     className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeForm}
@@ -176,7 +183,6 @@ const SignUp = () => {
                                     type="date"
                                     placeholder="Identity Issued At"
                                     name="identityIssuedAt"
-                                    defaultValue=""
                                     value={formData.identityIssuedAt}
                                     className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeForm}
@@ -185,7 +191,6 @@ const SignUp = () => {
                                     type="text"
                                     placeholder="Permanent Address"
                                     name="permanentAddress"
-                                    defaultValue=""
                                     value={formData.permanentAddress}
                                     className="w-full mb-6 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeForm}
@@ -232,31 +237,32 @@ const SignUp = () => {
                     <div className="w-1/2 h-full flex items-center justify-center">
                         <div className="w-full max-w-md p-8 bg-white/70 backdrop-blur-md rounded-xl shadow-lg">
                             <h2 className="text-2xl font-semibold mb-6 text-gray-800">Verify Account</h2>
-                            <p>An otp has send to {formData.email}. Please check.</p>
+                            <p>An otp has sent to {formData.email}. Please check.</p>
                             {otpError && (
                                 <p className="text-red-600 text-sm mb-4 text-center">{otpError}</p>
                             )}
                             <form onSubmit={handleVerifyOtp}>
                                 <input
                                     type="text"
-                                    placeholder="Otp"
+                                    placeholder="OTP"
                                     name="otp"
-                                    defaultValue=""
                                     className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     onChange={handleChangeOtp}
+                                    value={otp}
                                 />
-                                
                                 <button
                                     type="submit"
-                                    className="w-full bg-[#0D584D] hover:bg-green-500 text-white font-semibold py-2 rounded-lg transition duration-300 cursor-pointer"
+                                    className="w-full bg-[#0D584D] hover:bg-green-500 text-white font-semibold py-2 rounded-lg transition duration-300 cursor-pointer mb-2"
+                                    disabled={otpLoading}
                                 >
-                                    Send OTP
+                                    {otpLoading ? 'Đang xác thực...' : 'Verify OTP'}
                                 </button>
                                 <button
                                     onClick={handleResendOtp}
                                     className="w-full bg-[#0D584D] hover:bg-green-500 text-white font-semibold py-2 rounded-lg transition duration-300 cursor-pointer"
+                                    disabled={otpLoading}
                                 >
-                                    Resend Otp
+                                    {otpLoading ? 'Đang gửi lại OTP...' : 'Resend OTP'}
                                 </button>
                             </form>
                         </div>

@@ -13,6 +13,7 @@ import RoomTypeManagementPage from "../pages/RoomTypeManagementPage";
 import ServiceManagementPage from "../pages/ServiceManagementPage";
 import RoomManagementPage from "../pages/RoomManagementPage";
 import BookingRequestPage from "../pages/BookingRequestPage";
+import ResetPassword from "@src/pages/ResetPassword";
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
         path:'/services',
         element: <ServicePage />,
       },
+      {
+        path: '/reset-password',
+        element: <ResetPassword />,
+      }
     ],
   },
 
