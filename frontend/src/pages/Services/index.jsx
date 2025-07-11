@@ -5,10 +5,10 @@ import Cart from './Cart';
 import ServiceCard from './ServiceCard';
 import SupportBox from './SupportBox';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { fetchServices } from '@apis/service';
 import { Input } from '@ui/input';
 import { Card, CardContent } from '@ui/card';
 import { Button } from '@ui/button';
+import serviceApi from '@apis/service';
 
 // const services = [
 //     {
@@ -40,12 +40,17 @@ export default function ServicePage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['services', currentPage, searchQuery],
-    queryFn: () => fetchServices(currentPage, limit, searchQuery),
+    queryFn: () =>
+      serviceApi.getServices({
+        page: currentPage,
+        limit,
+        keyword: searchQuery,
+      }),
     keepPreviousData: true,
   });
 
-  const services = data?.data[0] || [];
-  const totalPages = Math.ceil(data?.data[1] || 1 / limit);
+  const services = data.data?.data[0] || [];
+  const totalPages = Math.ceil(data.data?.data[1] || 1 / limit);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
