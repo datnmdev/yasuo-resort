@@ -49,8 +49,8 @@ export default function ServicePage() {
     keepPreviousData: true,
   });
 
-  const services = data.data?.data[0] || [];
-  const totalPages = Math.ceil(data.data?.data[1] || 1 / limit);
+  const services = data?.data?.data[0] || [];
+  const totalPages = Math.ceil(data?.data?.data[1] || 1 / limit);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
