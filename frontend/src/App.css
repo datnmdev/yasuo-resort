@@ -7,9 +7,17 @@
 @import "./css/style.scss";
 
 html {
-  font-family: 'Nunito', 'Roboto', "Poppins", sans-serif;
+  font-family: "Nunito", "Roboto", "Poppins", sans-serif;
 }
 
-body{
+body {
   background-color: var(--paper-white);
+  box-shadow: 0 0 0 15px #0d584d inset;
+  padding: 15px;
+}
+
+.center-both {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

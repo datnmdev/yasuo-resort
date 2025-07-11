@@ -1,0 +1,11 @@
+// tiện cho việc import dùng alias thay vì phải ../../../ và để vscode hiểu alias
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@ui/*": ["src/components/ui/*"],
+      "@apis/*": ["src/apis/*"],
+      "@src/*": ["src/*"]
+    }
+  }
+}

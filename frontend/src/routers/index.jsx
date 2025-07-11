@@ -8,6 +8,7 @@ import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
 import RoomPage from "../pages/Rooms";
 import RoomDetailPage from "../pages/Rooms/RoomDetailPage";
+import ServicePage from "../pages/Services";
 import RoomTypeManagementPage from "../pages/RoomTypeManagementPage";
 import ServiceManagementPage from "../pages/ServiceManagementPage";
 import RoomManagementPage from "../pages/RoomManagementPage";
@@ -36,7 +37,13 @@ const router = createBrowserRouter([
         path: "/rooms",
         element: <RoomPage />,
       },
-      { path: "/rooms/:id", element: <RoomDetailPage /> },
+      { path: '/rooms/:id', 
+        element: <RoomDetailPage /> 
+      },
+      {
+        path:'/services',
+        element: <ServicePage />,
+      },
     ],
   },
 
