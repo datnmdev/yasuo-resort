@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import TextEditor from "../../components/TextEditor";
 import useToast from "../../hooks/toast.hook";
 
-export default function RoomTypeManagement() {
+export default function RoomTypeManagementPage() {
   const [getRoomTypesReq, setGetRoomTypesReq] = useState({
     page: 1,
     limit: 10,

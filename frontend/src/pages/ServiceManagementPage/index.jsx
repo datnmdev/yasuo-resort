@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import TextEditor from "../../components/TextEditor";
 import useToast from "../../hooks/toast.hook";
 
-export default function ServiceManagement() {
+export default function ServiceManagementPage() {
   const [getServicesReq, setGetServicesReq] = useState({
     page: 1,
     limit: 10,

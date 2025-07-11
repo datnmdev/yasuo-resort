@@ -35,10 +35,9 @@ export class Room {
 
   @Column("enum", {
     name: "current_condition",
-    nullable: true,
     enum: ["available", "booked"],
   })
-  currentCondition: "available" | "booked" | null;
+  currentCondition: "available" | "booked";
 
   @Column("datetime", {
     name: "created_at",

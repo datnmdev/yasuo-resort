@@ -1,6 +1,15 @@
-import { ArrayMinSize, IsArray, IsInt, IsOptional, IsString } from "class-validator";
-import { RoomCurrentCondition, RoomStatus } from "common/constants/room.constants";
-import { OneOf } from "common/decorators/validation.decorator";
+import {
+  ArrayMinSize,
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import {
+  RoomCurrentCondition,
+  RoomStatus,
+} from 'common/constants/room.constants';
+import { OneOf } from 'common/decorators/validation.decorator';
 
 export class UpdateRoomReqDto {
   @IsOptional()
@@ -20,15 +29,13 @@ export class UpdateRoomReqDto {
     RoomStatus.ACTIVE,
     RoomStatus.INACTIVE,
     RoomStatus.UNDER_MAINTENANCE,
-    RoomStatus.RETIRED
+    RoomStatus.RETIRED,
   ])
   status: 'active' | 'inactive' | 'under_maintenance' | 'retired';
 
   @IsOptional()
-  @OneOf([
-    RoomCurrentCondition.AVAILABLE
-  ])
-  currentCondition: 'available';
+  @OneOf([RoomCurrentCondition.AVAILABLE, RoomCurrentCondition.BOOKED])
+  currentCondition: 'available' | 'booked';
 
   @IsOptional()
   @IsArray()

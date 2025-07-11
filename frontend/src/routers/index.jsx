@@ -8,8 +8,9 @@ import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
 import RoomPage from "../pages/Rooms";
 import RoomDetailPage from "../pages/Rooms/RoomDetailPage";
-import RoomTypeManagement from "../pages/RoomTypeManagement";
-import ServiceManagement from "../pages/ServiceManagement";
+import RoomTypeManagementPage from "../pages/RoomTypeManagementPage";
+import ServiceManagementPage from "../pages/ServiceManagementPage";
+import RoomManagementPage from "../pages/RoomManagementPage";
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -52,11 +53,15 @@ const router = createBrowserRouter([
       },
       {
         path: "room-type-management",
-        element: <RoomTypeManagement />,
+        element: <RoomTypeManagementPage />,
       },
       {
         path: "service-management",
-        element: <ServiceManagement />,
+        element: <ServiceManagementPage />,
+      },
+      {
+        path: "room-management",
+        element: <RoomManagementPage />,
       },
     ],
   },

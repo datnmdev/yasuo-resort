@@ -26,9 +26,10 @@ export class RoomService {
     return this.roomRepository
       .createQueryBuilder('room')
       .leftJoinAndSelect('room.media', 'media')
+      .leftJoinAndSelect('room.type', 'type')
       .where(
         new Brackets((qb) => {
-          if (typeof query.roomNumber === 'string') {
+          if (typeof query.roomNumber === 'string' && query.roomNumber) {
             qb.where('room.roomNumber = :roomNumber', {
               roomNumber: query.roomNumber,
             });
@@ -142,56 +143,44 @@ export class RoomService {
         },
       });
       if (room) {
-        const isValidRoomNumber =
-          body.roomNumber &&
-          (await this.roomRepository.findOne({
-            where: {
-              roomNumber: body.roomNumber,
+        // Cập nhật thông tin room vào CSDL
+        if (Object.keys(_.omit(body, 'media')).length > 0) {
+          await queryRunner.manager.update(
+            Room,
+            {
+              id: roomId,
             },
-          }))
-            ? true
-            : false;
-        if (!isValidRoomNumber) {
-          // Cập nhật thông tin room vào CSDL
-          if (Object.keys(_.omit(body, 'media')).length > 0) {
-            await queryRunner.manager.update(
-              Room,
-              {
-                id: roomId,
-              },
-              _.omit(body, 'media'),
-            );
-          }
-
-          // Cập nhật media
-          const oldMedia = await queryRunner.manager.find(Media, {
-            where: {
-              roomId,
-            },
-          });
-          for (const item of oldMedia) {
-            const filePath = path.join(process.cwd(), item.path);
-            try {
-              await access(filePath);
-              await unlink(filePath);
-            } catch (error) {
-              console.log('Delete File Error::', error);
-            }
-          }
-          await queryRunner.manager.delete(Media, {
-            roomId: room.id,
-          });
-          const mediaEntities = body.media.map((item) =>
-            queryRunner.manager.create(Media, {
-              roomId: room.id,
-              path: item,
-            }),
+            _.omit(body, 'media'),
           );
-          await queryRunner.manager.save(mediaEntities);
-          await queryRunner.commitTransaction();
-          return null;
         }
-        throw new ConflictException('Room type name already exists');
+
+        // Cập nhật media
+        const oldMedia = await queryRunner.manager.find(Media, {
+          where: {
+            roomId,
+          },
+        });
+        for (const item of oldMedia) {
+          const filePath = path.join(process.cwd(), item.path);
+          try {
+            await access(filePath);
+            await unlink(filePath);
+          } catch (error) {
+            console.log('Delete File Error::', error);
+          }
+        }
+        await queryRunner.manager.delete(Media, {
+          roomId: room.id,
+        });
+        const mediaEntities = body.media.map((item) =>
+          queryRunner.manager.create(Media, {
+            roomId: room.id,
+            path: item,
+          }),
+        );
+        await queryRunner.manager.save(mediaEntities);
+        await queryRunner.commitTransaction();
+        return null;
       }
       throw new NotFoundException('Room type not found');
     } catch (error) {
