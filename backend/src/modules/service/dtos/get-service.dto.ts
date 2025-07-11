@@ -1,10 +1,10 @@
-import { Transform } from "class-transformer";
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from "class-validator";
+import { Transform } from 'class-transformer';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class GetServiceReqDto {
   @IsOptional()
   @IsString()
-  name: string;
+  keyword: string;
 
   @Transform(({ value }) => Number(value))
   @IsNotEmpty()

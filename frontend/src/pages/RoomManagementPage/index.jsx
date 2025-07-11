@@ -9,8 +9,15 @@ import {
   Form,
   Tag,
   Select,
+  Popover,
+  Tree,
 } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  FilterOutlined,
+} from "@ant-design/icons";
 import useFetch from "../../hooks/fetch.hook";
 import apis from "../../apis/index";
 import { useEffect, useState } from "react";
@@ -313,18 +320,122 @@ export default function RoomManagementPage() {
           </Button>
         </div>
 
-        <div>
-          <Input.Search
-            placeholder="Type room number..."
-            enterButton
-            loading={getRoomsReq.name ? isGettingRooms : false}
-            onSearch={(value) =>
-              setGetRoomsReq({
-                ...getRoomsReq,
-                roomNumber: value,
-              })
-            }
-          />
+        <div className="flex space-x-2">
+          <div>
+            <Input.Search
+              placeholder="Type id or room number..."
+              enterButton
+              loading={getRoomsReq.name ? isGettingRooms : false}
+              onSearch={(value) =>
+                setGetRoomsReq({
+                  ...getRoomsReq,
+                  keyword: value,
+                })
+              }
+            />
+          </div>
+
+          <div>
+            <Popover
+              content={
+                <>
+                  <Tree
+                    style={{ minWidth: 242 }}
+                    selectable={false}
+                    defaultExpandedKeys={["status"]}
+                    defaultSelectedKeys={["status"]}
+                    defaultCheckedKeys={["status"]}
+                    checkable
+                    treeData={[
+                      {
+                        title: "Status",
+                        key: "status",
+                        children: [
+                          {
+                            title: "INACTIVE",
+                            key: "inactive",
+                          },
+                          {
+                            title: "ACTIVE",
+                            key: "active",
+                          },
+                          {
+                            title: "UNDER_MAINTENANCE",
+                            key: "under_maintenance",
+                          },
+                          {
+                            title: "RETIRED",
+                            key: "retired",
+                          },
+                        ],
+                      },
+                    ]}
+                    onCheck={(selectedStatus) =>
+                      setGetRoomsReq({
+                        ...getRoomsReq,
+                        status:
+                          selectedStatus.filter((status) => status != "status")
+                            .length > 0
+                            ? JSON.stringify(
+                                selectedStatus.filter(
+                                  (status) => status != "status"
+                                )
+                              )
+                            : [],
+                      })
+                    }
+                  />
+                  <Tree
+                    style={{ minWidth: 242 }}
+                    selectable={false}
+                    defaultExpandedKeys={["currentCondition"]}
+                    defaultSelectedKeys={["currentCondition"]}
+                    defaultCheckedKeys={["currentCondition"]}
+                    checkable
+                    treeData={[
+                      {
+                        title: "Current condition",
+                        key: "currentCondition",
+                        children: [
+                          {
+                            title: "AVAILABLE",
+                            key: "available",
+                          },
+                          {
+                            title: "BOOKED",
+                            key: "booked",
+                          },
+                        ],
+                      },
+                    ]}
+                    onCheck={(selectedCurrentCondition) =>
+                      setGetRoomsReq({
+                        ...getRoomsReq,
+                        currentCondition:
+                          selectedCurrentCondition.filter(
+                            (currentCondition) =>
+                              currentCondition != "currentCondition"
+                          ).length > 0
+                            ? JSON.stringify(
+                                selectedCurrentCondition.filter(
+                                  (currentCondition) =>
+                                    currentCondition != "currentCondition"
+                                )
+                              )
+                            : [],
+                      })
+                    }
+                  />
+                </>
+              }
+              trigger={["click"]}
+            >
+              <Button>
+                <FilterOutlined />
+                Filter
+              </Button>
+            </Popover>
+          </div>
         </div>
       </div>
 

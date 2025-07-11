@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Booking } from './entities/booking.entity';
-import { DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 import { Contract } from './entities/contract.entity';
 import { BookingRoomReqDto } from './dtos/booking-room.dto';
 import * as moment from 'moment';
@@ -21,6 +21,8 @@ import { htmlToPdf } from 'utils/puppeteer.util';
 import { hasSignature } from 'utils/sharp.util';
 import { toPascalCase } from 'utils/string.util';
 import { Role } from 'common/constants/user.constants';
+import { GetBookingReqDto } from './dtos/get-bookings.dto';
+import * as _ from 'lodash';
 
 @Injectable()
 export class BookingService {
@@ -33,6 +35,70 @@ export class BookingService {
     private readonly contractRepository: Repository<Contract>,
     private readonly dataSource: DataSource,
   ) {}
+
+  async getBookings(query: GetBookingReqDto) {
+    const result = await this.bookingRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.user', 'user')
+      .leftJoinAndSelect('booking.contract', 'contract')
+      .leftJoinAndSelect('booking.room', 'room')
+      .leftJoinAndSelect('room.type', 'type')
+      .leftJoinAndSelect('booking.bookingServices', 'bookingServices')
+      .leftJoinAndSelect('bookingServices.service', 'service')
+      .where(
+        new Brackets((qb) => {
+          if (typeof query.id === 'number' && query.id > 0) {
+            qb.where('booking.id = :bookingId', {
+              bookingId: query.id,
+            });
+          }
+        }),
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          if (typeof query.userId === 'number') {
+            qb.where('bookingId.user_id = :userId', {
+              userId: query.userId,
+            });
+          }
+        }),
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          if (typeof query.roomId === 'number') {
+            qb.where('bookingId.room_id = :roomId', {
+              roomId: query.roomId,
+            });
+          }
+        }),
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          if (query.status instanceof Array) {
+            query.status.forEach((e, i) => {
+              if (i === 0) {
+                qb.where(`booking.status = :status0`, {
+                  status0: e,
+                });
+              } else {
+                qb.orWhere(`booking.status = :status${i}`, {
+                  [`status${i}`]: e,
+                });
+              }
+            });
+          }
+        }),
+      )
+      .orderBy('booking.id', 'DESC')
+      .skip((query.page - 1) * query.limit)
+      .take(query.limit)
+      .getManyAndCount();
+
+    return [
+      result[0].map((item) => _.omit(item, 'user.passwordHash')),
+      result[1],
+    ];
+  }
 
   async bookingRoom(userId: number, bookingRoomBody: BookingRoomReqDto) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -47,7 +113,14 @@ export class BookingService {
         relations: ['type'],
       });
 
-      // Kiểm tra phòng này đã được ai đặt chưa
+      // Kiểm tra phòng này có sẵn sàng để đặt không
+      if (roomInfo.status != 'active') {
+        throw new ConflictException(
+          'This room is currently not available for booking',
+        );
+      }
+
+      // Kiểm tra phòng này đã được ai đặt chưa và phòng có sẵn
       if (roomInfo.currentCondition === 'booked') {
         throw new ConflictException('Room has already been booked');
       }
@@ -113,35 +186,59 @@ export class BookingService {
   }
 
   async cancelRoomBooking(role: Role, userId: number, bookingId: number) {
-    let booking = await this.bookingRepository.findOne({
-      where: {
-        userId,
-        id: bookingId,
-      },
-    });
-    if (role === Role.ADMIN) {
-      booking = await this.bookingRepository.findOne({
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      let booking = await queryRunner.manager.findOne(Booking, {
         where: {
+          userId,
           id: bookingId,
         },
       });
-    }
-    if (booking) {
-      if (booking.status === 'pending') {
-        return await this.bookingRepository.update(
-          {
+      if (role === Role.ADMIN) {
+        booking = await queryRunner.manager.findOne(Booking, {
+          where: {
             id: bookingId,
           },
-          {
-            status: 'cancelled',
-          },
-        );
-      } else if (booking.status === 'confirmed') {
-        throw new ForbiddenException('Cannot cancel a confirmed booking');
+        });
       }
-      throw new BadRequestException('This booking has already been canceled');
+      if (booking) {
+        if (booking.status === 'pending') {
+          await queryRunner.manager.update(
+            Room,
+            {
+              id: booking.roomId,
+            },
+            {
+              currentCondition: 'available',
+            },
+          );
+          const result = await queryRunner.manager.update(
+            Booking,
+            {
+              id: bookingId,
+            },
+            {
+              status: 'cancelled',
+            },
+          );
+          await queryRunner.commitTransaction();
+          return result;
+        } else if (booking.status === 'confirmed') {
+          throw new ForbiddenException('Cannot cancel a confirmed booking');
+        }
+        throw new BadRequestException('This booking has already been canceled');
+      }
+      throw new ForbiddenException(
+        'You are not allowed to modify this resource',
+      );
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-    throw new ForbiddenException('You are not allowed to modify this resource');
   }
 
   async createContract(bookingId: number) {

@@ -7,7 +7,7 @@ import { ArrayElementsIn } from "common/decorators/validation.decorator";
 export class GetRoomsReqDto {
   @IsOptional()
   @IsString()
-  roomNumber: string;
+  keyword: string;
 
   @IsOptional()
   @IsInt()

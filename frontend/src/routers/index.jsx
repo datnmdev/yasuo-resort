@@ -11,11 +11,12 @@ import RoomDetailPage from "../pages/Rooms/RoomDetailPage";
 import RoomTypeManagementPage from "../pages/RoomTypeManagementPage";
 import ServiceManagementPage from "../pages/ServiceManagementPage";
 import RoomManagementPage from "../pages/RoomManagementPage";
+import BookingRequestPage from "../pages/BookingRequestPage";
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
   {
-    path: '/',
+    path: "/",
     element: <UserLayout />,
     errorElement: <ErrorPage />,
     children: [
@@ -24,20 +25,18 @@ const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
-        path:'/login',
+        path: "/login",
         element: <Login />,
       },
       {
-        path:'/signup',
+        path: "/signup",
         element: <SignUp />,
       },
       {
-        path:'/rooms',
+        path: "/rooms",
         element: <RoomPage />,
       },
-      { path: '/rooms/:id', 
-        element: <RoomDetailPage /> 
-      },
+      { path: "/rooms/:id", element: <RoomDetailPage /> },
     ],
   },
 
@@ -62,6 +61,10 @@ const router = createBrowserRouter([
       {
         path: "room-management",
         element: <RoomManagementPage />,
+      },
+      {
+        path: "booking-request",
+        element: <BookingRequestPage />,
       },
     ],
   },

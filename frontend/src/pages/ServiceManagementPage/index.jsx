@@ -152,7 +152,7 @@ export default function ServiceManagementPage() {
             key: service.id,
             id: service.id,
             name: service.name,
-            price: `$${service.price}`,
+            price: `${service.price}`,
             description: service.description,
           })),
           services.data[1],
@@ -268,13 +268,13 @@ export default function ServiceManagementPage() {
 
         <div>
           <Input.Search
-            placeholder="Type name..."
+            placeholder="Type id or name..."
             enterButton
             loading={getServicesReq.name ? isGettingServices : false}
             onSearch={(value) =>
               setGetServicesReq({
                 ...getServicesReq,
-                name: value,
+                keyword: value,
               })
             }
           />

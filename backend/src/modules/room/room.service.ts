@@ -29,10 +29,15 @@ export class RoomService {
       .leftJoinAndSelect('room.type', 'type')
       .where(
         new Brackets((qb) => {
-          if (typeof query.roomNumber === 'string' && query.roomNumber) {
+          if (query.keyword) {
             qb.where('room.roomNumber = :roomNumber', {
-              roomNumber: query.roomNumber,
+              roomNumber: query.keyword,
             });
+            if (!isNaN(Number(query.keyword))) {
+              qb.orWhere('room.id = :id', {
+                id: Number(query.keyword),
+              });
+            }
           }
         }),
       )
@@ -79,6 +84,7 @@ export class RoomService {
           }
         }),
       )
+      .orderBy('room.id', 'DESC')
       .skip((query.page - 1) * query.limit)
       .take(query.limit)
       .getManyAndCount();

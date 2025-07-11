@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Param,
   Post,
   Put,
@@ -18,10 +19,20 @@ import { User } from 'common/decorators/user.decorator';
 import { BookingServicesReqDto } from './dtos/booking-service.dto';
 import { DeleteServiceReqDto } from './dtos/delete-service.dto';
 import { SignContractReqDto } from './dtos/sign-contract.dto';
+import { GetBookingReqDto } from './dtos/get-bookings.dto';
 
 @Controller('booking')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
+
+  @Get()
+  async getBookings(
+    @Query() getBookingsQuery: GetBookingReqDto
+  ) {
+    return AppResponse.ok(
+      await this.bookingService.getBookings(getBookingsQuery),
+    );
+  }
 
   @Post()
   @Roles(Role.USER)

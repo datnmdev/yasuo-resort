@@ -272,13 +272,13 @@ export default function RoomTypeManagementPage() {
 
         <div>
           <Input.Search
-            placeholder="Type name..."
+            placeholder="Type id or name..."
             enterButton
             loading={getRoomTypesReq.name ? isGettingRoomTypes : false}
             onSearch={(value) =>
               setGetRoomTypesReq({
                 ...getRoomTypesReq,
-                name: value,
+                keyword: value,
               })
             }
           />

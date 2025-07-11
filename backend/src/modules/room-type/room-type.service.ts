@@ -22,13 +22,19 @@ export class RoomTypeService {
       .createQueryBuilder('roomType')
       .where(
         new Brackets((qb) => {
-          if (getRoomTypeQuery.name) {
+          if (getRoomTypeQuery.keyword) {
             qb.where('roomType.name = :name', {
-              name: getRoomTypeQuery.name,
+              name: getRoomTypeQuery.keyword,
             });
+            if (!isNaN(Number(getRoomTypeQuery.keyword))) {
+              qb.orWhere('roomType.id = :id', {
+                id: Number(getRoomTypeQuery.keyword),
+              });
+            }
           }
         }),
       )
+      .orderBy('roomType.id', 'DESC')
       .skip((getRoomTypeQuery.page - 1) * getRoomTypeQuery.limit)
       .take(getRoomTypeQuery.limit)
       .getManyAndCount();
