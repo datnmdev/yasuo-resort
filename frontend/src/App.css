@@ -1,21 +1,38 @@
-@import "https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap";
-@import "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined";
-@import "https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded";
-@import "https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp";
-@import "https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap";
-@import "tailwindcss";
-@import "./css/style.scss";
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Roboto:ital,wght@0,100..900;1,100..900&family=Pacifico&family=Poppins:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp');
+@import 'tailwindcss';
 
+@theme {
+  --primary: #007bff;
+  --secondary: #6c757d;
+  --success: #28a745;
+  --danger: #dc3545;
+  --text-dark: #343a40;
+  --text-light: #f8f9fa;
+  --deep-teal: #0d584d;
+  --dark-teal: #0c3336;
+  --paper-white: #f7f7f7;
+  --turquoise: #30dec4;
+}
 html {
-  font-family: "Nunito", "Roboto", "Poppins", sans-serif;
+  font-family: 'Nunito', 'Roboto', 'Poppins', sans-serif;
+  scroll-behavior: smooth;
 }
 
 body {
   background-color: var(--paper-white);
-  box-shadow: 0 0 0 15px #0d584d inset;
-  padding: 15px;
 }
 
+a {
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
 .center-both {
   display: flex;
   justify-content: center;

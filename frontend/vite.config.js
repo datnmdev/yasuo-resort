@@ -12,7 +12,7 @@ export default defineConfig({
     alias: {
       '@ui': '/src/components/ui',
       '@apis': '/src/apis',
-      '@utils': '/src/utils',
+      '@libs': '/src/libs',
       '@src': '/src',
     },
   },

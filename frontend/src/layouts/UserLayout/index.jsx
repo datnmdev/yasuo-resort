@@ -1,20 +1,17 @@
-import { Outlet } from "react-router";
-import Logo from "../../components/navigation/Logo";
-import Navbar from "../../components/navigation/navbar";
-import Footer from "../../components/footer/Footer";
-import { useAutoLogin } from "../../hooks/useAutoLogin";
+import { Outlet } from 'react-router';
+import Navbar from '@src/components/navigation/Navbar';
+import { useAutoLogin } from '@src/hooks/useAutoLogin';
+import Footer from '@src/components/footer/Footer';
+import Logo from '@src/components/navigation/Logo';
 
 export default function UserLayout() {
   useAutoLogin();
   return (
-    <div className="shadow-[0_0_0_15px_#0D584D_inset]">
-      <Logo/>
-      <Navbar/>
-      <div className="p-[15px]">
-        <Outlet />
-      </div>
-
-      <Footer/>
+    <div className="min-h-screen">
+      <Logo />
+      <Navbar />
+      <Outlet />
+      <Footer />
     </div>
-  )
+  );
 }

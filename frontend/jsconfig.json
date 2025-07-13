@@ -5,6 +5,7 @@
     "paths": {
       "@ui/*": ["src/components/ui/*"],
       "@apis/*": ["src/apis/*"],
+      "@libs/*": ["src/libs/*"],
       "@src/*": ["src/*"]
     }
   }

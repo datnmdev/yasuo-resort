@@ -1,24 +1,39 @@
-import { createBrowserRouter } from "react-router";
-import HomePage from "../pages/HomePage";
-import UserLayout from "../layouts/UserLayout";
-import AdminLayout from "../layouts/AdminLayout";
+import { createBrowserRouter } from 'react-router';
+import HomePage from '../pages/HomePage';
+import UserLayout from '../layouts/UserLayout';
+import AdminLayout from '../layouts/AdminLayout';
 // import DashboardPage from "../pages/DasboardPage";
-import ErrorPage from "../pages/ErrorPage";
-import Login from "../pages/Login";
-import SignUp from "../pages/SignUp";
-import RoomPage from "../pages/Rooms";
-import RoomDetailPage from "../pages/Rooms/RoomDetailPage";
-import ServicePage from "../pages/Services";
-import RoomTypeManagementPage from "../pages/RoomTypeManagementPage";
-import ServiceManagementPage from "../pages/ServiceManagementPage";
-import RoomManagementPage from "../pages/RoomManagementPage";
-import BookingRequestPage from "../pages/BookingRequestPage";
-import ResetPassword from "@src/pages/ResetPassword";
+import ErrorPage from '../pages/ErrorPage';
+import Login from '../pages/Login';
+import SignUp from '../pages/SignUp';
+import RoomPage from '../pages/Rooms';
+import ServicePage from '../pages/Services';
+import RoomTypeManagementPage from '../pages/RoomTypeManagementPage';
+import ServiceManagementPage from '../pages/ServiceManagementPage';
+import RoomManagementPage from '../pages/RoomManagementPage';
+import BookingRequestPage from '../pages/BookingRequestPage';
+import ResetPassword from '@src/pages/ResetPassword';
+import AboutPage from '@src/pages/AboutUs';
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
   {
-    path: "/",
+    path: '/login',
+    element: <Login />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: '/signup',
+    element: <SignUp />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPassword />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: '/',
     element: <UserLayout />,
     errorElement: <ErrorPage />,
     children: [
@@ -26,35 +41,25 @@ const router = createBrowserRouter([
         index: true,
         element: <HomePage />,
       },
+
       {
-        path: "/login",
-        element: <Login />,
-      },
-      {
-        path: "/signup",
-        element: <SignUp />,
-      },
-      {
-        path: "/rooms",
+        path: '/rooms',
         element: <RoomPage />,
       },
-      { path: '/rooms/:id', 
-        element: <RoomDetailPage /> 
-      },
       {
-        path:'/services',
+        path: '/services',
         element: <ServicePage />,
       },
       {
-        path: '/reset-password',
-        element: <ResetPassword />,
-      }
+        path: '/about-us',
+        element: <AboutPage />,
+      },
     ],
   },
 
   // Cấu hình route cho các trang dành cho admin
   {
-    path: "/admin",
+    path: '/admin',
     element: <AdminLayout />,
     errorElement: <ErrorPage />,
     children: [
@@ -63,19 +68,19 @@ const router = createBrowserRouter([
       //   element: <DashboardPage />,
       // },
       {
-        path: "room-type-management",
+        path: 'room-type-management',
         element: <RoomTypeManagementPage />,
       },
       {
-        path: "service-management",
+        path: 'service-management',
         element: <ServiceManagementPage />,
       },
       {
-        path: "room-management",
+        path: 'room-management',
         element: <RoomManagementPage />,
       },
       {
-        path: "booking-request",
+        path: 'booking-request',
         element: <BookingRequestPage />,
       },
     ],
