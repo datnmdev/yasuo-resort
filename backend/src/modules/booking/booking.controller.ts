@@ -84,19 +84,13 @@ export class BookingController {
   @Roles(Role.USER, Role.ADMIN)
   @UseGuards(RolesGuard)
   async bookingServices(
-    @User('role') role: string,
+    @User('role') role: Role,
     @User('id') userId: number,
     @Body() bookingServicesBody: BookingServicesReqDto,
   ) {
-    if (role === Role.ADMIN) {
-      return AppResponse.ok(
-        await this.bookingService.bookingServicesWithAdminRole(
-          bookingServicesBody,
-        ),
-      );
-    }
     return AppResponse.ok(
-      await this.bookingService.bookingServicesWithUserRole(
+      await this.bookingService.bookingServices(
+        role,
         userId,
         bookingServicesBody,
       ),

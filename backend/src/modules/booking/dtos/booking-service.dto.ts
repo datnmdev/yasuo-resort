@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsInt, IsNotEmpty, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsInt,
+  IsNotEmpty,
+  ValidateNested,
+} from 'class-validator';
 
 class ServiceDto {
   @IsNotEmpty()
@@ -9,6 +15,14 @@ class ServiceDto {
   @IsNotEmpty()
   @IsInt()
   quantity: number;
+
+  @IsNotEmpty()
+  @IsDateString()
+  startDate: string;
+
+  @IsNotEmpty()
+  @IsDateString()
+  endDate: string;
 }
 
 export class BookingServicesReqDto {

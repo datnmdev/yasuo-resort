@@ -7,11 +7,11 @@ export class Contract {
   @Column('int', { primary: true, name: 'booking_id' })
   bookingId: number;
 
-  @Column('tinyint', { name: 'signed_by_user', default: () => "'0'" })
-  signedByUser: number;
+  @Column('longtext', { name: 'signed_by_user', nullable: true })
+  signedByUser: string;
 
-  @Column('tinyint', { name: 'signed_by_admin', default: () => "'0'" })
-  signedByAdmin: number;
+  @Column('longtext', { name: 'signed_by_admin', nullable: true })
+  signedByAdmin: string;
 
   @Column('text', { name: 'contract_url' })
   contractUrl: string;

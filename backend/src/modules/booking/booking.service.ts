@@ -3,10 +3,11 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Booking } from './entities/booking.entity';
-import { Between, Brackets, DataSource, Not, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 import { Contract } from './entities/contract.entity';
 import { BookingRoomReqDto } from './dtos/booking-room.dto';
 import * as moment from 'moment';
@@ -23,6 +24,7 @@ import { toPascalCase } from 'utils/string.util';
 import { Role } from 'common/constants/user.constants';
 import { GetBookingReqDto } from './dtos/get-bookings.dto';
 import * as _ from 'lodash';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class BookingService {
@@ -138,6 +140,14 @@ export class BookingService {
         ],
       });
 
+      // Kiểm tra tính hợp lệ của roomId
+      if (!roomInfo) {
+        throw new BadRequestException({
+          message: 'Invalid room ID',
+          error: 'BadRequest',
+        });
+      }
+
       // Kiểm tra phòng này có sẵn sàng để đặt không
       if (roomInfo.status != 'active') {
         throw new ConflictException(
@@ -148,14 +158,16 @@ export class BookingService {
       // Kiểm tra phòng này trong khoảng thời gian từ start date đến end date có ai đặt chưa
       const booking = await queryRunner.manager
         .createQueryBuilder(Booking, 'booking')
-        .where('booking.start_date BETWEEN :start1 AND :end1', {
-          start1: bookingRoomBody.startDate,
-          end1: bookingRoomBody.endDate,
+        .where('booking.room_id = :roomId', {
+          roomId: roomInfo.id,
         })
-        .orWhere('booking.end_date BETWEEN :start2 AND :end2', {
-          start2: bookingRoomBody.startDate,
-          end2: bookingRoomBody.endDate,
-        })
+        .andWhere(
+          `booking.status != 'cancelled' AND booking.start_date < :endDate AND booking.end_date > :startDate`,
+          {
+            startDate: bookingRoomBody.startDate,
+            endDate: bookingRoomBody.endDate,
+          },
+        )
         .getOne();
       if (booking) {
         throw new ConflictException(
@@ -288,6 +300,7 @@ export class BookingService {
 
         // Tạo file hợp đồng
         const now = Date.now();
+        const adminSignature = `data:image/png;base64,${(await fs.readFile(path.join(process.cwd(), 'src/assets/images/director-signature.png'))).toString('base64')}`;
         const bookedServices = booking.bookingServices.map((item, index) => ({
           ...item,
           index: index + 1,
@@ -345,7 +358,7 @@ export class BookingService {
                 ) * 100,
               ) / 100,
             ),
-            adminSignature: `data:image/png;base64,${(await fs.readFile(path.join(process.cwd(), 'src/assets/images/director-signature.png'))).toString('base64')}`,
+            adminSignature,
           },
           {
             async: true,
@@ -366,14 +379,13 @@ export class BookingService {
         // Lưu thông tin hợp đồng
         const contractEntity = queryRunner.manager.create(Contract, {
           bookingId,
-          signedByAdmin: 1,
-          signedByUser: 0,
+          signedByAdmin: adminSignature,
           contractUrl: path.join('uploads', `${fileName}.pdf`),
         });
         const newContract = await queryRunner.manager.save(contractEntity);
 
         await queryRunner.commitTransaction();
-        return newContract;
+        return _.omit(newContract, ['signedByAdmin', 'signedByUser']);
       }
       throw new BadRequestException({
         message: 'Invalid booking ID param',
@@ -441,6 +453,12 @@ export class BookingService {
         );
       }
 
+      // Kiểm tra admin đã xác nhận và tạo hợp đồng trước đó chưa
+      if (!booking.contract) {
+        await fs.unlink(signaturePath);
+        throw new NotFoundException('The contract not found');
+      }
+
       // Kiểm tra hợp đồng đã ký chưa
       if (booking.contract.signedByUser) {
         await fs.unlink(signaturePath);
@@ -448,6 +466,7 @@ export class BookingService {
       }
 
       // Áp dụng chữ ký lên hợp đồng
+      const userSignature = `data:image/png;base64,${(await fs.readFile(signaturePath)).toString('base64')}`;
       const bookedServices = booking.bookingServices.map((item, index) => ({
         ...item,
         index: index + 1,
@@ -505,8 +524,8 @@ export class BookingService {
               ) * 100,
             ) / 100,
           ),
-          adminSignature: `data:image/png;base64,${(await fs.readFile(path.join(process.cwd(), 'src/assets/images/director-signature.png'))).toString('base64')}`,
-          userSignature: `data:image/png;base64,${(await fs.readFile(signaturePath)).toString('base64')}`,
+          adminSignature: booking.contract.signedByAdmin,
+          userSignature,
         },
         {
           async: true,
@@ -530,7 +549,7 @@ export class BookingService {
         Contract,
         { bookingId },
         {
-          signedByUser: 1,
+          signedByUser: userSignature,
         },
       );
 
@@ -554,7 +573,8 @@ export class BookingService {
     }
   }
 
-  async bookingServicesWithUserRole(
+  async bookingServices(
+    role: Role,
     userId: number,
     body: BookingServicesReqDto,
   ) {
@@ -562,97 +582,32 @@ export class BookingService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const booking = await this.bookingRepository.findOne({
-        where: {
-          id: body.bookingId,
-          userId,
-        },
-      });
-      if (booking) {
-        const bookedServices = await this.bookingServiceRepository.find({
+      let booking: Booking;
+      if (role === Role.ADMIN) {
+        booking = await queryRunner.manager.findOne(Booking, {
           where: {
-            bookingId: booking.id,
+            id: body.bookingId,
+            userId,
           },
         });
-        const filteredServices = body.services.filter((service) =>
-          bookedServices.every(
-            (_service) => _service.serviceId != service.serviceId,
-          ),
-        );
-        const bookingServiceEntities: BookingServiceEntity[] = [];
-        for (const service of filteredServices) {
-          const serviceInfo = await this.dataSource.manager.findOne(Service, {
-            where: {
-              id: service.serviceId,
-            },
-          });
-          bookingServiceEntities.push(
-            this.bookingServiceRepository.create({
-              ...service,
-              bookingId: booking.id,
-              price: serviceInfo.price,
-            }),
-          );
-        }
-        const newBookingServices = await queryRunner.manager.save(
-          bookingServiceEntities,
-        );
-        // Cập nhật lại tổng chi phí thuê phòng + dịch vụ
-        let totalPrice =
-          Number(booking.roomPrice) *
-          moment(booking.endDate).diff(moment(booking.startDate), 'days');
-        for (const service of bookedServices) {
-          totalPrice +=
-            Number(service.price) *
-            service.quantity *
-            moment(service.endDate).diff(moment(service.startDate), 'days');
-        }
-        for (const service of newBookingServices) {
-          totalPrice +=
-            Number(service.price) *
-            service.quantity *
-            moment(service.endDate).diff(moment(service.startDate), 'days');
-        }
-        await queryRunner.manager.update(
-          Booking,
-          {
-            id: booking.id,
+      } else {
+        booking = await queryRunner.manager.findOne(Booking, {
+          where: {
+            id: body.bookingId,
+            userId,
           },
-          {
-            totalPrice: totalPrice.toString(),
-          },
-        );
-
-        await queryRunner.commitTransaction();
-        return newBookingServices;
+        });
       }
-      throw new BadRequestException(
-        'Cannot book services without a room booking',
-      );
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
-  }
 
-  async bookingServicesWithAdminRole(body: BookingServicesReqDto) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      const booking = await this.bookingRepository.findOne({
-        where: {
-          id: body.bookingId,
-        },
-      });
       if (booking) {
-        const bookedServices = await this.bookingServiceRepository.find({
-          where: {
-            bookingId: booking.id,
+        const bookedServices = await queryRunner.manager.find(
+          BookingServiceEntity,
+          {
+            where: {
+              bookingId: booking.id,
+            },
           },
-        });
+        );
         const filteredServices = body.services.filter((service) =>
           bookedServices.every(
             (_service) => _service.serviceId != service.serviceId,
@@ -660,7 +615,7 @@ export class BookingService {
         );
         const bookingServiceEntities: BookingServiceEntity[] = [];
         for (const service of filteredServices) {
-          const serviceInfo = await this.dataSource.manager.findOne(Service, {
+          const serviceInfo = await queryRunner.manager.findOne(Service, {
             where: {
               id: service.serviceId,
             },
@@ -701,6 +656,104 @@ export class BookingService {
             totalPrice: totalPrice.toString(),
           },
         );
+
+        // Cập nhật lại bảng dịch vụ trong hợp đồng
+        const newestBookingInfo = await queryRunner.manager.findOne(Booking, {
+          where: {
+            id: booking.id,
+          },
+          relations: [
+            'contract',
+            'room',
+            'user',
+            'room.type',
+            'bookingServices',
+            'bookingServices.service',
+          ],
+        });
+        const newestbookedServices = newestBookingInfo.bookingServices.map(
+          (item, index) => ({
+            ...item,
+            index: index + 1,
+            startDate: moment(item.startDate).format('DD-MM-YYYY'),
+            endDate: moment(item.endDate).format('DD-MM-YYYY'),
+            totalPrice: String(
+              Math.ceil(
+                moment(item.endDate).diff(moment(item.startDate), 'days') *
+                  Number(item.price) *
+                  item.quantity *
+                  100,
+              ) / 100,
+            ),
+          }),
+        );
+        const contractHTML = await ejs.renderFile(
+          path.join(process.cwd(), 'src/assets/templates/contract.ejs'),
+          {
+            now: {
+              day: moment(newestBookingInfo.contract.createdAt).format('DD'),
+              month: moment(newestBookingInfo.contract.createdAt).format('MM'),
+              year: moment(newestBookingInfo.contract.createdAt).format('YYYY'),
+            },
+            booking: {
+              ...newestBookingInfo,
+              startDate: {
+                day: moment(newestBookingInfo.startDate).format('DD'),
+                month: moment(newestBookingInfo.startDate).format('MM'),
+                year: moment(newestBookingInfo.startDate).format('YYYY'),
+              },
+              endDate: {
+                day: moment(newestBookingInfo.endDate).format('DD'),
+                month: moment(newestBookingInfo.endDate).format('MM'),
+                year: moment(newestBookingInfo.endDate).format('YYYY'),
+              },
+            },
+            user: {
+              ...newestBookingInfo.user,
+              dob: {
+                day: moment(newestBookingInfo.user.dob).format('DD'),
+                month: moment(newestBookingInfo.user.dob).format('MM'),
+                year: moment(newestBookingInfo.user.dob).format('YYYY'),
+              },
+              identityIssuedAt: {
+                day: moment(newestBookingInfo.user.identityIssuedAt).format(
+                  'DD',
+                ),
+                month: moment(newestBookingInfo.user.identityIssuedAt).format(
+                  'MM',
+                ),
+                year: moment(newestBookingInfo.user.identityIssuedAt).format(
+                  'YYYY',
+                ),
+              },
+            },
+            bookedServices: newestbookedServices,
+            totalBookedServicePrice: String(
+              Math.ceil(
+                newestbookedServices.reduce(
+                  (acc, curr) => acc + Number(curr.totalPrice),
+                  0,
+                ) * 100,
+              ) / 100,
+            ),
+            adminSignature: newestBookingInfo.contract.signedByAdmin,
+            userSignature: newestBookingInfo.contract.signedByUser,
+          },
+          {
+            async: true,
+          },
+        );
+        const fileName = `${newestBookingInfo.id}_${toPascalCase(newestBookingInfo.user.name)}_Contract`;
+        const fileRelativePath = path.join('uploads', `${fileName}.html`);
+        await fs.writeFile(
+          path.join(process.cwd(), fileRelativePath),
+          contractHTML,
+        );
+        await htmlToPdf(
+          path.join(process.cwd(), fileRelativePath),
+          path.join(process.cwd(), path.join('uploads', `${fileName}.pdf`)),
+        );
+        await fs.unlink(path.join(process.cwd(), fileRelativePath));
 
         await queryRunner.commitTransaction();
         return newBookingServices;
