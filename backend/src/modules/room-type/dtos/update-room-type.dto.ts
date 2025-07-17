@@ -1,4 +1,10 @@
-import { IsCurrency, IsOptional, IsString } from "class-validator";
+import {
+  IsArray,
+  IsCurrency,
+  IsInt,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class UpdateRoomTypeReqDto {
   @IsOptional()
@@ -7,9 +13,18 @@ export class UpdateRoomTypeReqDto {
 
   @IsOptional()
   @IsCurrency()
-  pricePerDay: string;
+  minPrice: string;
+
+  @IsOptional()
+  @IsCurrency()
+  maxPrice: string;
 
   @IsOptional()
   @IsString()
   description: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  serviceIds: number[];
 }

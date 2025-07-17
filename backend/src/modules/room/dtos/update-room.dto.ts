@@ -1,14 +1,12 @@
 import {
   ArrayMinSize,
   IsArray,
+  IsCurrency,
   IsInt,
   IsOptional,
   IsString,
 } from 'class-validator';
-import {
-  RoomCurrentCondition,
-  RoomStatus,
-} from 'common/constants/room.constants';
+import { RoomStatus } from 'common/constants/room.constants';
 import { OneOf } from 'common/decorators/validation.decorator';
 
 export class UpdateRoomReqDto {
@@ -25,17 +23,16 @@ export class UpdateRoomReqDto {
   description: string;
 
   @IsOptional()
-  @OneOf([
-    RoomStatus.ACTIVE,
-    RoomStatus.INACTIVE,
-    RoomStatus.UNDER_MAINTENANCE,
-    RoomStatus.RETIRED,
-  ])
-  status: 'active' | 'inactive' | 'under_maintenance' | 'retired';
+  @OneOf([RoomStatus.ACTIVE, RoomStatus.INACTIVE, RoomStatus.MAINTENANCE])
+  status: 'active' | 'inactive' | 'maintenance';
 
   @IsOptional()
-  @OneOf([RoomCurrentCondition.AVAILABLE, RoomCurrentCondition.BOOKED])
-  currentCondition: 'available' | 'booked';
+  @IsInt()
+  maxPeople: number;
+
+  @IsOptional()
+  @IsCurrency()
+  price: string;
 
   @IsOptional()
   @IsArray()

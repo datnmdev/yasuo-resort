@@ -1,4 +1,4 @@
-import { Booking } from "modules/booking/entities/booking.entity";
+import { Booking } from 'modules/booking/entities/booking.entity';
 import {
   Column,
   Entity,
@@ -7,41 +7,41 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
-} from "typeorm";
-import { Media } from "./media.entity";
-import { RoomType } from "modules/room-type/entities/room-type.entity";
+} from 'typeorm';
+import { Media } from './media.entity';
+import { RoomType } from 'modules/room-type/entities/room-type.entity';
 
-@Index("FK_room__room_type_idx", ["typeId"], {})
-@Index("room_number_UNIQUE", ["roomNumber"], { unique: true })
-@Entity("room", { schema: "resort_booking" })
+@Index('room_number_UNIQUE', ['roomNumber'], { unique: true })
+@Index('FK_room__room_type_idx', ['typeId'], {})
+@Entity('room', { schema: 'resort_booking' })
 export class Room {
-  @PrimaryGeneratedColumn({ type: "int", name: "id" })
+  @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id: number;
 
-  @Column("varchar", { name: "room_number", unique: true, length: 255 })
+  @Column('varchar', { name: 'room_number', unique: true, length: 255 })
   roomNumber: string;
 
-  @Column("int", { name: "type_id" })
+  @Column('int', { name: 'max_people' })
+  maxPeople: number;
+
+  @Column('int', { name: 'type_id' })
   typeId: number;
 
-  @Column("longtext", { name: "description", nullable: true })
+  @Column('longtext', { name: 'description', nullable: true })
   description: string | null;
 
-  @Column("enum", {
-    name: "status",
-    enum: ["active", "inactive", "under_maintenance", "retired"],
+  @Column('enum', {
+    name: 'status',
+    enum: ['active', 'inactive', 'maintenance'],
   })
-  status: "active" | "inactive" | "under_maintenance" | "retired";
+  status: 'active' | 'inactive' | 'maintenance';
 
-  @Column("enum", {
-    name: "current_condition",
-    enum: ["available", "booked"],
-  })
-  currentCondition: "available" | "booked";
+  @Column('decimal', { name: 'price', precision: 18, scale: 2 })
+  price: string;
 
-  @Column("datetime", {
-    name: "created_at",
-    default: () => "CURRENT_TIMESTAMP",
+  @Column('datetime', {
+    name: 'created_at',
+    default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt: Date;
 
@@ -52,9 +52,9 @@ export class Room {
   media: Media[];
 
   @ManyToOne(() => RoomType, (roomType) => roomType.rooms, {
-    onDelete: "NO ACTION",
-    onUpdate: "NO ACTION",
+    onDelete: 'NO ACTION',
+    onUpdate: 'NO ACTION',
   })
-  @JoinColumn([{ name: "type_id", referencedColumnName: "id" }])
+  @JoinColumn([{ name: 'type_id', referencedColumnName: 'id' }])
   type: RoomType;
 }

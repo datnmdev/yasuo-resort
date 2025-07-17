@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Booking } from './entities/booking.entity';
-import { Brackets, DataSource, Repository } from 'typeorm';
+import { Between, Brackets, DataSource, Not, Repository } from 'typeorm';
 import { Contract } from './entities/contract.entity';
 import { BookingRoomReqDto } from './dtos/booking-room.dto';
 import * as moment from 'moment';
@@ -101,16 +101,41 @@ export class BookingService {
   }
 
   async bookingRoom(userId: number, bookingRoomBody: BookingRoomReqDto) {
+    // Kiểm tra tính hợp lệ của start date và end date
+    if (
+      moment(bookingRoomBody.startDate).valueOf() < Date.now() ||
+      moment(bookingRoomBody.endDate).valueOf() <= Date.now()
+    ) {
+      throw new BadRequestException({
+        message: 'The contract signing date and end date must be in the future',
+        error: 'BadRequest',
+      });
+    }
+    const totalRentalDays = moment(bookingRoomBody.endDate).diff(
+      moment(bookingRoomBody.startDate),
+      'days',
+    );
+    if (totalRentalDays <= 0) {
+      throw new BadRequestException({
+        message: 'The contract end date must be later than the signing date',
+        error: 'BadRequest',
+      });
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const roomInfo = await this.dataSource.manager.findOne(Room, {
+      const roomInfo = await queryRunner.manager.findOne(Room, {
         where: {
           id: bookingRoomBody.roomId,
         },
-        relations: ['type'],
+        relations: [
+          'type',
+          'type.roomTypeAddons',
+          'type.roomTypeAddons.service',
+        ],
       });
 
       // Kiểm tra phòng này có sẵn sàng để đặt không
@@ -120,57 +145,52 @@ export class BookingService {
         );
       }
 
-      // Kiểm tra phòng này đã được ai đặt chưa và phòng có sẵn
-      if (roomInfo.currentCondition === 'booked') {
-        throw new ConflictException('Room has already been booked');
-      }
-
-      const services: Record<string, Service> = {};
-      let totalPrice: number = Number(roomInfo.type.pricePerDay);
-      for (const service of bookingRoomBody.services) {
-        const serviceInfo = await this.dataSource.manager.findOne(Service, {
-          where: {
-            id: service.serviceId,
-          },
-        });
-        services[serviceInfo.id] = serviceInfo;
-        totalPrice += Number(serviceInfo.price) * service.quantity;
+      // Kiểm tra phòng này trong khoảng thời gian từ start date đến end date có ai đặt chưa
+      const booking = await queryRunner.manager
+        .createQueryBuilder(Booking, 'booking')
+        .where('booking.start_date BETWEEN :start1 AND :end1', {
+          start1: bookingRoomBody.startDate,
+          end1: bookingRoomBody.endDate,
+        })
+        .orWhere('booking.end_date BETWEEN :start2 AND :end2', {
+          start2: bookingRoomBody.startDate,
+          end2: bookingRoomBody.endDate,
+        })
+        .getOne();
+      if (booking) {
+        throw new ConflictException(
+          'This room has already been booked during this time period',
+        );
       }
 
       // Lưu thông tin đặt phòng
       const bookingEntity = this.bookingRepository.create({
         ...bookingRoomBody,
-        roomPrice: roomInfo.type.pricePerDay,
+        roomPrice: roomInfo.price,
         startDate: moment(bookingRoomBody.startDate).format('YYYY-MM-DD'),
         endDate: moment(bookingRoomBody.endDate).format('YYYY-MM-DD'),
         userId,
-        totalPrice: totalPrice.toString(),
+        totalPrice: String(
+          Math.ceil(Number(roomInfo.price) * totalRentalDays * 100) / 100,
+        ),
       });
       const newBooking = await queryRunner.manager.save(bookingEntity);
 
       // Lưu thông tin dịch vụ kèm theo
-      const bookingServiceEntities = bookingRoomBody.services.map((item) =>
+      const bookingServiceEntities = roomInfo.type.roomTypeAddons.map((item) =>
         this.bookingServiceRepository.create({
           serviceId: item.serviceId,
           bookingId: newBooking.id,
-          quantity: item.quantity,
-          price: services[item.serviceId].price,
+          quantity: roomInfo.maxPeople,
+          price: '0.00',
+          startDate: newBooking.startDate,
+          endDate: newBooking.endDate,
         }),
       );
       const bookingServices = await queryRunner.manager.save(
         bookingServiceEntities,
       );
 
-      // Cập nhật lại trạng thái phòng
-      await queryRunner.manager.update(
-        Room,
-        {
-          id: bookingRoomBody.roomId,
-        },
-        {
-          currentCondition: 'booked',
-        },
-      );
       await queryRunner.commitTransaction();
 
       return {
@@ -205,15 +225,6 @@ export class BookingService {
       }
       if (booking) {
         if (booking.status === 'pending') {
-          await queryRunner.manager.update(
-            Room,
-            {
-              id: booking.roomId,
-            },
-            {
-              currentCondition: 'available',
-            },
-          );
           const result = await queryRunner.manager.update(
             Booking,
             {
@@ -250,7 +261,13 @@ export class BookingService {
         where: {
           id: bookingId,
         },
-        relations: ['room', 'user', 'room.type'],
+        relations: [
+          'room',
+          'user',
+          'room.type',
+          'bookingServices',
+          'bookingServices.service',
+        ],
       });
       if (booking) {
         if (booking.status === 'cancelled') {
@@ -271,6 +288,20 @@ export class BookingService {
 
         // Tạo file hợp đồng
         const now = Date.now();
+        const bookedServices = booking.bookingServices.map((item, index) => ({
+          ...item,
+          index: index + 1,
+          startDate: moment(item.startDate).format('DD-MM-YYYY'),
+          endDate: moment(item.endDate).format('DD-MM-YYYY'),
+          totalPrice: String(
+            Math.ceil(
+              moment(item.endDate).diff(moment(item.startDate), 'days') *
+                Number(item.price) *
+                item.quantity *
+                100,
+            ) / 100,
+          ),
+        }));
         const contractHTML = await ejs.renderFile(
           path.join(process.cwd(), 'src/assets/templates/contract.ejs'),
           {
@@ -305,6 +336,15 @@ export class BookingService {
                 year: moment(booking.user.identityIssuedAt).format('YYYY'),
               },
             },
+            bookedServices,
+            totalBookedServicePrice: String(
+              Math.ceil(
+                bookedServices.reduce(
+                  (acc, curr) => acc + Number(curr.totalPrice),
+                  0,
+                ) * 100,
+              ) / 100,
+            ),
             adminSignature: `data:image/png;base64,${(await fs.readFile(path.join(process.cwd(), 'src/assets/images/director-signature.png'))).toString('base64')}`,
           },
           {
@@ -376,7 +416,14 @@ export class BookingService {
           id: bookingId,
           userId,
         },
-        relations: ['contract', 'room', 'user', 'room.type'],
+        relations: [
+          'contract',
+          'room',
+          'user',
+          'room.type',
+          'bookingServices',
+          'bookingServices.service',
+        ],
       });
       if (!booking) {
         await fs.unlink(signaturePath);
@@ -401,6 +448,20 @@ export class BookingService {
       }
 
       // Áp dụng chữ ký lên hợp đồng
+      const bookedServices = booking.bookingServices.map((item, index) => ({
+        ...item,
+        index: index + 1,
+        startDate: moment(item.startDate).format('DD-MM-YYYY'),
+        endDate: moment(item.endDate).format('DD-MM-YYYY'),
+        totalPrice: String(
+          Math.ceil(
+            moment(item.endDate).diff(moment(item.startDate), 'days') *
+              Number(item.price) *
+              item.quantity *
+              100,
+          ) / 100,
+        ),
+      }));
       const contractHTML = await ejs.renderFile(
         path.join(process.cwd(), 'src/assets/templates/contract.ejs'),
         {
@@ -435,6 +496,15 @@ export class BookingService {
               year: moment(booking.user.identityIssuedAt).format('YYYY'),
             },
           },
+          bookedServices,
+          totalBookedServicePrice: String(
+            Math.ceil(
+              bookedServices.reduce(
+                (acc, curr) => acc + Number(curr.totalPrice),
+                0,
+              ) * 100,
+            ) / 100,
+          ),
           adminSignature: `data:image/png;base64,${(await fs.readFile(path.join(process.cwd(), 'src/assets/images/director-signature.png'))).toString('base64')}`,
           userSignature: `data:image/png;base64,${(await fs.readFile(signaturePath)).toString('base64')}`,
         },
@@ -484,7 +554,10 @@ export class BookingService {
     }
   }
 
-  async bookingServices(userId: number, body: BookingServicesReqDto) {
+  async bookingServicesWithUserRole(
+    userId: number,
+    body: BookingServicesReqDto,
+  ) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -525,12 +598,20 @@ export class BookingService {
           bookingServiceEntities,
         );
         // Cập nhật lại tổng chi phí thuê phòng + dịch vụ
-        let totalPrice = Number(booking.roomPrice);
+        let totalPrice =
+          Number(booking.roomPrice) *
+          moment(booking.endDate).diff(moment(booking.startDate), 'days');
         for (const service of bookedServices) {
-          totalPrice += Number(service.price) * service.quantity;
+          totalPrice +=
+            Number(service.price) *
+            service.quantity *
+            moment(service.endDate).diff(moment(service.startDate), 'days');
         }
         for (const service of newBookingServices) {
-          totalPrice += Number(service.price) * service.quantity;
+          totalPrice +=
+            Number(service.price) *
+            service.quantity *
+            moment(service.endDate).diff(moment(service.startDate), 'days');
         }
         await queryRunner.manager.update(
           Booking,
@@ -556,41 +637,77 @@ export class BookingService {
     }
   }
 
-  async deleteService(bookingId: number, serviceId: number) {
+  async bookingServicesWithAdminRole(body: BookingServicesReqDto) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const deleteResult = await queryRunner.manager.delete(
-        BookingServiceEntity,
-        {
-          bookingId,
-          serviceId,
-        },
-      );
-
-      // Cập nhật lại tổng chi phí thuê phòng + dịch vụ
-      const booking = await queryRunner.manager.findOne(Booking, {
+      const booking = await this.bookingRepository.findOne({
         where: {
-          id: bookingId,
+          id: body.bookingId,
         },
-        relations: ['bookingServices'],
       });
-      let totalPrice = Number(booking.roomPrice);
-      for (const bookingService of booking.bookingServices) {
-        totalPrice += Number(bookingService.price) * bookingService.quantity;
+      if (booking) {
+        const bookedServices = await this.bookingServiceRepository.find({
+          where: {
+            bookingId: booking.id,
+          },
+        });
+        const filteredServices = body.services.filter((service) =>
+          bookedServices.every(
+            (_service) => _service.serviceId != service.serviceId,
+          ),
+        );
+        const bookingServiceEntities: BookingServiceEntity[] = [];
+        for (const service of filteredServices) {
+          const serviceInfo = await this.dataSource.manager.findOne(Service, {
+            where: {
+              id: service.serviceId,
+            },
+          });
+          bookingServiceEntities.push(
+            this.bookingServiceRepository.create({
+              ...service,
+              bookingId: booking.id,
+              price: serviceInfo.price,
+            }),
+          );
+        }
+        const newBookingServices = await queryRunner.manager.save(
+          bookingServiceEntities,
+        );
+        // Cập nhật lại tổng chi phí thuê phòng + dịch vụ
+        let totalPrice =
+          Number(booking.roomPrice) *
+          moment(booking.endDate).diff(moment(booking.startDate), 'days');
+        for (const service of bookedServices) {
+          totalPrice +=
+            Number(service.price) *
+            service.quantity *
+            moment(service.endDate).diff(moment(service.startDate), 'days');
+        }
+        for (const service of newBookingServices) {
+          totalPrice +=
+            Number(service.price) *
+            service.quantity *
+            moment(service.endDate).diff(moment(service.startDate), 'days');
+        }
+        await queryRunner.manager.update(
+          Booking,
+          {
+            id: booking.id,
+          },
+          {
+            totalPrice: totalPrice.toString(),
+          },
+        );
+
+        await queryRunner.commitTransaction();
+        return newBookingServices;
       }
-      await queryRunner.manager.update(
-        Booking,
-        {
-          id: booking.id,
-        },
-        {
-          totalPrice: totalPrice.toString(),
-        },
+      throw new BadRequestException(
+        'Cannot book services without a room booking',
       );
-      await queryRunner.commitTransaction();
-      return deleteResult;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

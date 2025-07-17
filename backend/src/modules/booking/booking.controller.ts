@@ -17,7 +17,6 @@ import { BookingRoomReqDto } from './dtos/booking-room.dto';
 import { AppResponse } from 'common/http/wrapper.http';
 import { User } from 'common/decorators/user.decorator';
 import { BookingServicesReqDto } from './dtos/booking-service.dto';
-import { DeleteServiceReqDto } from './dtos/delete-service.dto';
 import { SignContractReqDto } from './dtos/sign-contract.dto';
 import { GetBookingReqDto } from './dtos/get-bookings.dto';
 
@@ -26,9 +25,7 @@ export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @Get()
-  async getBookings(
-    @Query() getBookingsQuery: GetBookingReqDto
-  ) {
+  async getBookings(@Query() getBookingsQuery: GetBookingReqDto) {
     return AppResponse.ok(
       await this.bookingService.getBookings(getBookingsQuery),
     );
@@ -84,25 +81,24 @@ export class BookingController {
   }
 
   @Post('service')
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.ADMIN)
   @UseGuards(RolesGuard)
   async bookingServices(
+    @User('role') role: string,
     @User('id') userId: number,
     @Body() bookingServicesBody: BookingServicesReqDto,
   ) {
+    if (role === Role.ADMIN) {
+      return AppResponse.ok(
+        await this.bookingService.bookingServicesWithAdminRole(
+          bookingServicesBody,
+        ),
+      );
+    }
     return AppResponse.ok(
-      await this.bookingService.bookingServices(userId, bookingServicesBody),
-    );
-  }
-
-  @Delete('service')
-  @Roles(Role.ADMIN)
-  @UseGuards(RolesGuard)
-  async deleteService(@Query() deleteServicesQuery: DeleteServiceReqDto) {
-    return AppResponse.ok(
-      await this.bookingService.deleteService(
-        deleteServicesQuery.bookingId,
-        deleteServicesQuery.serviceId,
+      await this.bookingService.bookingServicesWithUserRole(
+        userId,
+        bookingServicesBody,
       ),
     );
   }

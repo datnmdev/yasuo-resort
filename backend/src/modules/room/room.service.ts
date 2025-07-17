@@ -13,6 +13,7 @@ import * as _ from 'lodash';
 import { Media } from './entities/media.entity';
 import { access, unlink } from 'fs/promises';
 import * as path from 'path';
+import * as moment from 'moment';
 
 @Injectable()
 export class RoomService {
@@ -44,8 +45,17 @@ export class RoomService {
       .andWhere(
         new Brackets((qb) => {
           if (typeof query.typeId === 'number') {
-            qb.where('room.typeId = :typeId', {
+            qb.where('room.type_id = :typeId', {
               typeId: query.typeId,
+            });
+          }
+        }),
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          if (typeof query.maxPeople === 'number') {
+            qb.where('room.max_people = :maxPeople', {
+              maxPeople: query.maxPeople,
             });
           }
         }),
@@ -69,18 +79,29 @@ export class RoomService {
       )
       .andWhere(
         new Brackets((qb) => {
-          if (query.currentCondition instanceof Array) {
-            query.currentCondition.forEach((e, i) => {
-              if (i === 0) {
-                qb.where(`room.current_condition = :currentCondition0`, {
-                  currentCondition0: e,
-                });
-              } else {
-                qb.orWhere(`room.current_condition = :currentCondition${i}`, {
-                  [`currentCondition${i}`]: e,
-                });
-              }
+          if (query.priceRange) {
+            qb.where('room.price >= :minPrice AND room.price <= :maxPrice', {
+              minPrice: query.priceRange.minPrice,
+              maxPrice: query.priceRange.maxPrice,
             });
+          }
+        }),
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          if (query.dateRange) {
+            qb.andWhere(
+              `room.id NOT IN (
+              SELECT b.room_id FROM booking b
+              WHERE b.status != 'cancelled' AND b.start_date < :endDate AND b.end_date > :startDate
+            )`,
+              {
+                startDate: moment(query.dateRange.startDate).format(
+                  'YYYY-MM-DD',
+                ),
+                endDate: moment(query.dateRange.startDate).format('YYYY-MM-DD'),
+              },
+            );
           }
         }),
       )
@@ -100,16 +121,27 @@ export class RoomService {
         where: {
           roomNumber: body.roomNumber,
         },
+        relations: ['type'],
       });
       if (room) {
         throw new ConflictException('Room number already exists');
       }
 
+      // Kiểm tra giá phòng có nằm trong khoảng giá quy định không
+      if (
+        Number(body.price) < Number(room.type.minPrice) ||
+        Number(body.price) > Number(room.type.maxPrice)
+      ) {
+        throw new ConflictException(
+          'The room price is outside the allowed price range for this room type',
+        );
+      }
+
       // Tạo room mới
-      const roomEntity = queryRunner.manager.create(
-        Room,
-        _.omit(body, 'media'),
-      );
+      const roomEntity = queryRunner.manager.create(Room, {
+        ..._.omit(body, 'media'),
+        status: 'inactive',
+      });
       const newRoom = await queryRunner.manager.save(roomEntity);
 
       // Lưu media
@@ -149,6 +181,17 @@ export class RoomService {
         },
       });
       if (room) {
+        // Kiểm tra giá phòng có nằm trong khoảng giá quy định không
+        if (
+          body.price &&
+          (Number(body.price) < Number(room.type.minPrice) ||
+            Number(body.price) > Number(room.type.maxPrice))
+        ) {
+          throw new ConflictException(
+            'The room price is outside the allowed price range for this room type',
+          );
+        }
+
         // Cập nhật thông tin room vào CSDL
         if (Object.keys(_.omit(body, 'media')).length > 0) {
           await queryRunner.manager.update(
@@ -188,7 +231,7 @@ export class RoomService {
         await queryRunner.commitTransaction();
         return null;
       }
-      throw new NotFoundException('Room type not found');
+      throw new NotFoundException('Room not found');
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

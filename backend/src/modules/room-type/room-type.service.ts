@@ -5,16 +5,18 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RoomType } from './entities/room-type.entity';
-import { Brackets, QueryFailedError, Repository } from 'typeorm';
+import { Brackets, DataSource, QueryFailedError, Repository } from 'typeorm';
 import { CreateRoomTypeReqDto } from './dtos/create-room-type.dto';
 import { UpdateRoomTypeReqDto } from './dtos/update-room-type.dto';
 import { GetRoomTypesReqDto } from './dtos/get-room-type.dto';
+import { RoomTypeAddon } from './entities/room-type-addon.entity';
 
 @Injectable()
 export class RoomTypeService {
   constructor(
     @InjectRepository(RoomType)
     private readonly roomTypeRepository: Repository<RoomType>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async getRoomTypes(getRoomTypeQuery: GetRoomTypesReqDto) {
@@ -41,42 +43,93 @@ export class RoomTypeService {
   }
 
   async createRoomType(body: CreateRoomTypeReqDto) {
-    // Kiểm tra room type name
-    const roomType = await this.roomTypeRepository.findOne({
-      where: {
-        name: body.name,
-      },
-    });
-    if (roomType) {
-      throw new ConflictException('Room type name already exists');
-    }
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      // Kiểm tra room type name
+      const roomType = await this.roomTypeRepository.findOne({
+        where: {
+          name: body.name,
+        },
+      });
+      if (roomType) {
+        throw new ConflictException('Room type name already exists');
+      }
 
-    // Tạo room type mới
-    const roomTypeEntity = this.roomTypeRepository.create({
-      name: body.name,
-      pricePerDay: body.pricePerDay,
-      description: body.description,
-    });
-    return this.roomTypeRepository.save(roomTypeEntity);
+      // Tạo room type mới
+      const roomTypeEntity = this.roomTypeRepository.create({
+        name: body.name,
+        minPrice: body.minPrice,
+        maxPrice: body.maxPrice,
+        description: body.description,
+      });
+      const newRoomType = await this.roomTypeRepository.save(roomTypeEntity);
+
+      // Lưu dịch vụ đính kèm thuộc loại phòng
+      const serviceAddonEntities = body.serviceIds.map((serviceId) =>
+        queryRunner.manager.create(RoomTypeAddon, {
+          roomTypeId: newRoomType.id,
+          serviceId,
+        }),
+      );
+      await queryRunner.manager.save(serviceAddonEntities);
+
+      await queryRunner.commitTransaction();
+      return newRoomType;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async updateRoomType(roomTypeId: number, body: UpdateRoomTypeReqDto) {
-    // Kiểm tra room type
-    const roomType = await this.roomTypeRepository.findOne({
-      where: {
-        id: roomTypeId,
-      },
-    });
-    if (roomType) {
-      // Cập nhật thông tin room type vào CSDL
-      return this.roomTypeRepository.update(
-        {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      // Kiểm tra room type
+      const roomType = await queryRunner.manager.findOne(RoomType, {
+        where: {
           id: roomTypeId,
         },
-        body,
-      );
+      });
+      if (roomType) {
+        // Cập nhật thông tin room type vào CSDL
+        const updateResult = await queryRunner.manager.update(
+          RoomType,
+          {
+            id: roomTypeId,
+          },
+          body,
+        );
+
+        // Cập nhật lại dịch vụ đính kèm (nếu có)
+        if (body.serviceIds) {
+          await queryRunner.manager.delete(RoomTypeAddon, {
+            roomTypeId,
+          });
+          const serviceAddonEntities = body.serviceIds.map((serviceId) =>
+            queryRunner.manager.create(RoomTypeAddon, {
+              roomTypeId,
+              serviceId,
+            }),
+          );
+          await queryRunner.manager.save(serviceAddonEntities);
+        }
+
+        await queryRunner.commitTransaction();
+        return updateResult;
+      }
+      throw new NotFoundException('Room type not found');
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-    throw new NotFoundException('Room type not found');
   }
 
   async deleteRoomType(roomTypeId: number) {

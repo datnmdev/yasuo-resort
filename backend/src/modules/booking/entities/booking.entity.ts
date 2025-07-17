@@ -1,3 +1,5 @@
+import { Room } from 'modules/room/entities/room.entity';
+import { User } from 'modules/user/entities/user.entity';
 import {
   Column,
   Entity,
@@ -10,8 +12,6 @@ import {
 } from 'typeorm';
 import { BookingService } from './booking-service.entity';
 import { Contract } from './contract.entity';
-import { Room } from 'modules/room/entities/room.entity';
-import { User } from 'modules/user/entities/user.entity';
 
 @Index('FK_booking__user_idx', ['userId'], {})
 @Index('FK_booking__room_idx', ['roomId'], {})

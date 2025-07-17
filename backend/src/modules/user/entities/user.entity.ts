@@ -14,7 +14,7 @@ export class User {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id: number;
 
-  @Column('nchar', { name: 'cccd', length: 12, unique: true })
+  @Column('char', { name: 'cccd', unique: true, length: 12 })
   cccd: string;
 
   @Column('date', { name: 'identity_issued_at' })

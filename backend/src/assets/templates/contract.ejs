@@ -100,7 +100,45 @@
         ở và các khoản thuế mà bên cho thuê phải nộp cho Nhà nước theo quy định
         của pháp luật.
       </p>
-      <p>2.2. Phương thức thanh toán.&nbsp;</p>
+      <p>2.2. Giá dịch vụ thuê.</p>
+      <p>
+        Trong thời hạn hợp đồng còn hiệu lực nếu bên B có nhu cầu thuê các dịch vụ 
+        được cung cấp bởi bên A thì bên B phải có trách nhiệm thanh toán đầy đủ. 
+        Dưới đây là bảng dịch vụ mà bên B đã thuê:
+      </p>
+      <table border="1" style="width: 100%; border-collapse: collapse">
+        <thead>
+          <tr>
+            <th style="text-align: center; padding: 8px;">STT</th>
+            <th style="text-align: center; padding: 8px;">Mã dịch vụ</th>
+            <th style="text-align: center; padding: 8px;">Tên dịch vụ</th>
+            <th style="text-align: center; padding: 8px;">Đơn giá</th>
+            <th style="text-align: center; padding: 8px;">Số lượng</th>
+            <th style="text-align: center; padding: 8px;">Ngày bắt đầu</th>
+            <th style="text-align: center; padding: 8px;">Ngày kết thúc</th>
+            <th style="text-align: center; padding: 8px;">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% locals.bookedServices.forEach(function(bookedService) { %>
+            <tr>
+              <td style="text-align: center; padding: 8px;"><%= bookedService.index %></td>
+              <td style="text-align: center; padding: 8px;"><%= bookedService.serviceId %></td>
+              <td style="text-align: center; padding: 8px;"><%= bookedService.service.name %></td>
+              <td style="text-align: center; padding: 8px;">$<%= bookedService.price %></td>
+              <td style="text-align: center; padding: 8px;"><%= bookedService.quantity %></td>
+              <td style="text-align: center; padding: 8px;"><%= bookedService.startDate %></td>
+              <td style="text-align: center; padding: 8px;"><%= bookedService.endDate %></td>
+              <td style="text-align: center; padding: 8px;">$<%= bookedService.totalPrice %></td>
+            </tr>
+          <% }) %>
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 8px; font-weight: bold;">Tổng cộng</td>
+            <td style="text-align: center; padding: 8px; font-weight: bold;">$<%= locals.totalBookedServicePrice %></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>2.3. Phương thức thanh toán.&nbsp;</p>
       <p>
         - Bên B có trách nhiệm thanh toán số tiền theo nội dung hợp đồng bằng
         đồng đô la có thể thanh toán thông qua phương thức chi trả là bằng tiền
@@ -113,7 +151,7 @@
         năm <%= locals.booking.endDate.year %>.&nbsp;
       </p>
       <p>
-        Điều 3: Thời điểm giao nhận đối tượng thuê vào lúc 14h00 phút ngày <%=
+        Điều 3: Thời điểm giao nhận đối tượng thuê vào ngày <%=
         locals.booking.startDate.day %> tháng <%= locals.booking.startDate.month
         %> năm <%= locals.booking.startDate.year %>.
       </p>

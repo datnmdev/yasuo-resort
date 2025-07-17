@@ -1,4 +1,5 @@
 import { BookingService } from "modules/booking/entities/booking-service.entity";
+import { RoomTypeAddon } from "modules/room-type/entities/room-type-addon.entity";
 import {
   Column,
   Entity,
@@ -16,6 +17,9 @@ export class Service {
   @Column("varchar", { name: "name", length: 255 })
   name: string;
 
+  @Column("enum", { name: "status", enum: ["inactive", "active"] })
+  status: "inactive" | "active";
+
   @Column("decimal", { name: "price", precision: 18, scale: 2 })
   price: string;
 
@@ -24,4 +28,7 @@ export class Service {
 
   @OneToMany(() => BookingService, (bookingService) => bookingService.service)
   bookingServices: BookingService[];
+
+  @OneToMany(() => RoomTypeAddon, (roomTypeAddon) => roomTypeAddon.service)
+  roomTypeAddons: RoomTypeAddon[];
 }

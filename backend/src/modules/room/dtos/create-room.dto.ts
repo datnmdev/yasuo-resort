@@ -1,6 +1,12 @@
-import { ArrayMinSize, IsArray, IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
-import { RoomCurrentCondition, RoomStatus } from "common/constants/room.constants";
-import { OneOf } from "common/decorators/validation.decorator";
+import {
+  ArrayMinSize,
+  IsArray,
+  IsCurrency,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateRoomReqDto {
   @IsNotEmpty()
@@ -16,19 +22,12 @@ export class CreateRoomReqDto {
   description: string;
 
   @IsNotEmpty()
-  @OneOf([
-    RoomStatus.ACTIVE,
-    RoomStatus.INACTIVE,
-    RoomStatus.UNDER_MAINTENANCE,
-    RoomStatus.RETIRED
-  ])
-  status: 'active' | 'inactive' | 'under_maintenance' | 'retired';
+  @IsInt()
+  maxPeople: number;
 
-  @IsOptional()
-  @OneOf([
-    RoomCurrentCondition.AVAILABLE
-  ])
-  currentCondition: 'available';
+  @IsNotEmpty()
+  @IsCurrency()
+  price: string;
 
   @IsNotEmpty()
   @IsArray()
