@@ -12,7 +12,7 @@ import { Button } from '@ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@ui/popover';
 import bookingApi from '@apis/booking';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@ui/command';
-import { cn } from '@libs/utils';
+import { cn, formatDateVN } from '@libs/utils';
 
 export default function ServicePage() {
   // States for Combobox
@@ -20,7 +20,7 @@ export default function ServicePage() {
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [comboboxSearchQuery, setComboboxSearchQuery] = useState('');
   const [comboboxPage, setComboboxPage] = useState(1);
-  const comboboxPageSize = 5;
+  const comboboxPageSize = 4;
 
   const { data: bookingData, isPending: isFetchingComboboxBookings } = useQuery({
     queryKey: ['bookings', comboboxPage, comboboxSearchQuery],
@@ -43,7 +43,7 @@ export default function ServicePage() {
   // States for Services
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const limit = 20;
+  const limit = 4;
   const { data, isLoading } = useQuery({
     queryKey: ['services', currentPage, searchQuery],
     queryFn: () =>
@@ -145,11 +145,11 @@ export default function ServicePage() {
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1">
               <CalendarDays className="w-4 h-4" />
-              <span>Nhận phòng: {currentBooking.startDate}</span>
+              <span>Nhận phòng: {formatDateVN(currentBooking.startDate)}</span>
             </div>
             <div className="flex items-center gap-1">
               <CalendarDays className="w-4 h-4" />
-              <span>Trả phòng: {currentBooking.endDate}</span>
+              <span>Trả phòng: {formatDateVN(currentBooking.endDate)}</span>
             </div>
           </div>
         </CardContent>
@@ -189,7 +189,12 @@ export default function ServicePage() {
             <>
               <div className="space-y-4">
                 {services.map((service, idx) => (
-                  <ServiceCard key={idx} service={service} />
+                  <ServiceCard
+                    key={idx}
+                    service={service}
+                    startDate={currentBooking.startDate}
+                    endDate={currentBooking.endDate}
+                  />
                 ))}
               </div>
 

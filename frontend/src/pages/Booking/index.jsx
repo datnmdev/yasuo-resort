@@ -1,385 +1,217 @@
-'use client';
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@ui/card';
+import { Button } from '@ui/button';
+import { Separator } from '@ui/separator';
+import { CheckCircle, XCircle, Calendar, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@ui/dialog';
+import { useLocation, useNavigate } from 'react-router';
+import { roomTypeSelector } from '@src/stores/reducers/roomTypeReducer';
+import { useSelector } from 'react-redux';
+import { Badge } from '@ui/badge';
+import { serviceSelector } from '@src/stores/reducers/serviceReducer';
+import { formatCurrencyVND, formatDateVN } from '@libs/utils';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  Calendar,
-  MapPin,
-  CreditCard,
-  Check,
-  Plus,
-  Minus,
-  ShoppingCart,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
-import { useLocation } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export default function BookingConfirmationPage() {
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [selectedServices, setSelectedServices] = useState({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const servicesPerPage = 5;
   const { state } = useLocation();
-  const room = state?.room;
+  const navigate = useNavigate();
+  const { room, startDate, endDate } = state;
+  const roomTypes = useSelector(roomTypeSelector.selectAll);
+  const services = useSelector(serviceSelector.selectAll);
 
-  // Get all services
-  const { data, isLoading } = useQuery({
-    queryKey: ['services', currentPage, searchQuery],
-    queryFn: () =>
-      serviceApi.getServices({
-        page: currentPage,
-        limit,
-        keyword: searchQuery,
-      }),
-    keepPreviousData: true,
-  });
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isBookingSuccessful, setIsBookingSuccessful] = useState(false);
 
-  // Pagination logic
-  const totalPages = Math.ceil(availableServices.length / servicesPerPage);
-  const startIndex = (currentPage - 1) * servicesPerPage;
-  const endIndex = startIndex + servicesPerPage;
-  const currentServices = availableServices.slice(startIndex, endIndex);
+  const numberOfNights = useMemo(() => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
-  const calculateNights = () => {
-    if (!startDate || !endDate) return 0;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
+      const diff = end.getTime() - start.getTime();
+      const nights = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      return nights > 0 ? nights : 0;
+    }
+    return 0;
+  }, [startDate, endDate]);
 
-  const calculateRoomTotal = () => {
-    if (!room) return 0;
-    return room.type.pricePerDay * calculateNights();
-  };
+  const calculateRoomTotal = useMemo(() => {
+    if (room && numberOfNights > 0) {
+      return room.price * numberOfNights;
+    }
+    return 0;
+  }, [room, numberOfNights]);
 
-  const calculateServicesTotal = () => {
-    return Object.entries(selectedServices).reduce((total, [serviceId, quantity]) => {
-      const service = availableServices.find((s) => s.id === serviceId);
-      return total + (service ? service.price * quantity : 0);
-    }, 0);
-  };
+  const handleConfirmBooking = () => {
+    if (!room) {
+      alert('No room selected for booking.');
+      return;
+    }
 
-  const calculateTotal = () => {
-    return calculateRoomTotal() + calculateServicesTotal();
-  };
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
-  };
-
-  const updateServiceQuantity = (serviceId, change) => {
-    setSelectedServices((prev) => {
-      const currentQuantity = prev[serviceId] || 0;
-      const newQuantity = Math.max(0, currentQuantity + change);
-      if (newQuantity === 0) {
-        const { [serviceId]: _, ...rest } = prev;
-        return rest;
-      }
-      return { ...prev, [serviceId]: newQuantity };
+    // Simulate booking process with userId (assuming it's available from context/token)
+    console.log('Booking details:', {
+      // In a real app, userId would be passed from auth context
+      roomId: room.id,
+      roomNumber: room.roomNumber,
+      roomType: room.type.name,
+      startDate: startDate,
+      endDate: endDate,
+      numberOfNights,
+      totalAmount: calculateRoomTotal,
     });
+
+    // Simulate API call success/failure
+    const success = Math.random() > 0.2; // 80% success rate
+    setIsBookingSuccessful(success);
+    setShowConfirmation(true);
   };
 
-  const goToPage = (page) => {
-    setCurrentPage(page);
-  };
-
-  const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+  const handleCloseConfirmation = () => {
+    setShowConfirmation(false);
+    if (isBookingSuccessful) {
+      navigate('/'); // Redirect to home or a success page
     }
-  };
-
-  const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const fadeInUp = {
-    initial: { opacity: 0, y: 60 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6 },
   };
 
   if (!room) {
     return (
-      <div className="min-h-screen pt-16 bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Room not found</h1>
-          <p className="text-gray-600">Please select a room from the rooms page.</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="p-8 text-center">
+          <CardTitle className="text-2xl font-bold text-red-600 mb-4">Room Not Found</CardTitle>
+          <CardContent>
+            <p className="text-gray-600 mb-6">
+              The selected room could not be found. Please go back and select a room.
+            </p>
+            <Button onClick={() => navigate('/rooms')}>Go to Rooms Page</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-16 bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <motion.div className="text-center mb-8" {...fadeInUp}>
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">Book Your Stay</h1>
-          <p className="text-gray-600">Complete your reservation details</p>
-        </motion.div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Booking Form */}
-          <motion.div
-            className="lg:col-span-2 space-y-6"
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            {/* Room Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-green-600">Selected Room</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-3 mb-4">
-                  <MapPin className="w-5 h-5 text-green-600" />
-                  <div>
-                    <div className="font-semibold">
-                      {room.type.name} - Room {room.roomNumber}
-                    </div>
-                    <div className="text-sm text-gray-600">{formatPrice(room.type.pricePerDay)} per night</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Date Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Calendar className="w-5 h-5 text-green-600" />
-                  <span>Select Dates</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="startDate">Check-in Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="endDate">Check-out Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    min={startDate || new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-                {calculateNights() > 0 && (
-                  <div className="md:col-span-2 text-sm text-gray-600">
-                    Total nights: <span className="font-semibold">{calculateNights()}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Services Selection with Pagination */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <ShoppingCart className="w-5 h-5 text-green-600" />
-                    <span>Additional Services</span>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    Page {currentPage} of {totalPages}
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {currentServices.map((service) => (
-                    <div key={service.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h4 className="font-semibold text-gray-800">{service.name}</h4>
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{service.id}</span>
-                        </div>
-                        <p className="text-sm text-gray-600">{service.description}</p>
-                        <p className="text-green-600 font-semibold">{formatPrice(service.price)}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateServiceQuantity(service.id, -1)}
-                          disabled={!selectedServices[service.id]}
-                        >
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                        <span className="w-8 text-center">{selectedServices[service.id] || 0}</span>
-                        <Button variant="outline" size="sm" onClick={() => updateServiceQuantity(service.id, 1)}>
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={prevPage}
-                      disabled={currentPage === 1}
-                      className="flex items-center space-x-1 bg-transparent"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      <span>Previous</span>
-                    </Button>
-
-                    <div className="flex items-center space-x-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <Button
-                          key={page}
-                          variant={currentPage === page ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => goToPage(page)}
-                          className={currentPage === page ? 'bg-green-600 hover:bg-green-700' : 'hover:bg-green-50'}
-                        >
-                          {page}
-                        </Button>
-                      ))}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={nextPage}
-                      disabled={currentPage === totalPages}
-                      className="flex items-center space-x-1 bg-transparent"
-                    >
-                      <span>Next</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Payment Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CreditCard className="w-5 h-5 text-green-600" />
-                  <span>Payment Information</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="cardNumber">Card Number</Label>
-                  <Input id="cardNumber" placeholder="1234 5678 9012 3456" />
-                </div>
-                <div>
-                  <Label htmlFor="cardName">Cardholder Name</Label>
-                  <Input id="cardName" placeholder="JOHN DOE" />
-                </div>
-                <div>
-                  <Label htmlFor="expiry">Expiry Date</Label>
-                  <Input id="expiry" placeholder="MM/YY" />
-                </div>
-                <div>
-                  <Label htmlFor="cvv">CVV</Label>
-                  <Input id="cvv" placeholder="123" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Booking Summary */}
-          <motion.div
-            className="lg:col-span-1"
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <Card className="sticky top-24">
-              <CardHeader>
-                <CardTitle className="text-green-600">Booking Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-800">Room Details</h4>
-                  <div className="text-sm text-gray-600">
-                    {room.type.name} - Room {room.roomNumber}
-                  </div>
-                  {calculateNights() > 0 && (
-                    <div className="text-sm text-gray-600">
-                      {calculateNights()} nights × {formatPrice(room.type.pricePerDay)}
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Room Total</span>
-                    <span>{formatPrice(calculateRoomTotal())}</span>
-                  </div>
-                  {Object.entries(selectedServices).map(([serviceId, quantity]) => {
-                    const service = availableServices.find((s) => s.id === serviceId);
-                    if (!service || quantity === 0) return null;
-                    return (
-                      <div key={serviceId} className="flex justify-between text-sm">
-                        <span>
-                          {service.name} × {quantity}
-                        </span>
-                        <span>{formatPrice(service.price * quantity)}</span>
-                      </div>
-                    );
-                  })}
-                  {calculateServicesTotal() > 0 && (
-                    <div className="flex justify-between">
-                      <span>Services Total</span>
-                      <span>{formatPrice(calculateServicesTotal())}</span>
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span className="text-green-600">{formatPrice(calculateTotal())}</span>
-                </div>
-
-                <Button
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  size="lg"
-                  disabled={!startDate || !endDate || calculateNights() <= 0}
-                >
-                  <Check className="w-5 h-5 mr-2" />
-                  Confirm Booking
-                </Button>
-
-                <div className="text-center text-sm text-gray-600">
-                  <p>You will receive a confirmation email within 5 minutes.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+    <div className="min-h-screen bg-gray-50 py-12 pt-20">
+      {/* Header Section */}
+      <section className="bg-gradient-to-r from-green-600 to-green-700 text-white py-12">
+        <div className="container mx-auto px-4 text-center">
+          <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-200" />
+          <h1 className="text-4xl font-bold mb-2">Confirm Your Booking</h1>
+          <p className="text-xl text-green-100">Review your reservation details below.</p>
         </div>
+      </section>
+
+      <div className="container mx-auto px-4 py-8 flex justify-center">
+        <Card className="w-full max-w-3xl p-8 shadow-xl border border-gray-100">
+          <CardHeader className="p-0 mb-6">
+            <CardTitle className="text-3xl font-bold text-gray-800">Booking Details</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              {/* Room Image and Basic Info */}
+              <div>
+                <img
+                  src={`${baseUrl}/${room.media[0]?.path || 'placeholder.svg'}`}
+                  alt={room.type.name}
+                  className="w-full h-56 object-cover rounded-lg shadow-md mb-4"
+                />
+                <h3 className="text-2xl font-bold text-green-700 mb-1">
+                  {room.type.name} - Room {room.roomNumber}
+                </h3>
+                <p className="text-gray-600 text-sm">{room.shortDescription}</p>
+              </div>
+
+              {/* Dates and Capacity */}
+              <div className="space-y-3 text-gray-700">
+                <p className="flex items-center gap-2 text-lg">
+                  <Calendar className="w-5 h-5 text-gray-500" />
+                  <span className="font-semibold">Check-in:</span> {formatDateVN(startDate)}
+                </p>
+                <p className="flex items-center gap-2 text-lg">
+                  <Calendar className="w-5 h-5 text-gray-500" />
+                  <span className="font-semibold">Check-out:</span> {formatDateVN(endDate)}
+                </p>
+                <p className="flex items-center gap-2 text-lg">
+                  <span className="font-semibold ml-7">{numberOfNights} nights</span>
+                </p>
+                <p className="flex items-center gap-2 text-lg">
+                  <Users className="w-5 h-5 text-gray-500" />
+                  <span className="font-semibold">Capacity:</span> {room.maxPeople} Guests
+                </p>
+              </div>
+            </div>
+
+            <Separator className="my-8" />
+
+            {/* Amenities and Services */}
+            <h3 className="text-xl font-semibold text-gray-800 mb-3">Room Amenities</h3>
+            {roomTypes
+              ?.find((type) => type.id === room.typeId)
+              ?.roomTypeAddons?.map((addon, index) => {
+                const service = services.find((s) => s.id === addon.serviceId);
+                return (
+                  <div key={index} className="flex items-center gap-1 text-sm text-gray-600">
+                    <Badge variant="outlined">{service?.name || 'Không rõ'}</Badge>
+                  </div>
+                );
+              })}
+            <Separator className="my-8" />
+
+            {/* Price Summary */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center text-gray-700">
+                <span>Room Rate ({numberOfNights} nights)</span>
+                <span className="font-semibold">{formatCurrencyVND(calculateRoomTotal)}</span>
+              </div>
+              <div className="flex justify-between items-center text-xl font-bold text-gray-900 pt-4 border-t-2 border-gray-200 mt-4">
+                <span>Total Amount</span>
+                <span className="text-green-600">{formatCurrencyVND(calculateRoomTotal)}</span>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              <Button
+                onClick={handleConfirmBooking}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white text-lg py-3"
+              >
+                Confirm Booking
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 text-gray-700 text-lg py-3 bg-transparent"
+                onClick={() => navigate('/rooms')}
+              >
+                Cancel Booking
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <DialogContent className="sm:max-w-[425px] text-center">
+          <DialogHeader>
+            {isBookingSuccessful ? (
+              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            ) : (
+              <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            )}
+            <DialogTitle className="text-2xl font-bold">
+              {isBookingSuccessful ? 'Booking Confirmed!' : 'Booking Failed'}
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
+              {isBookingSuccessful
+                ? 'Your room has been successfully booked. A confirmation will be sent to you soon.'
+                : 'There was an issue processing your booking. Please try again or contact support.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-center">
+            <Button onClick={handleCloseConfirmation} className="bg-green-600 hover:bg-green-700">
+              {isBookingSuccessful ? 'Go to Home' : 'Try Again'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

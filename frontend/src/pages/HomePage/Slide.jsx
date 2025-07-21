@@ -6,21 +6,21 @@ import { Link } from 'react-router';
 
 const heroSlides = [
   {
-    image: '/slice-image-1.jpg',
+    image: '/homepage-image-1.jpg',
     title: 'Paradise Resort',
     subtitle: 'Your Ultimate Tropical Getaway',
     description:
       'Experience luxury and tranquility in our pristine beachfront resort surrounded by lush tropical gardens',
   },
   {
-    image: '/slice-image-2.jpg',
+    image: '/homepage-image-2.jpg',
     title: 'Luxury Accommodations',
     subtitle: 'Comfort Meets Elegance',
     description:
       'Indulge in our beautifully appointed rooms and suites, each designed to provide the perfect sanctuary',
   },
   {
-    image: '/slice-image-3.jpg',
+    image: '/homepage-image-3.jpg',
     title: 'World-Class Amenities',
     subtitle: 'Everything You Need',
     description:
@@ -119,11 +119,10 @@ const Slide = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.8 }}
         >
-          <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 text-lg">
+          <Button size="lg" className="bg-teal-700 hover:bg-teal-800 text-white px-8 py-3 text-lg">
             <Link to="/rooms">Explore Rooms</Link>
           </Button>
           <Button
-            asChild
             variant="outline"
             size="lg"
             className="border-white text-white hover:bg-white hover:text-teal-600 bg-transparent px-8 py-3 text-lg"

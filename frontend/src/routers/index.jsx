@@ -14,6 +14,7 @@ import RoomManagementPage from '../pages/RoomManagementPage';
 import BookingRequestPage from '../pages/BookingRequestPage';
 import ResetPassword from '@src/pages/ResetPassword';
 import AboutPage from '@src/pages/AboutUs';
+import BookingPage from '@src/pages/Booking';
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -53,6 +54,10 @@ const router = createBrowserRouter([
       {
         path: '/about-us',
         element: <AboutPage />,
+      },
+      {
+        path: '/booking-confirmation',
+        element: <BookingPage />,
       },
     ],
   },

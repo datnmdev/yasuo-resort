@@ -145,7 +145,6 @@ const Introduction = () => {
                 <Link to="/rooms">Book Now</Link>
               </Button>
               <Button
-                asChild
                 variant="outline"
                 size="lg"
                 className="border-white text-white hover:bg-white hover:text-teal-600 bg-transparent px-8 py-3 text-lg"

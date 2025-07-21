@@ -23,7 +23,7 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      alert('Vui lòng nhập đầy đủ email và password.');
+      alert('Please enter both email and password.');
       return;
     }
 
@@ -80,10 +80,10 @@ const Login = () => {
           with a convenient location just three miles from downtown Saugatuck.
         </p>
         <p className="text-2xl text-white text-center mb-16">
-          Start your morning with breakfast overlooking Lake Michigan. By day, you can explore the area with our kayaks
+          {`Start your morning with breakfast overlooking Lake Michigan. By day, you can explore the area with our kayaks
           and bikes, hike the wooded trails on our property, take a dip in the lake, or wander the many shops,
           galleries, and restaurants in town. At night, come back to watch a spectacular sunset around the fire pits, or
-          snuggle up and stargaze from our deck at the water’s edge.
+          snuggle up and stargaze from our deck at the water's edge.`}
         </p>
       </div>
 
@@ -132,7 +132,7 @@ const Login = () => {
             </Link>
           </p>
           <p className="text-sm mt-6 text-center text-gray-600">
-            Don't have an account?{' '}
+            {`Don't have an account?`}{' '}
             <Link to="/signup" className="text-teal-600 hover:underline">
               Sign Up
             </Link>

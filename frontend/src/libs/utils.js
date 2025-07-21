@@ -7,9 +7,16 @@ export function cn(...args) {
 }
 
 // Chuyển number thành tiền tệ USD
-export function formatCurrencyUSD(amount) {
-    return new Intl.NumberFormat('en-US', {
+export function formatCurrencyVND(amount) {
+    return new Intl.NumberFormat('vi-VN', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'VND',
     }).format(amount);
 }
+
+export function formatDateVN(dateString) {
+    if (!dateString) return 'Chưa chọn';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN');
+};
+

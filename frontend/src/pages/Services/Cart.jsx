@@ -1,5 +1,5 @@
 import { ShoppingCart } from 'lucide-react';
-import { formatCurrencyUSD } from '../../libs/utils';
+import { formatCurrencyVND } from '../../libs/utils';
 import CartItems from './CartItems';
 import { useSelector } from 'react-redux';
 import { cartSelector } from '@src/stores/reducers/cartReducer';
@@ -18,16 +18,12 @@ export default function Cart() {
 
   const { mutate: placeOrder, isPending: isPlacingOrder } = useMutation({
     mutationFn: () => {},
-    onSuccess: (data) => {
-      if (data.success) {
-        clear(); // xoá giỏ hàng
-      } else {
-        alert('Có lỗi xảy ra khi thêm dịch vụ. Vui lòng thử lại.');
-      }
+    onSuccess: () => {
+      clear(); // xoá giỏ hàng
     },
     onError: (error) => {
       console.error('Error adding services to booking:', error);
-      alert('Có lỗi xảy ra khi thêm dịch vụ. Vui lòng thử lại.');
+      alert('An error occurred while placing your order. Please try again.');
     },
   });
 
@@ -38,7 +34,7 @@ export default function Cart() {
     }
 
     if (cart.length === 0) {
-      alert('Giỏ hàng của bạn đang trống. Vui lòng thêm dịch vụ để đặt.');
+      alert('Your cart is empty. Please add items before placing an order.');
       return;
     }
 
@@ -70,7 +66,7 @@ export default function Cart() {
         <div className="border-b border-gray-300 my-4"></div>
         <div className="px-4 py-2 bg-teal-100/80 rounded-md flex justify-between font-semibold">
           <h1>Tổng cộng:</h1>
-          <p className="text-teal-700">{formatCurrencyUSD(totalAmount)}</p>
+          <p className="text-teal-700">{formatCurrencyVND(totalAmount)}</p>
         </div>
         <Button
           className="mt-4 w-full bg-teal-600 hover:bg-teal-700 text-white h-12 transition-colors duration-200"

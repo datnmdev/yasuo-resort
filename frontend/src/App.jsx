@@ -1,9 +1,9 @@
-import { RouterProvider } from "react-router";
-import "./App.css";
-import router from "./routers";
-import { Provider } from "react-redux";
-import { store } from "./stores";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider } from 'react-router';
+import './App.css';
+import router from './routers';
+import { Provider } from 'react-redux';
+import { store } from './stores';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();
 
