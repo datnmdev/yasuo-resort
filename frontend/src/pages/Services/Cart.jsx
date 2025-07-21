@@ -14,12 +14,23 @@ export default function Cart() {
   const navigate = useNavigate();
   const { clear } = useCart;
 
-  const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalAmount = cart.reduce((sum, item) => {
+    const start = new Date(item.startDate);
+    const end = new Date(item.endDate);
 
-  const { mutate: placeOrder, isPending: isPlacingOrder } = useMutation({
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const numberOfDays = Math.max(
+      1,
+      Math.ceil((end - start) / msPerDay) + 1 // include the end date
+    );
+
+    return sum + item.price * item.quantity * numberOfDays;
+  }, 0);
+
+  const { mutate: placeOrder, isPending: isBookingService } = useMutation({
     mutationFn: () => {},
     onSuccess: () => {
-      clear(); // xoá giỏ hàng
+      clear(); // clear the cart
     },
     onError: (error) => {
       console.error('Error adding services to booking:', error);
@@ -38,13 +49,13 @@ export default function Cart() {
       return;
     }
 
-    placeOrder(); // gọi mutation
+    placeOrder();
   };
 
   return (
     <div className="rounded-lg overflow-hidden border border-gray-300 bg-white/80">
       <h2 className="p-4 text-lg mb-2 flex gap-2 bg-teal-100/80 text-teal-700 font-bold">
-        <ShoppingCart /> Giỏ hàng
+        <ShoppingCart /> Cart
       </h2>
       <div className="p-4">
         {cart.length === 0 ? (
@@ -52,32 +63,32 @@ export default function Cart() {
             <div className="p-4 rounded-full center-both w-14 h-14 bg-gray-300/50">
               <ShoppingCart size={28} strokeWidth={2.75} />
             </div>
-            Giỏ hàng trống
+            Your cart is empty.
             <br />
-            Chọn dịch vụ để bắt đầu
+            Please select services to get started.
           </div>
         ) : (
           <div className="space-y-2">
-            {cart.map((item) => (
-              <CartItems key={item.id} item={item} />
+            {cart.map((service) => (
+              <CartItems key={service.uuid} service={service} />
             ))}
           </div>
         )}
         <div className="border-b border-gray-300 my-4"></div>
         <div className="px-4 py-2 bg-teal-100/80 rounded-md flex justify-between font-semibold">
-          <h1>Tổng cộng:</h1>
+          <h1>Total:</h1>
           <p className="text-teal-700">{formatCurrencyVND(totalAmount)}</p>
         </div>
         <Button
           className="mt-4 w-full bg-teal-600 hover:bg-teal-700 text-white h-12 transition-colors duration-200"
           onClick={handlePlaceOrder}
-          disabled={isPlacingOrder || cart.length === 0}
+          disabled={isBookingService || cart.length === 0}
         >
-          {isPlacingOrder
-            ? 'Đang thêm...'
+          {isBookingService
+            ? 'Booking...'
             : Cookies.get('accessToken')
-            ? 'Thêm dịch vụ vào đơn phòng'
-            : 'Đăng nhập để thêm dịch vụ'}
+            ? 'Add services to booking'
+            : 'Log in to add services'}
         </Button>
       </div>
     </div>

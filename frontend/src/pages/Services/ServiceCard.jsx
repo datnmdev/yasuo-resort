@@ -5,6 +5,7 @@ import { Label } from '@ui/label';
 import { Input } from '@ui/input';
 import { useState } from 'react';
 import { Button } from '@ui/button';
+import { v4 as uuidv4 } from 'uuid';
 
 const iconMap = [
   <Gift key={0} className="w-5 h-5 text-teal-600" />,
@@ -14,7 +15,22 @@ const iconMap = [
 
 export default function ServiceCard({ service, startDate, endDate }) {
   const { id, name, description, price } = service;
-  const { add } = useCart();
+  const { booking, add } = useCart();
+  const { startDate, endDate } = booking;
+
+  // State for in-card configuration
+  const [isBooking, setIsBooking] = useState(false);
+  const [tempNumPeople, setTempNumPeople] = useState(1);
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
+
+  const handleAddToCart = () => {
+    if (Object.keys(booking).length === 0) {
+      alert('Please select a room before adding services');
+      return;
+    }
+    setIsBooking(true);
+  };
 
   // State for in-card configuration
   const [isBooking, setIsBooking] = useState(false);
@@ -33,11 +49,11 @@ export default function ServiceCard({ service, startDate, endDate }) {
           <p className="text-sm text-gray-600 mt-1">{description}</p>
         </div>
         <div className="text-right">
-          <p className="font-bold text-teal-700 text-lg">{formatCurrencyVND(price)}</p>
+          <p className="font-bold text-teal-700 text-lg">{formatCurrencyVND(price)}/person/day</p>
           {!isBooking && (
             <Button
               size="sm"
-              onClick={() => setIsBooking(true)}
+              onClick={handleAddToCart}
               className="mt-2 px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm"
             >
               + Add to cart
@@ -94,7 +110,16 @@ export default function ServiceCard({ service, startDate, endDate }) {
             <Button
               size="sm"
               className="flex-grow bg-teal-700 hover:bg-teal-800"
-              onClick={() => add(service)}
+              onClick={() => {
+                setIsBooking(false);
+                add({
+                  ...service,
+                  quantity: tempNumPeople,
+                  startDate: tempStartDate,
+                  endDate: tempEndDate,
+                  uuid: uuidv4(),
+                });
+              }}
               disabled={!tempNumPeople || tempNumPeople <= 0 || !tempStartDate || !tempEndDate}
             >
               Confirm Add

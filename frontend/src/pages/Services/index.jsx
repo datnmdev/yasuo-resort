@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import Cart from './Cart';
 import ServiceCard from './ServiceCard';
-import SupportBox from './SupportBox';
+import BookedServices from './BookedServices';
 import { CalendarDays, Check, ChevronLeft, ChevronRight, ChevronsUpDown, Loader2, Search, Star } from 'lucide-react';
 import { Input } from '@ui/input';
 import { Card, CardContent } from '@ui/card';
@@ -13,10 +13,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@ui/popover';
 import bookingApi from '@apis/booking';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@ui/command';
 import { cn, formatDateVN } from '@libs/utils';
+import { useCart } from '@src/hooks/useCart';
 
 export default function ServicePage() {
   // States for Combobox
-  const [currentBooking, setCurrentBooking] = useState({});
+  const { booking, setBooking } = useCart();
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [comboboxSearchQuery, setComboboxSearchQuery] = useState('');
   const [comboboxPage, setComboboxPage] = useState(1);
@@ -36,7 +37,7 @@ export default function ServicePage() {
   const comboboxTotalPages = Math.ceil((bookingData?.data?.data[1] || 1) / comboboxPageSize);
 
   const handleComboboxSelect = (id) => {
-    setCurrentBooking(bookings.find((b) => `${b.id} - ${b.room.roomNumber}` === id));
+    setBooking(bookings.find((b) => `${b.id} - ${b.room.roomNumber}` === id));
     setComboboxOpen(false);
   };
 
@@ -79,9 +80,7 @@ export default function ServicePage() {
                   aria-expanded={comboboxOpen}
                   className="w-[240px] justify-between bg-white"
                 >
-                  {currentBooking.id
-                    ? `${currentBooking.id} - ${currentBooking.room.roomNumber}`
-                    : 'Chọn mã đơn phòng...'}
+                  {booking.id ? `${booking.id} - ${booking.room.roomNumber}` : 'Chọn mã đơn phòng...'}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -101,15 +100,10 @@ export default function ServicePage() {
                       <CommandEmpty>Không tìm thấy phòng.</CommandEmpty>
                     ) : (
                       <CommandGroup>
-                        {bookings.map((booking) => (
-                          <CommandItem key={booking.id} value={booking.id} onSelect={handleComboboxSelect}>
-                            <Check
-                              className={cn(
-                                'mr-2 h-4 w-4',
-                                currentBooking.id === booking.id ? 'opacity-100' : 'opacity-0'
-                              )}
-                            />
-                            {booking.id} - {booking.room.roomNumber}
+                        {bookings.map((b) => (
+                          <CommandItem key={b.id} value={b.id} onSelect={handleComboboxSelect}>
+                            <Check className={cn('mr-2 h-4 w-4', booking.id === b.id ? 'opacity-100' : 'opacity-0')} />
+                            {b.id} - {b.room.roomNumber}
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -145,11 +139,11 @@ export default function ServicePage() {
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1">
               <CalendarDays className="w-4 h-4" />
-              <span>Nhận phòng: {formatDateVN(currentBooking.startDate)}</span>
+              <span>Nhận phòng: {formatDateVN(booking.startDate)}</span>
             </div>
             <div className="flex items-center gap-1">
               <CalendarDays className="w-4 h-4" />
-              <span>Trả phòng: {formatDateVN(currentBooking.endDate)}</span>
+              <span>Trả phòng: {formatDateVN(booking.endDate)}</span>
             </div>
           </div>
         </CardContent>
@@ -251,7 +245,7 @@ export default function ServicePage() {
         </div>
         <div className="space-y-6">
           <Cart />
-          <SupportBox />
+          <BookedServices />
         </div>
       </div>
     </div>

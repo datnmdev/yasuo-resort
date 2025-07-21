@@ -1,70 +1,74 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice } from "@reduxjs/toolkit";
 
-// Nếu cần lưu persist cart vào localStorage:
-const loadCartFromStorage = () => {
+// helpers
+const loadCartFromStorage = (booking) => {
   try {
-    const stored = localStorage.getItem('cart_items')
-    return stored ? JSON.parse(stored) : []
-  } catch (e) {
-    return []
+    const raw = localStorage.getItem(`cart_items_${booking.id}`);
+    if (!raw) return [];
+
+    const { items, expiry } = JSON.parse(raw);
+
+    const now = new Date();
+    const expiryDate = new Date(expiry);
+
+    if (now > expiryDate) {
+      // đã quá hạn checkout → xóa
+      localStorage.removeItem(`cart_items_${booking.id}`);
+      return [];
+    }
+
+    return items;
+  } catch {
+    return [];
   }
-}
+};
 
-const saveCartToStorage = (cart) => {
-  localStorage.setItem('cart_items', JSON.stringify(cart))
-}
+const saveCartToStorage = (booking, cart) => {
+  const data = {
+    items: cart,
+    expiry: booking.endDate,
+  };
 
+  localStorage.setItem(`cart_items_${booking.id}`, JSON.stringify(data));
+};
+
+
+// reducer
 const initialState = {
-  items: loadCartFromStorage(),
-}
+  booking: {},
+  items: [],
+};
 
 export const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    setCart: (state, action) => {
-      state.items = action.payload
-      saveCartToStorage(state.items)
+    setBooking: (state, action) => {
+      state.booking = action.payload;
+      state.items = loadCartFromStorage(action.payload);
     },
     addToCart: (state, action) => {
-      const existing = state.items.find((item) => item.id === action.payload.id)
-      if (existing) {
-        existing.quantity += 1
-      } else {
-        state.items.push({ ...action.payload, quantity: 1 })
-      }
-      saveCartToStorage(state.items)
+      state.items.push(action.payload)
+      saveCartToStorage(state.booking, state.items);
     },
     removeFromCart: (state, action) => {
-      state.items = state.items.filter((item) => item.id !== action.payload)
-      saveCartToStorage(state.items)
-    },
-    updateQuantity: (state, action) => {
-      const { id, change } = action.payload
-      state.items = state.items
-        .map((item) => {
-          if (item.id === id) {
-            const newQty = item.quantity + change
-            return newQty > 0 ? { ...item, quantity: newQty } : null
-          }
-          return item
-        })
-        .filter(Boolean)
-      saveCartToStorage(state.items)
+      state.items = state.items.filter((item) => item.uuid !== action.payload);
+      saveCartToStorage(state.booking, state.items);
     },
     clearCart: (state) => {
-      state.items = []
-      saveCartToStorage([])
+      state.items = [];
+      if (state.booking) {
+        localStorage.removeItem(`cart_items_${state.booking}`);
+      }
     },
   },
-})
+});
 
-export const cartAction = cartSlice.actions
+export const cartAction = cartSlice.actions;
 
 export const cartSelector = {
   selectCart: (state) => state.cart.items,
-  totalItems: (state) => state.cart.items.reduce((sum, item) => sum + item.quantity, 0),
-  totalServices: (state) => state.cart.items.length,
-}
+  booking: (state) => state.cart.booking,
+};
 
 export default cartSlice.reducer
