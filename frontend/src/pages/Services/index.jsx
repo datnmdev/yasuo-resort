@@ -183,12 +183,7 @@ export default function ServicePage() {
             <>
               <div className="space-y-4">
                 {services.map((service, idx) => (
-                  <ServiceCard
-                    key={idx}
-                    service={service}
-                    startDate={currentBooking.startDate}
-                    endDate={currentBooking.endDate}
-                  />
+                  <ServiceCard key={idx} service={service} />
                 ))}
               </div>
 

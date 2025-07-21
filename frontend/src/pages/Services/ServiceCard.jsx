@@ -13,7 +13,7 @@ const iconMap = [
   <Sparkles key={2} className="w-5 h-5 text-teal-600" />,
 ];
 
-export default function ServiceCard({ service, startDate, endDate }) {
+export default function ServiceCard({ service }) {
   const { id, name, description, price } = service;
   const { booking, add } = useCart();
   const { startDate, endDate } = booking;
@@ -31,12 +31,6 @@ export default function ServiceCard({ service, startDate, endDate }) {
     }
     setIsBooking(true);
   };
-
-  // State for in-card configuration
-  const [isBooking, setIsBooking] = useState(false);
-  const [tempNumPeople, setTempNumPeople] = useState(1);
-  const [tempStartDate, setTempStartDate] = useState('');
-  const [tempEndDate, setTempEndDate] = useState('');
 
   return (
     <div className="bg-white/90 border border-gray-300 rounded-lg p-4 hover:shadow-md transition">
