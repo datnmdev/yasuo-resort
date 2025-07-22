@@ -15,6 +15,7 @@ import BookingRequestPage from '../pages/BookingRequestPage';
 import ResetPassword from '@src/pages/ResetPassword';
 import AboutPage from '@src/pages/AboutUs';
 import BookingPage from '@src/pages/Booking';
+import Contract from '@src/pages/Contract';
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -58,6 +59,10 @@ const router = createBrowserRouter([
       {
         path: '/booking-confirmation',
         element: <BookingPage />,
+      },
+      {
+        path: '/contracts',
+        element: <Contract />,
       },
     ],
   },

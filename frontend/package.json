@@ -39,6 +39,7 @@
     "react-router-dom": "^7.6.3",
     "react-slick": "^0.30.3",
     "sass": "^1.89.2",
+    "signature_pad": "^5.0.10",
     "slick-carousel": "^1.8.1",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.10",

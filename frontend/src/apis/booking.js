@@ -16,4 +16,10 @@ export default {
       `/booking/${req.param.bookingId}/cancel-room-booking`
     );
   },
+  userSignTheContract: (req) => {
+    return axiosInstance.put(
+      `/booking/${req.param.bookingId}/sign-contract`,
+      req.body
+    );
+  },
 };
