@@ -14,4 +14,8 @@ export default {
     axiosInstance.post("/auth/verify-forgot-password", { email, otp }),
   resetPassword: (email, password, code) =>
     axiosInstance.put("/auth/reset-password", { email, password, code }),
+  getProfile: () => axiosInstance.get("/user/get-profile"),
+  updateProfile:(data) => {
+    axiosInstance.put("/user/update-profile",data)
+  }
 };

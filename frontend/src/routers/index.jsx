@@ -16,6 +16,8 @@ import ResetPassword from '@src/pages/ResetPassword';
 import AboutPage from '@src/pages/AboutUs';
 import BookingPage from '@src/pages/Booking';
 import Contract from '@src/pages/Contract';
+import Profile from '@src/pages/Profile';
+import EditProfile from '@src/pages/Profile/EditProfile';
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -63,6 +65,14 @@ const router = createBrowserRouter([
       {
         path: '/contracts',
         element: <Contract />,
+      },
+      {
+        path: '/profile',
+        element: <Profile />,
+      },
+      {
+        path: '/profile/edit',
+        element: <EditProfile />,
       },
     ],
   },
