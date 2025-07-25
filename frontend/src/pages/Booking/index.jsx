@@ -161,21 +161,23 @@ export default function BookingConfirmationPage() {
               </div>
             </div>
 
-            <Separator className="my-8" />
+            <Separator className="my-6" />
 
             {/* Amenities and Services */}
             <h3 className="text-xl font-semibold text-gray-800 mb-3">Room Amenities</h3>
-            {roomTypes
-              ?.find((type) => type.id === room.typeId)
-              ?.roomTypeAddons?.map((addon, index) => {
-                const service = services.find((s) => s.id === addon.serviceId);
-                return (
-                  <div key={index} className="flex items-center gap-1 text-sm text-gray-600">
-                    <Badge variant="outlined">{service?.name || 'Không rõ'}</Badge>
-                  </div>
-                );
-              })}
-            <Separator className="my-8" />
+            <div className="flex gap-2">
+              {roomTypes
+                ?.find((type) => type.id === room.typeId)
+                ?.roomTypeAddons?.map((addon, index) => {
+                  const service = services.find((s) => s.id === addon.serviceId);
+                  return (
+                    <div key={index} className="flex items-center gap-1 text-sm text-gray-600">
+                      <Badge variant="outlined">{service?.name || 'Không rõ'}</Badge>
+                    </div>
+                  );
+                })}
+            </div>
+            <Separator className="my-6" />
 
             {/* Price Summary */}
             <div className="space-y-4">
