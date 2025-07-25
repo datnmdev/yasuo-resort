@@ -14,6 +14,8 @@ import bookingApi from '@apis/booking';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@ui/command';
 import { cn, formatDateVN } from '@libs/utils';
 import { useCart } from '@src/hooks/useCart';
+import { useSelector } from 'react-redux';
+import { userSelector } from '@src/stores/reducers/userReducer';
 
 export default function ServicePage() {
   // States for Combobox
@@ -22,6 +24,7 @@ export default function ServicePage() {
   const [comboboxSearchQuery, setComboboxSearchQuery] = useState('');
   const [comboboxPage, setComboboxPage] = useState(1);
   const comboboxPageSize = 4;
+  const user = useSelector(userSelector.selectUser);
 
   const { data: bookingData, isPending: isFetchingComboboxBookings } = useQuery({
     queryKey: ['bookings', comboboxPage, comboboxSearchQuery],
@@ -33,7 +36,7 @@ export default function ServicePage() {
       }),
     keepPreviousData: true,
   });
-  const bookings = bookingData?.data?.data[0] || [];
+  const bookings = bookingData?.data?.data[0].filter((b) => b.userId === user?.id && b.status === 'confirmed') || [];
   const comboboxTotalPages = Math.ceil((bookingData?.data?.data[1] || 1) / comboboxPageSize);
 
   const handleComboboxSelect = (id) => {

@@ -6,6 +6,7 @@ import { Input } from '@ui/input';
 import { useState } from 'react';
 import { Button } from '@ui/button';
 import { v4 as uuidv4 } from 'uuid';
+import dayjs from 'dayjs';
 
 const iconMap = [
   <Gift key={0} className="w-5 h-5 text-teal-600" />,
@@ -94,7 +95,9 @@ export default function ServiceCard({ service }) {
                 type="date"
                 value={tempEndDate}
                 onChange={(e) => setTempEndDate(e.target.value)}
-                min={tempStartDate || startDate} // End date cannot be before start date
+                min={dayjs(tempStartDate || startDate)
+                  .add(1, 'day')
+                  .format('YYYY-MM-DD')}
                 max={endDate}
                 className="w-full"
               />

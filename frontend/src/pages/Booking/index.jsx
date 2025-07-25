@@ -10,6 +10,8 @@ import { useSelector } from 'react-redux';
 import { Badge } from '@ui/badge';
 import { serviceSelector } from '@src/stores/reducers/serviceReducer';
 import { formatCurrencyVND, formatDateVN } from '@libs/utils';
+import { useMutation } from '@tanstack/react-query';
+import bookingApi from '@apis/booking';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -42,28 +44,34 @@ export default function BookingConfirmationPage() {
     return 0;
   }, [room, numberOfNights]);
 
+  const bookingMutation = useMutation({
+    mutationFn: bookingApi.bookingRoom,
+    onSuccess: (data) => {
+      setIsBookingSuccessful(true);
+      setShowConfirmation(true);
+      console.log('Booking success:', data);
+    },
+    onError: (error) => {
+      setIsBookingSuccessful(false);
+      setShowConfirmation(true);
+      console.error('Booking failed:', error);
+    },
+  });
   const handleConfirmBooking = () => {
     if (!room) {
       alert('No room selected for booking.');
       return;
     }
 
-    // Simulate booking process with userId (assuming it's available from context/token)
-    console.log('Booking details:', {
-      // In a real app, userId would be passed from auth context
+    const bookingData = {
       roomId: room.id,
-      roomNumber: room.roomNumber,
-      roomType: room.type.name,
-      startDate: startDate,
-      endDate: endDate,
-      numberOfNights,
-      totalAmount: calculateRoomTotal,
-    });
+      startDate,
+      endDate,
+    };
 
-    // Simulate API call success/failure
-    const success = Math.random() > 0.2; // 80% success rate
-    setIsBookingSuccessful(success);
-    setShowConfirmation(true);
+    console.log('Booking details:', bookingData);
+
+    bookingMutation.mutate(bookingData);
   };
 
   const handleCloseConfirmation = () => {
@@ -90,7 +98,7 @@ export default function BookingConfirmationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 pt-20">
+    <div className="min-h-screen bg-gray-50 pb-12">
       {/* Header Section */}
       <section className="bg-gradient-to-r from-green-600 to-green-700 text-white py-12">
         <div className="container mx-auto px-4 text-center">

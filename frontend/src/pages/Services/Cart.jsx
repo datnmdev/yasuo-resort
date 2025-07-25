@@ -8,11 +8,13 @@ import { useNavigate } from 'react-router';
 import Cookies from 'js-cookie';
 import { useCart } from '@src/hooks/useCart';
 import { useMutation } from '@tanstack/react-query';
+import bookingApi from '@apis/booking';
 
 export default function Cart() {
   const cart = useSelector(cartSelector.selectCart);
+  const booking = useSelector(cartSelector.booking);
   const navigate = useNavigate();
-  const { clear } = useCart;
+  const { clear } = useCart();
 
   const totalAmount = cart.reduce((sum, item) => {
     const start = new Date(item.startDate);
@@ -21,16 +23,17 @@ export default function Cart() {
     const msPerDay = 1000 * 60 * 60 * 24;
     const numberOfDays = Math.max(
       1,
-      Math.ceil((end - start) / msPerDay) + 1 // include the end date
+      Math.ceil((end - start) / msPerDay) // include the end date
     );
 
     return sum + item.price * item.quantity * numberOfDays;
   }, 0);
 
   const { mutate: placeOrder, isPending: isBookingService } = useMutation({
-    mutationFn: () => {},
+    mutationFn: bookingApi.bookingService,
     onSuccess: () => {
       clear(); // clear the cart
+      alert('Booking services successfully!');
     },
     onError: (error) => {
       console.error('Error adding services to booking:', error);
@@ -49,7 +52,17 @@ export default function Cart() {
       return;
     }
 
-    placeOrder();
+    const bookingServiceData = {
+      bookingId: booking.id,
+      services: cart.map((s) => ({
+        serviceId: s.id,
+        quantity: s.quantity,
+        startDate: s.startDate,
+        endDate: s.endDate,
+      })),
+    };
+
+    placeOrder(bookingServiceData);
   };
 
   return (

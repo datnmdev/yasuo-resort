@@ -6,6 +6,12 @@ export default {
       params: query,
     });
   },
+  bookingRoom: (req) => {
+    return axiosInstance.post(`/booking`, req);
+  },
+  bookingService: (req) => {
+    return axiosInstance.post(`/booking/service`, req);
+  },
   createContract: (req) => {
     return axiosInstance.put(
       `/booking/${req.param.bookingId}/create-contract`

@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@ui/label';
 import { Button } from '@ui/button';
 import { Search, Users, DollarSign, XCircle, SlidersHorizontal } from 'lucide-react';
+import dayjs from 'dayjs';
 
 export function FilterCard({
   isFiltered,
@@ -160,7 +161,11 @@ export function FilterCard({
                     dateRange: { ...prev.dateRange, endDate: e.target.value },
                   }))
                 }
-                min={filterState.dateRange.startDate || new Date().toISOString().split('T')[0]}
+                min={
+                  filterState.dateRange.startDate
+                    ? dayjs(filterState.dateRange.startDate).add(1, 'day').format('YYYY-MM-DD')
+                    : dayjs().format('YYYY-MM-DD')
+                }
               />
             </div>
           </div>

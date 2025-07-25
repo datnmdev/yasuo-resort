@@ -58,7 +58,7 @@ export const cartSlice = createSlice({
     clearCart: (state) => {
       state.items = [];
       if (state.booking) {
-        localStorage.removeItem(`cart_items_${state.booking}`);
+        localStorage.removeItem(`cart_items_${state.booking.id}`);
       }
     },
   },
