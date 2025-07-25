@@ -140,28 +140,28 @@ export default function Contract() {
   return (
     <div className="max-w-7xl mx-auto px-6 pb-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">Hợp đồng đặt phòng của bạn</h1>
-        <p className="text-gray-600">Xem chi tiết các hợp đồng/đơn đặt phòng đã tạo.</p>
+        <h1 className="text-2xl font-bold mb-2">Your booking contract</h1>
+        <p className="text-gray-600">View details of created contracts/bookings.</p>
       </div>
       <div className="flex items-center gap-4 mb-4">
-        <label className="text-sm font-medium">Lọc theo trạng thái:</label>
+        <label className="text-sm font-medium">Filter by status:</label>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
           className="border rounded px-3 py-1 text-sm"
         >
-          <option value="all">Tất cả</option>
-          <option value="pending">Chờ xác nhận</option>
-          <option value="confirmed">Đã xác nhận</option>
-          <option value="cancelled">Đã hủy</option>
+          <option value="all">All</option>
+          <option value="pending">Pending confirmation</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="cancelled">Cancelled</option>
         </select>
       </div>
       {loading ? (
-        <div className="text-center text-gray-500 py-12">Đang tải dữ liệu...</div>
+        <div className="text-center text-gray-500 py-12">Loading data...</div>
       ) : error ? (
         <div className="text-center text-red-500 py-12">{error}</div>
       ) : contracts.length === 0 ? (
-        <div className="text-center text-gray-400 py-12">Bạn chưa có hợp đồng nào.</div>
+        <div className="text-center text-gray-400 py-12">You don't have any contract yet</div>
       ) : (
         <div className="space-y-8">
           {contracts
@@ -173,9 +173,9 @@ export default function Contract() {
               <div key={contract.id} className="bg-white p-6 rounded shadow">
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
                   <div>
-                    <div className="font-semibold text-lg text-teal-700">Mã Đặt phòng: #{contract.id}</div>
+                    <div className="font-semibold text-lg text-teal-700">Booking code: #{contract.id}</div>
                     <div className="text-sm text-gray-500">
-                      Ngày tạo: {new Date(contract.createdAt).toLocaleDateString()}
+                      Date created: {new Date(contract.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                   {/* status hợp đồng - span */}
@@ -197,33 +197,33 @@ export default function Contract() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                   <div>
-                    <div className="font-medium mb-1">Khách hàng</div>
+                    <div className="font-medium mb-1">Customer</div>
                     <div className="text-gray-700">{contract.user?.name}</div>
                     <div className="text-gray-500 text-sm">Email: {contract.user?.email}</div>
-                    <div className="text-gray-500 text-sm">SĐT: {contract.user?.phone}</div>
-                    <div className="text-gray-500 text-sm">CCCD: {contract.user?.cccd}</div>
+                    <div className="text-gray-500 text-sm">Phone: {contract.user?.phone}</div>
+                    <div className="text-gray-500 text-sm">Citizen identification: {contract.user?.cccd}</div>
                   </div>
                   <div>
-                    <div className="font-medium mb-1">Phòng</div>
+                    <div className="font-medium mb-1">Room</div>
                     <div className="text-gray-700">
                       {contract.room?.roomNumber} ({contract.room?.type?.name})
                     </div>
-                    <div className="text-gray-500 text-sm">Ngày nhận: {contract.startDate}</div>
-                    <div className="text-gray-500 text-sm">Ngày trả: {contract.endDate}</div>
-                    <div className="text-gray-500 text-sm">Giá phòng: {formatCurrencyUSD(contract.roomPrice)}</div>
-                    <div className="text-gray-500 text-sm">Tổng tiền: {formatCurrencyUSD(contract.totalPrice)}</div>
+                    <div className="text-gray-500 text-sm">Date in: {contract.startDate}</div>
+                    <div className="text-gray-500 text-sm">Date out: {contract.endDate}</div>
+                    <div className="text-gray-500 text-sm">Room's price: {formatCurrencyUSD(contract.roomPrice)}</div>
+                    <div className="text-gray-500 text-sm">Total: {formatCurrencyUSD(contract.totalPrice)}</div>
                   </div>
                 </div>
-                <div className="mb-2 font-medium">Dịch vụ kèm theo</div>
+                <div className="mb-2 font-medium">Additional services</div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm border rounded">
                     <thead>
                       <tr className="bg-gray-100">
-                        <th className="px-3 py-2 text-left">Tên dịch vụ</th>
-                        <th className="px-3 py-2 text-left">Số người</th>
-                        <th className="px-3 py-2 text-left">Ngày bắt đầu</th>
-                        <th className="px-3 py-2 text-left">Ngày kết thúc</th>
-                        <th className="px-3 py-2 text-left">Giá</th>
+                        <th className="px-3 py-2 text-left">Service name</th>
+                        <th className="px-3 py-2 text-left">Number of people</th>
+                        <th className="px-3 py-2 text-left">Start date</th>
+                        <th className="px-3 py-2 text-left">End Date</th>
+                        <th className="px-3 py-2 text-left">Price</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -240,7 +240,7 @@ export default function Contract() {
                       ) : (
                         <tr>
                           <td colSpan={5} className="px-3 py-2 text-center text-gray-400">
-                            Không có dịch vụ nào
+                            No services yet
                           </td>
                         </tr>
                       )}
@@ -249,11 +249,11 @@ export default function Contract() {
                 </div>
                 <div className="mt-4 space-y-2">
                   <div className="text-sm text-gray-500">
-                    Trạng thái hợp đồng: {contract.contract ? 'Đã tạo' : 'Chưa tạo'}
+                    Status of contract: {contract.contract ? 'Created' : 'Not created'}
                   </div>
 
                   {contract.status === 'cancelled' ? (
-                    <div className="text-sm font-medium text-red-600">❌ Hợp đồng đã bị hủy</div>
+                    <div className="text-sm font-medium text-red-600">❌ The contract has been cancelled.</div>
                   ) : (
                     <>
                       {contract.contract?.contractUrl && (
@@ -264,7 +264,7 @@ export default function Contract() {
                           }}
                           className="inline-flex items-center px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 rounded text-sm"
                         >
-                          Xem hợp đồng (PDF)
+                          View contract (PDF)
                         </button>
                       )}
 
@@ -275,32 +275,44 @@ export default function Contract() {
                           }`}
                         >
                           {contract.contract.signedByUser
-                            ? '✅ Hợp đồng đã được ký bởi bạn'
-                            : '🕐 Hợp đồng đang chờ bạn ký'}
+                            ? '✅ The contract has been signed by you'
+                            : '🕐 Contract is waiting for you to sign'}
                         </div>
                       )}
 
-                      {contract.contract && !contract.contract.signedByUser && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <button
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                            onClick={() => {
-                              setBookingToSign(contract);
-                              setOpenSignModal(true);
-                            }}
-                          >
-                            ✍️ Ký hợp đồng
-                          </button>
-                          <button
-                            className="inline-flex items-center px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 rounded text-sm"
-                            onClick={() => {
-                              setBookingToCancel(contract);
-                              setIsOpenCancelBooking(true);
-                            }}
-                          >
-                            🛑 Hủy hợp đồng
-                          </button>
-                        </div>
+                      {contract.contract ? (
+                        !contract.contract.signedByUser && (
+                          <>
+                            <button
+                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                              onClick={() => {
+                                setBookingToSign(contract);
+                                setOpenSignModal(true);
+                              }}
+                            >
+                              ✍️ Sign the contract
+                            </button>
+                            <button
+                              className="inline-flex items-center px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 rounded text-sm"
+                              onClick={() => {
+                                setBookingToCancel(contract);
+                                setIsOpenCancelBooking(true);
+                              }}
+                            >
+                              🛑 Cancel contract
+                            </button>
+                          </>
+                        )
+                      ) : (
+                        <button
+                          className="inline-flex items-center px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 rounded text-sm"
+                          onClick={() => {
+                            setBookingToCancel(contract);
+                            setIsOpenCancelBooking(true);
+                          }}
+                        >
+                          🛑 Cancel contract
+                        </button>
                       )}
                     </>
                   )}
@@ -310,7 +322,7 @@ export default function Contract() {
         </div>
       )}
       <Modal
-        title="Xem Hợp Đồng"
+        title="View contract"
         open={isOpenPdfModal}
         onCancel={() => setOpenPdfModal(false)}
         footer={null}
@@ -320,16 +332,16 @@ export default function Contract() {
       </Modal>
 
       <Modal
-        title="Hủy hợp đồng"
+        title="Cancel contract"
         open={isOpenCancelBooking}
         onCancel={() => setIsOpenCancelBooking(false)}
         footer={null}
         width={600}
       >
-        <div>Bạn có chắc muốn hủy hợp đồng</div>
+        <div className="mb-2">Are you sure you want to cancel the contract?</div>
         <div className="">
           <Button type="primary" onClick={handleCancelBooking}>
-            xác nhận
+            Confirm
           </Button>
         </div>
       </Modal>
@@ -338,9 +350,9 @@ export default function Contract() {
         <canvas ref={canvasRef} width={600} height={300} className="border rounded"></canvas>
 
         <div className="flex justify-between mt-4">
-          <Button onClick={() => signaturePadRef.current.clear()}>Tái kí</Button>
+          <Button onClick={() => signaturePadRef.current.clear()}>Re-sign</Button>
           <Button type="primary" onClick={handleSignContract}>
-            Gửi chữ kí
+            Send signature
           </Button>
         </div>
       </Modal>
