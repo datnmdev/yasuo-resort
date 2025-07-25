@@ -67,15 +67,7 @@ export default function BookingConfirmationPage() {
     }
 
     const bookingData = {
-    const bookingData = {
       roomId: room.id,
-      startDate,
-      endDate,
-    };
-
-    console.log('Booking details:', bookingData);
-
-    bookingMutation.mutate(bookingData);
       startDate,
       endDate,
     };
@@ -110,8 +102,7 @@ export default function BookingConfirmationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12">
-    <div className="min-h-screen bg-gray-50 pb-12">
+    <div className="min-h-screen bg-gray-50 py-12 pt-20">
       {/* Header Section */}
       <section className="bg-gradient-to-r from-green-600 to-green-700 text-white py-12">
         <div className="container mx-auto px-4 text-center">

@@ -119,22 +119,6 @@ const RoomPage = () => {
     setCurrentPage(pageNumber);
   };
 
-  const handleFiltersChange = (updater) => {
-    setFilterState((prev) => {
-      const newState = typeof updater === 'function' ? updater(prev) : updater;
-      return newState;
-    });
-    setCurrentPage(1); // Reset trang về 1 khi filter thay đổi
-  };
-
-  const handleFiltersChange = (updater) => {
-    setFilterState((prev) => {
-      const newState = typeof updater === 'function' ? updater(prev) : updater;
-      return newState;
-    });
-    setCurrentPage(1); // Reset trang về 1 khi filter thay đổi
-  };
-
   const handleApplyFilters = () => {
     if (!filterState.dateRange.startDate || !filterState.dateRange.endDate) {
       alert('Please select a date range.');
@@ -193,8 +177,7 @@ const RoomPage = () => {
             </motion.div>
             <FilterCard
               filterState={filterState}
-              setFilterState={handleFiltersChange}
-              setFilterState={handleFiltersChange}
+              setFilterState={setFilterState}
               handleApplyFilters={handleApplyFilters}
               handleClearFilters={handleClearFilters}
               roomTypes={roomTypes}
@@ -211,8 +194,7 @@ const RoomPage = () => {
               <FilterCard
                 isFiltered={isFiltered}
                 filterState={filterState}
-                setFilterState={handleFiltersChange}
-                setFilterState={handleFiltersChange}
+                setFilterState={setFilterState}
                 handleApplyFilters={handleApplyFilters}
                 handleClearFilters={handleClearFilters}
                 roomTypes={roomTypes}
@@ -246,8 +228,7 @@ const RoomPage = () => {
                             }}
                           />
                           <div className="absolute top-3 left-3">
-                            <Badge className="bg-teal-600 hover:bg-teal-600 text-white">Room {room.roomNumber}</Badge>
-                            <Badge className="bg-teal-600 hover:bg-teal-600 text-white">Room {room.roomNumber}</Badge>
+                            <Badge className="bg-green-600 hover:bg-green-600 text-white">Room {room.roomNumber}</Badge>
                           </div>
                           <div className="absolute top-3 right-3">
                             <Badge variant="secondary" className="bg-white/90 text-gray-700">
@@ -267,8 +248,7 @@ const RoomPage = () => {
 
                           <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
                             <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4 text-teal-600" />
-                              <Users className="w-4 h-4 text-teal-600" />
+                              <Users className="w-4 h-4 text-green-600" />
                               <span>{room.maxPeople} Guests</span>
                             </div>
                           </div>
@@ -297,8 +277,7 @@ const RoomPage = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1 border-teal-600 text-teal-600 hover:bg-teal-50 bg-transparent"
-                              className="flex-1 border-teal-600 text-teal-600 hover:bg-teal-50 bg-transparent"
+                              className="flex-1 border-green-600 text-green-600 hover:bg-green-50 bg-transparent"
                               onClick={() => setSelectedRoom(room)}
                             >
                               <Eye className="w-4 h-4 mr-2" />
@@ -306,8 +285,7 @@ const RoomPage = () => {
                             </Button>
                             <Button
                               size="sm"
-                              className="flex-1 bg-teal-600 hover:bg-teal-700"
-                              className="flex-1 bg-teal-600 hover:bg-teal-700"
+                              className="flex-1 bg-green-600 hover:bg-green-700"
                               onClick={() => handleBookRoom(room)}
                             >
                               Book Room
