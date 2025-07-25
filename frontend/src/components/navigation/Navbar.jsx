@@ -9,8 +9,8 @@ const Navbar = () => {
   ];
 
   return (
-    <div className="mb-6 text-center">
-      <ul className="max-w-[600px] mx-auto flex justify-between items-center">
+    <div className="mb-6 text-center bg-gray-200">
+      <ul className="max-w-[600px] mx-auto flex justify-between items-center pb-3">
         {list.map((item) => (
           <li key={item.name}>
             <Link

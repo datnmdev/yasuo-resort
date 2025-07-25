@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer className="bg-gray-800 text-white">
       <div className="container mx-auto px-36 pt-12">
         <div className="grid md:grid-cols-3 gap-24">
           {/* Company Info */}

@@ -23,6 +23,10 @@ html {
 
 body {
   background-color: var(--paper-white);
+  border: 15px solid var(--deep-teal);
+  margin: 0;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 a {

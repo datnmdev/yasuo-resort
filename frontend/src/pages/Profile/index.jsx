@@ -75,7 +75,7 @@ const Profile = () => {
         <div className="flex justify-center p-6 bg-gray-50 min-h-screen">
             <Card
                 style={{ width: 700 }}
-                cover={<div className="h-32 bg-blue-500 rounded-t-md"></div>}
+                cover={<div className="h-30 bg-blue-500 rounded-t-md" style={{ backgroundColor: "rgba(13, 88, 77, 0.7)" }}></div>}
                 actions={[
                     <Button type="primary" onClick={handleSaveInfo}>Lưu</Button>
                 ]}
@@ -84,7 +84,7 @@ const Profile = () => {
                     showUploadList={false}
                     beforeUpload={handleUploadAvatar}
                 >
-                    <div className="flex justify-center -mt-14 mb-4 cursor-pointer">
+                    <div className="flex justify-center -mt-30 mb-4 cursor-pointer">
                         <Avatar
                             size={120}
                             src={userInfo?.avatar ? `${import.meta.env.VITE_API_BASE_URL}/${userInfo.avatar}` : undefined}
