@@ -1,6 +1,6 @@
 import { Star, Gift, Sparkles, Users, Calendar } from 'lucide-react';
 import { useCart } from '@src/hooks/useCart';
-import { formatCurrencyVND } from '@src/libs/utils';
+import { formatCurrencyUSD } from '@src/libs/utils';
 import { Label } from '@ui/label';
 import { Input } from '@ui/input';
 import { useState } from 'react';
@@ -44,7 +44,7 @@ export default function ServiceCard({ service }) {
           <p className="text-sm text-gray-600 mt-1">{description}</p>
         </div>
         <div className="text-right">
-          <p className="font-bold text-teal-700 text-lg">{formatCurrencyVND(price)}/person/day</p>
+          <p className="font-bold text-teal-700 text-lg">{formatCurrencyUSD(price)}/person/day</p>
           {!isBooking && (
             <Button
               size="sm"

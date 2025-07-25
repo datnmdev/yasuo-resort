@@ -73,8 +73,8 @@ export function FilterCard({
                 id="num-guests"
                 type="number"
                 placeholder="Guests"
-                value={filterState.numGuests}
-                onChange={(e) => setFilterState((prev) => ({ ...prev, numGuests: e.target.value }))}
+                value={filterState.maxPeople}
+                onChange={(e) => setFilterState((prev) => ({ ...prev, maxPeople: e.target.value }))}
                 className="pl-10"
                 min="1"
               />
@@ -143,7 +143,7 @@ export function FilterCard({
                     dateRange: { ...prev.dateRange, startDate: e.target.value },
                   }))
                 }
-                min={new Date().toISOString().split('T')[0]}
+                min={dayjs().add(1, 'day').format('YYYY-MM-DD')}
                 className="flex-1"
               />
             </div>

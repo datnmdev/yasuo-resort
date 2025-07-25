@@ -9,7 +9,7 @@ import { roomTypeSelector } from '@src/stores/reducers/roomTypeReducer';
 import { useSelector } from 'react-redux';
 import { Badge } from '@ui/badge';
 import { serviceSelector } from '@src/stores/reducers/serviceReducer';
-import { formatCurrencyVND, formatDateVN } from '@libs/utils';
+import { formatCurrencyUSD, formatDateVN } from '@libs/utils';
 import { useMutation } from '@tanstack/react-query';
 import bookingApi from '@apis/booking';
 
@@ -24,6 +24,7 @@ export default function BookingConfirmationPage() {
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isBookingSuccessful, setIsBookingSuccessful] = useState(false);
+  const [bookingMessage, setBookingMessage] = useState('');
 
   const numberOfNights = useMemo(() => {
     if (startDate && endDate) {
@@ -49,11 +50,13 @@ export default function BookingConfirmationPage() {
     onSuccess: (data) => {
       setIsBookingSuccessful(true);
       setShowConfirmation(true);
+      setBookingMessage('Your room has been successfully booked. A confirmation will be sent to you soon.');
       console.log('Booking success:', data);
     },
     onError: (error) => {
       setIsBookingSuccessful(false);
       setShowConfirmation(true);
+      setBookingMessage(error.response.data.error.message);
       console.error('Booking failed:', error);
     },
   });
@@ -64,7 +67,15 @@ export default function BookingConfirmationPage() {
     }
 
     const bookingData = {
+    const bookingData = {
       roomId: room.id,
+      startDate,
+      endDate,
+    };
+
+    console.log('Booking details:', bookingData);
+
+    bookingMutation.mutate(bookingData);
       startDate,
       endDate,
     };
@@ -77,7 +88,8 @@ export default function BookingConfirmationPage() {
   const handleCloseConfirmation = () => {
     setShowConfirmation(false);
     if (isBookingSuccessful) {
-      navigate('/'); // Redirect to home or a success page
+      navigate('/');
+      window.scrollTo(0, 0);
     }
   };
 
@@ -98,6 +110,7 @@ export default function BookingConfirmationPage() {
   }
 
   return (
+    <div className="min-h-screen bg-gray-50 pb-12">
     <div className="min-h-screen bg-gray-50 pb-12">
       {/* Header Section */}
       <section className="bg-gradient-to-r from-green-600 to-green-700 text-white py-12">
@@ -168,11 +181,11 @@ export default function BookingConfirmationPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center text-gray-700">
                 <span>Room Rate ({numberOfNights} nights)</span>
-                <span className="font-semibold">{formatCurrencyVND(calculateRoomTotal)}</span>
+                <span className="font-semibold">{formatCurrencyUSD(calculateRoomTotal)}</span>
               </div>
               <div className="flex justify-between items-center text-xl font-bold text-gray-900 pt-4 border-t-2 border-gray-200 mt-4">
                 <span>Total Amount</span>
-                <span className="text-green-600">{formatCurrencyVND(calculateRoomTotal)}</span>
+                <span className="text-green-600">{formatCurrencyUSD(calculateRoomTotal)}</span>
               </div>
             </div>
 
@@ -207,11 +220,7 @@ export default function BookingConfirmationPage() {
             <DialogTitle className="text-2xl font-bold">
               {isBookingSuccessful ? 'Booking Confirmed!' : 'Booking Failed'}
             </DialogTitle>
-            <DialogDescription className="text-gray-600">
-              {isBookingSuccessful
-                ? 'Your room has been successfully booked. A confirmation will be sent to you soon.'
-                : 'There was an issue processing your booking. Please try again or contact support.'}
-            </DialogDescription>
+            <DialogDescription className="text-gray-600">{bookingMessage}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-center">
             <Button onClick={handleCloseConfirmation} className="bg-green-600 hover:bg-green-700">

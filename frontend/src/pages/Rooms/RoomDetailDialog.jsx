@@ -1,7 +1,7 @@
 import { Calendar, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { Button } from '@ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@ui/dialog';
-import { formatCurrencyVND } from '@libs/utils';
+import { formatCurrencyUSD } from '@libs/utils';
 import { useState } from 'react';
 import { Badge } from '@ui/badge';
 
@@ -96,7 +96,7 @@ export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom
 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">Room Rate</h3>
-                  <div className="text-2xl font-bold text-green-600">{formatCurrencyVND(selectedRoom.price)}/night</div>
+                  <div className="text-2xl font-bold text-green-600">{formatCurrencyUSD(selectedRoom.price)}/night</div>
                 </div>
 
                 <div>

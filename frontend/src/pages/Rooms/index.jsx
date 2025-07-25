@@ -17,7 +17,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@ui/pagination';
-import { formatCurrencyVND } from '@libs/utils';
+import { formatCurrencyUSD } from '@libs/utils';
 import { useScrollDown } from '@src/hooks/useScrollDown';
 import { FilterCard } from './FilterCard';
 import { RoomDetailDialog } from './RoomDetailDialog';
@@ -127,6 +127,14 @@ const RoomPage = () => {
     setCurrentPage(1); // Reset trang về 1 khi filter thay đổi
   };
 
+  const handleFiltersChange = (updater) => {
+    setFilterState((prev) => {
+      const newState = typeof updater === 'function' ? updater(prev) : updater;
+      return newState;
+    });
+    setCurrentPage(1); // Reset trang về 1 khi filter thay đổi
+  };
+
   const handleApplyFilters = () => {
     if (!filterState.dateRange.startDate || !filterState.dateRange.endDate) {
       alert('Please select a date range.');
@@ -150,7 +158,6 @@ const RoomPage = () => {
         endDate: '',
       },
     });
-    setIsFiltered(false);
     setCurrentPage(1);
   };
 
@@ -187,6 +194,7 @@ const RoomPage = () => {
             <FilterCard
               filterState={filterState}
               setFilterState={handleFiltersChange}
+              setFilterState={handleFiltersChange}
               handleApplyFilters={handleApplyFilters}
               handleClearFilters={handleClearFilters}
               roomTypes={roomTypes}
@@ -203,6 +211,7 @@ const RoomPage = () => {
               <FilterCard
                 isFiltered={isFiltered}
                 filterState={filterState}
+                setFilterState={handleFiltersChange}
                 setFilterState={handleFiltersChange}
                 handleApplyFilters={handleApplyFilters}
                 handleClearFilters={handleClearFilters}
@@ -225,7 +234,7 @@ const RoomPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {rooms.map((room, index) => (
                     <motion.div key={room.id} {...fadeInUp} transition={{ delay: index * 0.2 }}>
-                      <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 group bg-white">
+                      <Card className="flex flex-col overflow-hidden hover:shadow-xl transition-all duration-300 group h-full bg-white">
                         <div className="relative">
                           <img
                             src={`${baseUrl}/${room.media[0]?.path || 'placeholder.svg'}`}
@@ -238,6 +247,7 @@ const RoomPage = () => {
                           />
                           <div className="absolute top-3 left-3">
                             <Badge className="bg-teal-600 hover:bg-teal-600 text-white">Room {room.roomNumber}</Badge>
+                            <Badge className="bg-teal-600 hover:bg-teal-600 text-white">Room {room.roomNumber}</Badge>
                           </div>
                           <div className="absolute top-3 right-3">
                             <Badge variant="secondary" className="bg-white/90 text-gray-700">
@@ -246,19 +256,18 @@ const RoomPage = () => {
                           </div>
                         </div>
 
-                        <CardContent className="p-4">
-                          <div className="mb-3">
-                            <h3 className="text-xl font-bold text-gray-800 mb-1">
-                              {room.type.name} - Room {room.roomNumber}
-                            </h3>
-                            <div
-                              className="text-sm text-gray-600 line-clamp-2"
-                              dangerouslySetInnerHTML={{ __html: room.description }}
-                            ></div>
-                          </div>
+                        <CardContent className="p-4 flex-1 flex flex-col">
+                          <h3 className="text-xl font-bold text-gray-800 mb-3">
+                            {room.type.name} - Room {room.roomNumber}
+                          </h3>
+                          <div
+                            className="text-sm text-gray-600 line-clamp-2 flex-1"
+                            dangerouslySetInnerHTML={{ __html: room.description }}
+                          ></div>
 
                           <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
                             <div className="flex items-center gap-1">
+                              <Users className="w-4 h-4 text-teal-600" />
                               <Users className="w-4 h-4 text-teal-600" />
                               <span>{room.maxPeople} Guests</span>
                             </div>
@@ -281,13 +290,14 @@ const RoomPage = () => {
                           </div>
 
                           <div className="text-2xl font-bold text-teal-600 mb-4">
-                            {formatCurrencyVND(room.price)}/night
+                            {formatCurrencyUSD(room.price)}/night
                           </div>
 
                           <div className="flex gap-2">
                             <Button
                               variant="outline"
                               size="sm"
+                              className="flex-1 border-teal-600 text-teal-600 hover:bg-teal-50 bg-transparent"
                               className="flex-1 border-teal-600 text-teal-600 hover:bg-teal-50 bg-transparent"
                               onClick={() => setSelectedRoom(room)}
                             >
@@ -296,6 +306,7 @@ const RoomPage = () => {
                             </Button>
                             <Button
                               size="sm"
+                              className="flex-1 bg-teal-600 hover:bg-teal-700"
                               className="flex-1 bg-teal-600 hover:bg-teal-700"
                               onClick={() => handleBookRoom(room)}
                             >

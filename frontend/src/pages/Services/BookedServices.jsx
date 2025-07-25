@@ -1,4 +1,4 @@
-import { formatCurrencyVND, formatDateVN } from '@libs/utils';
+import { formatCurrencyUSD, formatDateVN } from '@libs/utils';
 import { useCart } from '@src/hooks/useCart';
 import { Card, CardContent } from '@ui/card';
 
@@ -37,7 +37,7 @@ export default function BookedServices() {
                   </div>
                 </div>
               </div>
-              <div className="text-right font-medium">{formatCurrencyVND(total)}</div>
+              <div className="text-right font-medium">{formatCurrencyUSD(total)}</div>
             </div>
           );
         })}

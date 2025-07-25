@@ -1,4 +1,4 @@
-import { formatCurrencyVND, formatDateVN } from '@libs/utils';
+import { formatCurrencyUSD, formatDateVN } from '@libs/utils';
 import { useCart } from '@src/hooks/useCart';
 import { Button } from '@ui/button';
 import { X } from 'lucide-react';
@@ -18,7 +18,7 @@ export default function CartItems({ service }) {
         )}`}</p>
       </div>
       <div className="flex items-center gap-2">
-        <span className="font-semibold text-gray-800">{formatCurrencyVND(itemTotal)}</span>
+        <span className="font-semibold text-gray-800">{formatCurrencyUSD(itemTotal)}</span>
         <Button size="icon" onClick={() => remove(service.uuid)} className="w-8 h-8 text-red-500 hover:bg-red-50">
           <X className="w-4 h-4" />
           <span className="sr-only">Remove</span>

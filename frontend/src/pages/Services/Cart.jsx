@@ -1,5 +1,5 @@
 import { ShoppingCart } from 'lucide-react';
-import { formatCurrencyVND } from '../../libs/utils';
+import { formatCurrencyUSD } from '../../libs/utils';
 import CartItems from './CartItems';
 import { useSelector } from 'react-redux';
 import { cartSelector } from '@src/stores/reducers/cartReducer';
@@ -90,7 +90,7 @@ export default function Cart() {
         <div className="border-b border-gray-300 my-4"></div>
         <div className="px-4 py-2 bg-teal-100/80 rounded-md flex justify-between font-semibold">
           <h1>Total:</h1>
-          <p className="text-teal-700">{formatCurrencyVND(totalAmount)}</p>
+          <p className="text-teal-700">{formatCurrencyUSD(totalAmount)}</p>
         </div>
         <Button
           className="mt-4 w-full bg-teal-600 hover:bg-teal-700 text-white h-12 transition-colors duration-200"
