@@ -41,6 +41,10 @@ export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom
                     src={`${baseUrl}/${selectedRoom.media[0]?.path || 'placeholder.svg'}`}
                     alt={`Room ${selectedRoom.roomNumber}`}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null; // tránh loop vô hạn
+                      e.target.src = '/placeholder.svg';
+                    }}
                   />
                   {selectedRoom.media.length > 1 && (
                     <>

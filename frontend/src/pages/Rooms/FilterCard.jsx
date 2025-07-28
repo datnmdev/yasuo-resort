@@ -3,18 +3,14 @@ import { Input } from '@ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui/select';
 import { Label } from '@ui/label';
 import { Button } from '@ui/button';
-import { Search, Users, DollarSign, XCircle, SlidersHorizontal } from 'lucide-react';
+import { Search, Users, XCircle, SlidersHorizontal } from 'lucide-react';
 import dayjs from 'dayjs';
+import { Slider } from 'antd';
 
-export function FilterCard({
-  isFiltered,
-  filterState,
-  setFilterState,
-  handleApplyFilters,
-  handleClearFilters,
-  roomTypes,
-  className,
-}) {
+const MIN = 0;
+const MAX = 50000;
+
+export function FilterCard({ filterState, setFilterState, handleClearFilters, roomTypes, className }) {
   return (
     <Card className={`p-6 border-none shadow-sm bg-white/50 ${className}`}>
       <CardHeader className="p-0 mb-6">
@@ -82,49 +78,30 @@ export function FilterCard({
           </div>
 
           {/* Price Range */}
-          <div>
-            <Label htmlFor="min-price" className="mb-2 block">
-              Min Price
-            </Label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                id="min-price"
-                type="number"
-                placeholder="Min"
-                value={filterState.priceRange.minPrice}
-                onChange={(e) =>
-                  setFilterState((prev) => ({
-                    ...prev,
-                    priceRange: { ...prev.priceRange, minPrice: e.target.value },
-                  }))
-                }
-                className="pl-10"
-                min="0"
-              />
+          <div className="col-span-2">
+            <Label className="mb-2 block">Khoảng giá</Label>
+
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+              <span>{filterState.priceRange.minPrice || MIN}₫</span>
+              <span>{filterState.priceRange.maxPrice || MAX}₫</span>
             </div>
-          </div>
-          <div>
-            <Label htmlFor="max-price" className="mb-2 block">
-              Max Price
-            </Label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                id="max-price"
-                type="number"
-                placeholder="Max"
-                value={filterState.priceRange.maxPrice}
-                onChange={(e) =>
-                  setFilterState((prev) => ({
-                    ...prev,
-                    priceRange: { ...prev.priceRange, maxPrice: e.target.value },
-                  }))
-                }
-                className="pl-10"
-                min="0"
-              />
-            </div>
+
+            <Slider
+              range
+              min={MIN}
+              max={MAX}
+              step={100}
+              value={[Number(filterState.priceRange.minPrice || MIN), Number(filterState.priceRange.maxPrice || MAX)]}
+              onChange={([min, max]) =>
+                setFilterState((prev) => ({
+                  ...prev,
+                  priceRange: {
+                    minPrice: String(min),
+                    maxPrice: String(max),
+                  },
+                }))
+              }
+            />
           </div>
 
           {/* Date Range */}
@@ -172,11 +149,6 @@ export function FilterCard({
 
           {/* Buttons */}
           <div className="flex gap-4 col-span-full">
-            {!isFiltered && (
-              <Button onClick={handleApplyFilters} className="flex-1 bg-teal-700 hover:bg-teal-700/90" size="lg">
-                Apply Filters
-              </Button>
-            )}
             <Button onClick={handleClearFilters} variant="outline" className="flex-1" size="lg">
               <XCircle className="w-4 h-4 mr-2" />
               Clear Filters

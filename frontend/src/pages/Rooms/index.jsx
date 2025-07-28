@@ -48,12 +48,10 @@ const RoomPage = () => {
 
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isFiltered, setIsFiltered] = useState(false);
   const limit = 4;
 
   // Get danh sách loại phòng
   const roomTypes = useSelector(roomTypeSelector.selectAll);
-  console.log(roomTypes);
 
   useEffect(() => {
     const fetchRoomTypes = async () => {
@@ -86,29 +84,32 @@ const RoomPage = () => {
     if (services.length === 0) fetchServices();
   }, [dispatch, services.length]);
 
-  // Lấy danh sách phòng đã lọc
-  const { data: roomData } = useQuery({
+  const { data: roomData, isLoading } = useQuery({
     queryKey: ['rooms', filterState, currentPage],
-    queryFn: () =>
-      roomApi.getRooms({
+    queryFn: () => {
+      const params = {
         page: currentPage,
         limit,
         ...(filterState.keyword && { keyword: filterState.keyword }),
-        ...(filterState.maxPeople && { maxPeople: Number(filterState.maxPeople) }),
-        ...(filterState.typeId && { typeId: Number(filterState.typeId) }),
-        ...(filterState.priceRange.minPrice &&
-          filterState.priceRange.maxPrice && {
-            priceRange: {
-              minPrice: Number(filterState.priceRange.minPrice),
-              maxPrice: Number(filterState.priceRange.maxPrice),
-            },
-          }),
-        dateRange: {
-          startDate: filterState.dateRange.startDate,
-          endDate: filterState.dateRange.endDate,
-        },
-      }),
-    enabled: isFiltered,
+        ...(filterState.maxPeople && { maxPeople: +filterState.maxPeople }),
+        ...(filterState.typeId && { typeId: +filterState.typeId }),
+      };
+
+      const { minPrice, maxPrice } = filterState.priceRange;
+      if (minPrice !== '' || maxPrice !== '') {
+        params.priceRange = {};
+        if (minPrice !== '') params.priceRange.minPrice = +minPrice;
+        if (maxPrice !== '') params.priceRange.maxPrice = +maxPrice;
+      }
+
+      const { startDate, endDate } = filterState.dateRange;
+      if (startDate && endDate) {
+        params.dateRange = { startDate, endDate };
+      }
+
+      console.log(params);
+      return roomApi.getRooms(params);
+    },
     keepPreviousData: true,
   });
 
@@ -120,11 +121,6 @@ const RoomPage = () => {
   };
 
   const handleApplyFilters = () => {
-    if (!filterState.dateRange.startDate || !filterState.dateRange.endDate) {
-      alert('Please select a date range.');
-      return;
-    }
-    setIsFiltered(true);
     setCurrentPage(1);
   };
 
@@ -148,7 +144,7 @@ const RoomPage = () => {
   const fadeInUp = {
     initial: { y: 40, opacity: 0 },
     animate: { y: 0, opacity: 1 },
-    transition: { duration: 1 },
+    transition: { duration: 0.5 },
   };
 
   const handleBookRoom = (room) => {
@@ -159,190 +155,145 @@ const RoomPage = () => {
 
   return (
     <section id="rooms" className="min-h-screen relative py-8">
-      {!isFiltered ? (
-        // Initial View: Hero Image + Filters
-        <>
-          <img
-            src="/homepage-image-6.jpg"
-            alt="Luxurious Resort View"
-            className="absolute inset-0 w-full h-full object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-black/30"></div> {/* Darker Overlay */}
-          <div className="relative z-10 container mx-auto px-4 flex flex-col items-center">
-            <motion.div className="text-center text-white mb-6" {...fadeInUp}>
-              <h2 className="text-6xl font-extrabold mb-4 drop-shadow-lg">Your Dream Stay Awaits</h2>
-              <p className="text-lg md:text-xl text-gray-200 drop-shadow-md">
-                Find the perfect room for your next unforgettable vacation.
-              </p>
-            </motion.div>
+      <AnimatePresence mode="wait">
+        <div className="container mx-auto px-20 grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-12">
+          {/* Filters Section (Always visible, now in a column) */}
+          <aside className="lg:col-span-1 sticky top-12 self-start">
             <FilterCard
               filterState={filterState}
               setFilterState={setFilterState}
               handleApplyFilters={handleApplyFilters}
               handleClearFilters={handleClearFilters}
               roomTypes={roomTypes}
-              className="w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-xl p-8 shadow-2xl border border-gray-100" // Enhanced styling for initial view
+              className="shadow-sm"
             />
-          </div>
-        </>
-      ) : (
-        // Filtered View: Horizontal Layout (Filters on left, Results on right)
-        <AnimatePresence mode="wait">
-          <div className="container mx-auto px-20 grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-12">
-            {/* Filters Section (Always visible, now in a column) */}
-            <aside className="lg:col-span-1">
-              <FilterCard
-                isFiltered={isFiltered}
-                filterState={filterState}
-                setFilterState={setFilterState}
-                handleApplyFilters={handleApplyFilters}
-                handleClearFilters={handleClearFilters}
-                roomTypes={roomTypes}
-                className="shadow-sm"
-              />
-            </aside>
+          </aside>
 
-            {/* Results Section */}
-            <main className="lg:col-span-1">
-              {rooms.length === 0 ? (
-                <motion.div className="text-center py-16" {...fadeInUp}>
-                  <div className="text-gray-400 mb-4">
-                    <MapPin className="w-16 h-16 mx-auto" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No rooms found</h3>
-                  <p className="text-gray-500">Please try again with different search terms or filters</p>
-                </motion.div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {rooms.map((room, index) => (
-                    <motion.div key={room.id} {...fadeInUp} transition={{ delay: index * 0.2 }}>
-                      <Card className="flex flex-col overflow-hidden hover:shadow-xl transition-all duration-300 group h-full bg-white">
-                        <div className="relative">
-                          <img
-                            src={`${baseUrl}/${room.media[0]?.path || 'placeholder.svg'}`}
-                            alt={`Room ${room.roomNumber}`}
-                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                            onError={(e) => {
-                              e.target.onerror = null; // tránh loop vô hạn
-                              e.target.src = '/placeholder.svg';
-                            }}
-                          />
-                          <div className="absolute top-3 left-3">
-                            <Badge className="bg-green-600 hover:bg-green-600 text-white">Room {room.roomNumber}</Badge>
-                          </div>
-                          <div className="absolute top-3 right-3">
-                            <Badge variant="secondary" className="bg-white/90 text-gray-700">
-                              {room.type.name}
-                            </Badge>
+          {/* Results Section */}
+          <main className="lg:col-span-1">
+            {isLoading ? (
+              <></>
+            ) : rooms.length === 0 ? (
+              <motion.div className="text-center py-16" {...fadeInUp}>
+                <div className="text-gray-400 mb-4">
+                  <MapPin className="w-16 h-16 mx-auto" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No rooms found</h3>
+                <p className="text-gray-500">Please try again with different search terms or filters</p>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {rooms.map((room, index) => (
+                  <motion.div key={room.id} {...fadeInUp} transition={{ delay: index * 0.2 }}>
+                    <Card className="flex flex-col overflow-hidden hover:shadow-xl transition-all duration-300 group h-full bg-white">
+                      <div className="relative">
+                        <img
+                          src={`${baseUrl}/${room.media[0]?.path || 'placeholder.svg'}`}
+                          alt={`Room ${room.roomNumber}`}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            e.target.onerror = null; // tránh loop vô hạn
+                            e.target.src = '/placeholder.svg';
+                          }}
+                        />
+                        <div className="absolute top-3 left-3">
+                          <Badge className="bg-green-600 hover:bg-green-600 text-white">Room {room.roomNumber}</Badge>
+                        </div>
+                        <div className="absolute top-3 right-3">
+                          <Badge variant="secondary" className="bg-white/90 text-gray-700">
+                            {room.type.name}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <CardContent className="p-4 flex-1 flex flex-col">
+                        <h3 className="text-xl font-bold text-gray-800 mb-3">
+                          {room.type.name} - Room {room.roomNumber}
+                        </h3>
+                        <div
+                          className="text-sm text-gray-600 line-clamp-2 flex-1"
+                          dangerouslySetInnerHTML={{ __html: room.description }}
+                        ></div>
+
+                        <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4 text-green-600" />
+                            <span>{room.maxPeople} Guests</span>
                           </div>
                         </div>
 
-                        <CardContent className="p-4 flex-1 flex flex-col">
-                          <h3 className="text-xl font-bold text-gray-800 mb-3">
-                            {room.type.name} - Room {room.roomNumber}
-                          </h3>
-                          <div
-                            className="text-sm text-gray-600 line-clamp-2 flex-1"
-                            dangerouslySetInnerHTML={{ __html: room.description }}
-                          ></div>
+                        <div className="text-2xl font-bold text-teal-600 mb-4">
+                          {formatCurrencyUSD(room.price)}/night
+                        </div>
 
-                          <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4 text-green-600" />
-                              <span>{room.maxPeople} Guests</span>
-                            </div>
-                          </div>
-
-                          <div className="mb-4 text-sm text-gray-700">
-                            <h4 className="font-semibold mb-2">Included Services:</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {roomTypes
-                                ?.find((type) => type.id === room.typeId)
-                                ?.roomTypeAddons?.map((addon, index) => {
-                                  const service = services.find((s) => s.id === addon.serviceId);
-                                  return (
-                                    <div key={index} className="flex items-center gap-1 text-sm text-gray-600">
-                                      <Badge variant="outlined">{service?.name || 'Không rõ'}</Badge>
-                                    </div>
-                                  );
-                                })}
-                            </div>
-                          </div>
-
-                          <div className="text-2xl font-bold text-teal-600 mb-4">
-                            {formatCurrencyUSD(room.price)}/night
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 border-green-600 text-green-600 hover:bg-green-50 bg-transparent"
-                              onClick={() => setSelectedRoom(room)}
-                            >
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Details
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-green-600 hover:bg-green-700"
-                              onClick={() => handleBookRoom(room)}
-                            >
-                              Book Room
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 border-green-600 text-green-600 hover:bg-green-50 bg-transparent"
+                            onClick={() => setSelectedRoom(room)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="flex-1 bg-green-600 hover:bg-green-700"
+                            onClick={() => handleBookRoom(room)}
+                          >
+                            Book Room
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <Pagination className="mt-8">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage > 1) handlePageChange(currentPage - 1);
+                      }}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        href="#"
+                        isActive={page === currentPage}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(page);
+                        }}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
                   ))}
-                </div>
-              )}
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <Pagination className="mt-8">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage > 1) handlePageChange(currentPage - 1);
-                        }}
-                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          href="#"
-                          isActive={page === currentPage}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handlePageChange(page);
-                          }}
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage < totalPages) handlePageChange(currentPage + 1);
-                        }}
-                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
-            </main>
-          </div>
-        </AnimatePresence>
-      )}
-
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                      }}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </main>
+        </div>
+      </AnimatePresence>
       {/* Room Detail Modal */}
       {!!selectedRoom && (
         <RoomDetailDialog

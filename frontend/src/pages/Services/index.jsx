@@ -27,17 +27,23 @@ export default function ServicePage() {
   const user = useSelector(userSelector.selectUser);
 
   const { data: bookingData, isPending: isFetchingComboboxBookings } = useQuery({
-    queryKey: ['bookings', comboboxPage, comboboxSearchQuery],
+    queryKey: ['bookings', comboboxPage, comboboxSearchQuery, user?.id], // thêm userId để cache chính xác
     queryFn: () =>
       bookingApi.getBookings({
         page: comboboxPage,
         limit: comboboxPageSize,
         keyword: searchQuery,
+        userId: user?.id,
+        status: ['confirmed', 'pending'],
       }),
     keepPreviousData: true,
+    enabled: !!user?.id,
   });
-  const bookings = bookingData?.data?.data[0].filter((b) => b.userId === user?.id && b.status === 'confirmed') || [];
+
+  const bookings = bookingData?.data?.data[0] || [];
   const comboboxTotalPages = Math.ceil((bookingData?.data?.data[1] || 1) / comboboxPageSize);
+
+  console.log(bookings);
 
   const handleComboboxSelect = (id) => {
     setBooking(bookings.find((b) => `${b.id} - ${b.room.roomNumber}` === id));
@@ -96,8 +102,8 @@ export default function ServicePage() {
                   />
                   <CommandList>
                     {isFetchingComboboxBookings ? (
-                      <CommandEmpty>
-                        <Loader2 className="mr-2 h-4 w-4 center-both animate-spin" /> Đang tải...
+                      <CommandEmpty className="center-both">
+                        <Loader2 className="mr-2 h-4 w-4 center-both animate-spin" /> <p>Đang tải...</p>
                       </CommandEmpty>
                     ) : bookings.length === 0 ? (
                       <CommandEmpty>Không tìm thấy phòng.</CommandEmpty>

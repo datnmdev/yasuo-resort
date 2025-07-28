@@ -1,42 +1,89 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@ui/card';
 import { Button } from '@ui/button';
-import { Separator } from '@ui/separator';
-import { CheckCircle, XCircle, Calendar, Users } from 'lucide-react';
+import { CheckCircle, XCircle, Users, Calendar as CalendarIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@ui/dialog';
 import { useLocation, useNavigate } from 'react-router';
-import { roomTypeSelector } from '@src/stores/reducers/roomTypeReducer';
-import { useSelector } from 'react-redux';
-import { Badge } from '@ui/badge';
-import { serviceSelector } from '@src/stores/reducers/serviceReducer';
 import { formatCurrencyUSD, formatDateVN } from '@libs/utils';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import bookingApi from '@apis/booking';
+import { eachDayOfInterval, format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui/select';
+import { Label } from '@ui/label';
+import { Input } from '@ui/input';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
+import dayjs from 'dayjs';
+import { Spin } from 'antd';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
+const alreadyBookedDates = ['2025-08-01', '2025-08-02', '2025-08-10', '2025-08-11', '2025-08-31'];
 
 export default function BookingConfirmationPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { room, startDate, endDate } = state;
-  const roomTypes = useSelector(roomTypeSelector.selectAll);
-  const services = useSelector(serviceSelector.selectAll);
+  const [dateRange, setDateRange] = useState([startDate, endDate]);
+  const [guests, setGuests] = useState(1);
 
+  const { data: bookingData, isLoading } = useQuery({
+    queryKey: ['bookings', room?.id],
+    queryFn: () =>
+      bookingApi.getBookings({
+        page: 1,
+        limit: 1000,
+        roomId: room?.id,
+        status: ['confirmed', 'pending'],
+      }),
+    keepPreviousData: true,
+    enabled: !!room?.id,
+  });
+
+  const getBookedDates = (bookings) => {
+    const bookedDates = bookings.flatMap((booking) => {
+      const range = eachDayOfInterval({
+        start: new Date(booking.startDate),
+        end: new Date(booking.endDate),
+      });
+
+      return range.map((date) => format(date, 'yyyy-MM-dd'));
+    });
+
+    return [...new Set(bookedDates)];
+  };
+  const bookings = bookingData?.data?.data[0] || [];
+
+  // Ktra ngày đấy của phòng có đã bị đặt chưa (dùng cho Calendar)
+  const isDateBooked = (date) => {
+    return getBookedDates(bookings).includes(format(date, 'yyyy-MM-dd'));
+  };
+
+  // Ktra khoảng thời gian check in checkout có dính ngày đã bị đặt ko.
+  const hasConflictWithBookedDates = (start, end) => {
+    if (!start || !end) return false;
+
+    const days = eachDayOfInterval({ start, end });
+    return days.some((d) => alreadyBookedDates.includes(format(d, 'yyyy-MM-dd')));
+  };
+
+  const [error, setError] = useState(
+    hasConflictWithBookedDates(startDate, endDate) ? 'Khoảng ngày bạn chọn có ngày đã được đặt trước.' : ''
+  );
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isBookingSuccessful, setIsBookingSuccessful] = useState(false);
   const [bookingMessage, setBookingMessage] = useState('');
 
   const numberOfNights = useMemo(() => {
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+    if (dateRange[0] && dateRange[1]) {
+      const start = new Date(dateRange[0]);
+      const end = new Date(dateRange[1]);
 
       const diff = end.getTime() - start.getTime();
       const nights = Math.ceil(diff / (1000 * 60 * 60 * 24));
       return nights > 0 ? nights : 0;
     }
     return 0;
-  }, [startDate, endDate]);
+  }, [dateRange]);
 
   const calculateRoomTotal = useMemo(() => {
     if (room && numberOfNights > 0) {
@@ -66,10 +113,12 @@ export default function BookingConfirmationPage() {
       return;
     }
 
+    const [checkin, checkout] = dateRange || [];
+
     const bookingData = {
       roomId: room.id,
-      startDate,
-      endDate,
+      startDate: checkin ? format(checkin, 'yyyy-MM-dd') : null,
+      endDate: checkout ? format(checkout, 'yyyy-MM-dd') : null,
     };
 
     console.log('Booking details:', bookingData);
@@ -102,73 +151,125 @@ export default function BookingConfirmationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 pt-20">
-      {/* Header Section */}
-      <section className="bg-gradient-to-r from-green-600 to-green-700 text-white py-12">
-        <div className="container mx-auto px-4 text-center">
-          <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-200" />
-          <h1 className="text-4xl font-bold mb-2">Confirm Your Booking</h1>
-          <p className="text-xl text-green-100">Review your reservation details below.</p>
-        </div>
-      </section>
-
-      <div className="container mx-auto px-4 py-8 flex justify-center">
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="container mx-auto px-4 flex justify-center gap-8">
         <Card className="w-full max-w-3xl p-8 shadow-xl border border-gray-100">
           <CardHeader className="p-0 mb-6">
-            <CardTitle className="text-3xl font-bold text-gray-800">Booking Details</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-800">Booking Details</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8 mb-8">
               {/* Room Image and Basic Info */}
               <div>
                 <img
                   src={`${baseUrl}/${room.media[0]?.path || 'placeholder.svg'}`}
                   alt={room.type.name}
-                  className="w-full h-56 object-cover rounded-lg shadow-md mb-4"
+                  className="w-full h-44 object-cover rounded-lg shadow-md"
+                  onError={(e) => {
+                    e.target.onerror = null; // tránh loop vô hạn
+                    e.target.src = '/placeholder.svg';
+                  }}
                 />
-                <h3 className="text-2xl font-bold text-green-700 mb-1">
-                  {room.type.name} - Room {room.roomNumber}
-                </h3>
-                <p className="text-gray-600 text-sm">{room.shortDescription}</p>
               </div>
-
               {/* Dates and Capacity */}
-              <div className="space-y-3 text-gray-700">
-                <p className="flex items-center gap-2 text-lg">
-                  <Calendar className="w-5 h-5 text-gray-500" />
-                  <span className="font-semibold">Check-in:</span> {formatDateVN(startDate)}
+              <div className="space-y-3 text-gray-700 text-base">
+                <p className="flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5 text-gray-500" />
+                  <span className="font-semibold">Check-in:</span> {formatDateVN(dateRange[0])}
                 </p>
-                <p className="flex items-center gap-2 text-lg">
-                  <Calendar className="w-5 h-5 text-gray-500" />
-                  <span className="font-semibold">Check-out:</span> {formatDateVN(endDate)}
+                <p className="flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5 text-gray-500" />
+                  <span className="font-semibold">Check-out:</span> {formatDateVN(dateRange[1])}
                 </p>
-                <p className="flex items-center gap-2 text-lg">
+                <p className="flex items-center gap-2">
                   <span className="font-semibold ml-7">{numberOfNights} nights</span>
                 </p>
-                <p className="flex items-center gap-2 text-lg">
+                <p className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-gray-500" />
                   <span className="font-semibold">Capacity:</span> {room.maxPeople} Guests
                 </p>
               </div>
             </div>
+            {/* Date Selection */}
+            <div className="space-y-4 mb-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="checkin" className="text-sm font-medium">
+                    Check-in Date
+                  </Label>
+                  <Input
+                    id="checkin"
+                    type="date"
+                    value={dateRange?.[0] ? format(new Date(dateRange[0]), 'yyyy-MM-dd') : ''}
+                    onChange={(e) => {
+                      const newStart = e.target.value ? new Date(e.target.value) : null;
+                      const newEnd = dateRange?.[1] || null;
 
-            <Separator className="my-6" />
+                      if (newStart && newEnd && hasConflictWithBookedDates(newStart, newEnd)) {
+                        setError('The selected date range includes a date that has already been booked.');
+                      } else {
+                        setError('');
+                      }
 
-            {/* Amenities and Services */}
-            <h3 className="text-xl font-semibold text-gray-800 mb-3">Room Amenities</h3>
-            <div className="flex gap-2">
-              {roomTypes
-                ?.find((type) => type.id === room.typeId)
-                ?.roomTypeAddons?.map((addon, index) => {
-                  const service = services.find((s) => s.id === addon.serviceId);
-                  return (
-                    <div key={index} className="flex items-center gap-1 text-sm text-gray-600">
-                      <Badge variant="outlined">{service?.name || 'Không rõ'}</Badge>
-                    </div>
-                  );
-                })}
+                      setDateRange([newStart, newEnd]);
+                    }}
+                    min={dayjs().add(1, 'day').format('YYYY-MM-DD')}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="checkout" className="text-sm font-medium">
+                    Check-out Date
+                  </Label>
+                  <Input
+                    id="checkout"
+                    type="date"
+                    value={dateRange?.[1] ? format(new Date(dateRange[1]), 'yyyy-MM-dd') : ''}
+                    onChange={(e) => {
+                      const newEnd = e.target.value ? new Date(e.target.value) : null;
+                      const newStart = dateRange?.[0] || null;
+
+                      if (newStart && newEnd && hasConflictWithBookedDates(newStart, newEnd)) {
+                        setError('The selected date range includes a date that has already been booked.');
+                      } else {
+                        setError('');
+                      }
+
+                      setDateRange([newStart, newEnd]);
+                    }}
+                    min={
+                      dateRange[0]
+                        ? dayjs(dateRange[0]).add(1, 'day').format('YYYY-MM-DD')
+                        : dayjs().format('YYYY-MM-DD')
+                    }
+                  />
+                </div>
+              </div>
+              {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+
+              <div>
+                <Label htmlFor="guests" className="text-sm font-medium">
+                  Number of people
+                </Label>
+                <Select value={guests} onValueChange={setGuests}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select number of guests" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[...Array(room.maxPeople).keys()]
+                      .map((i) => i + 1)
+                      .map((num) => (
+                        <SelectItem key={num} value={num}>
+                          {num} {num === 1 ? 'guest' : 'guests'}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Separator className="my-6" />
+            <h3 className="text-2xl font-bold text-green-700 mb-1">
+              {room.type.name} - Room {room.roomNumber}
+            </h3>
+            <p className="text-gray-600 text-sm">{room.shortDescription}</p>
 
             {/* Price Summary */}
             <div className="space-y-4">
@@ -185,6 +286,7 @@ export default function BookingConfirmationPage() {
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <Button
                 onClick={handleConfirmBooking}
+                disabled={!(dateRange[0] && dateRange[1])}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white text-lg py-3"
               >
                 Confirm Booking
@@ -199,6 +301,32 @@ export default function BookingConfirmationPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Right: Room Availability Calendar */}
+        <div className="rounded-lg p-6 bg-white shadow-lg">
+          <h2 className="text-xl font-semibold mb-4">📅 Room Availability</h2>
+          <Spin spinning={isLoading} tip="Loading...">
+            <Calendar
+              locale="en-US"
+              className="!border-0"
+              selectRange
+              tileClassName={({ date }) => {
+                if (isDateBooked(date)) return '!bg-red-500 !text-white !cursor-not-allowed';
+                return '!bg-white !text-gray-700';
+              }}
+            />
+          </Spin>
+          <div className="mt-4 space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-red-500 rounded-sm"></div>
+              <span>Booked</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-white border rounded-sm"></div>
+              <span>Available</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Confirmation Dialog */}
