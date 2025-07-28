@@ -99,7 +99,7 @@ export class RoomService {
                 startDate: moment(query.dateRange.startDate).format(
                   'YYYY-MM-DD',
                 ),
-                endDate: moment(query.dateRange.startDate).format('YYYY-MM-DD'),
+                endDate: moment(query.dateRange.endDate).format('YYYY-MM-DD'),
               },
             );
           }

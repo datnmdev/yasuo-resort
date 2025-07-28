@@ -59,7 +59,7 @@ export class BookingService {
       .andWhere(
         new Brackets((qb) => {
           if (typeof query.userId === 'number') {
-            qb.where('bookingId.user_id = :userId', {
+            qb.where('booking.user_id = :userId', {
               userId: query.userId,
             });
           }
@@ -68,7 +68,7 @@ export class BookingService {
       .andWhere(
         new Brackets((qb) => {
           if (typeof query.roomId === 'number') {
-            qb.where('bookingId.room_id = :roomId', {
+            qb.where('booking.room_id = :roomId', {
               roomId: query.roomId,
             });
           }
