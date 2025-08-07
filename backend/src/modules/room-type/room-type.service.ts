@@ -21,7 +21,6 @@ export class RoomTypeService {
   async getRoomTypes(getRoomTypeQuery: GetRoomTypesReqDto) {
     return this.roomTypeRepository
       .createQueryBuilder('roomType')
-      .leftJoinAndSelect('roomType.roomTypeAddons', 'roomTypeAddons')
       .where(
         new Brackets((qb) => {
           if (getRoomTypeQuery.keyword) {
