@@ -3,11 +3,10 @@ import { Button } from '@ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@ui/dialog';
 import { formatCurrencyUSD } from '@libs/utils';
 import { useState } from 'react';
-import { Badge } from '@ui/badge';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
-export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom, roomTypes, services }) {
+export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const nextImage = () => {
@@ -28,7 +27,7 @@ export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom
         {selectedRoom && (
           <>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-green-600">
+              <DialogTitle className="text-2xl font-bold text-teal-600">
                 {selectedRoom.type.name} - Room {selectedRoom.roomNumber}
               </DialogTitle>
             </DialogHeader>
@@ -73,7 +72,7 @@ export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom
                       <button
                         key={index}
                         className={`w-2 h-2 rounded-full transition-colors ${
-                          index === currentImageIndex ? 'bg-green-600' : 'bg-gray-300'
+                          index === currentImageIndex ? 'bg-teal-600' : 'bg-gray-300'
                         }`}
                         onClick={() => setCurrentImageIndex(index)}
                       />
@@ -100,14 +99,14 @@ export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom
 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">Room Rate</h3>
-                  <div className="text-2xl font-bold text-green-600">{formatCurrencyUSD(selectedRoom.price)}/night</div>
+                  <div className="text-2xl font-bold text-teal-600">{formatCurrencyUSD(selectedRoom.price)}/night</div>
                 </div>
 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">Amenities</h3>
                   <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600">
                     <div className="flex items-center gap-1">
-                      <Users className="w-4 h-4 text-green-600" />
+                      <Users className="w-4 h-4 text-teal-600" />
                       <span>Capacity: {selectedRoom.maxPeople} Guests</span>
                     </div>
                     {/* {selectedRoom.type.amenities.map((amenity, index) => (
@@ -115,22 +114,6 @@ export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom
                           <span>{amenity}</span>
                         </div>
                       ))} */}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Included Services</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {roomTypes
-                      ?.find((type) => type.id === selectedRoom.typeId)
-                      ?.roomTypeAddons?.map((addon, index) => {
-                        const service = services.find((s) => s.id === addon.serviceId);
-                        return (
-                          <div key={index} className="flex items-center gap-1 text-sm text-gray-600">
-                            <Badge variant="outlined">{service?.name || 'Không rõ'}</Badge>
-                          </div>
-                        );
-                      })}
                   </div>
                 </div>
 
@@ -152,7 +135,7 @@ export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom
 
                 <div className="pt-4">
                   <Button
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="w-full bg-teal-600 hover:bg-teal-700"
                     size="lg"
                     onClick={() => {
                       setSelectedRoom(null);

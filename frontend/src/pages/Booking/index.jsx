@@ -8,7 +8,6 @@ import { formatCurrencyUSD, formatDateVN } from '@libs/utils';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import bookingApi from '@apis/booking';
 import { eachDayOfInterval, format } from 'date-fns';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui/select';
 import { Label } from '@ui/label';
 import { Input } from '@ui/input';
 import Calendar from 'react-calendar';
@@ -17,14 +16,12 @@ import dayjs from 'dayjs';
 import { Spin } from 'antd';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
-const alreadyBookedDates = ['2025-08-01', '2025-08-02', '2025-08-10', '2025-08-11', '2025-08-31'];
 
 export default function BookingConfirmationPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { room, startDate, endDate } = state;
   const [dateRange, setDateRange] = useState([startDate, endDate]);
-  const [guests, setGuests] = useState(1);
 
   const { data: bookingData, isLoading } = useQuery({
     queryKey: ['bookings', room?.id],
@@ -63,11 +60,13 @@ export default function BookingConfirmationPage() {
     if (!start || !end) return false;
 
     const days = eachDayOfInterval({ start, end });
-    return days.some((d) => alreadyBookedDates.includes(format(d, 'yyyy-MM-dd')));
+    return days.some((d) => getBookedDates(bookings).includes(format(d, 'yyyy-MM-dd')));
   };
 
   const [error, setError] = useState(
-    hasConflictWithBookedDates(startDate, endDate) ? 'Khoảng ngày bạn chọn có ngày đã được đặt trước.' : ''
+    hasConflictWithBookedDates(startDate, endDate)
+      ? 'The selected date range includes a date that has already been booked.'
+      : ''
   );
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isBookingSuccessful, setIsBookingSuccessful] = useState(false);
@@ -245,26 +244,6 @@ export default function BookingConfirmationPage() {
                 </div>
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-
-              <div>
-                <Label htmlFor="guests" className="text-sm font-medium">
-                  Number of people
-                </Label>
-                <Select value={guests} onValueChange={setGuests}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select number of guests" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[...Array(room.maxPeople).keys()]
-                      .map((i) => i + 1)
-                      .map((num) => (
-                        <SelectItem key={num} value={num}>
-                          {num} {num === 1 ? 'guest' : 'guests'}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             <h3 className="text-2xl font-bold text-green-700 mb-1">
               {room.type.name} - Room {room.roomNumber}

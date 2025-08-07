@@ -79,11 +79,11 @@ export function FilterCard({ filterState, setFilterState, handleClearFilters, ro
 
           {/* Price Range */}
           <div className="col-span-2">
-            <Label className="mb-2 block">Khoảng giá</Label>
+            <Label className="mb-2 block">Price Range</Label>
 
             <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-              <span>{filterState.priceRange.minPrice || MIN}₫</span>
-              <span>{filterState.priceRange.maxPrice || MAX}₫</span>
+              <span>{filterState.priceRange.minPrice || MIN}$</span>
+              <span>{filterState.priceRange.maxPrice || MAX}$</span>
             </div>
 
             <Slider

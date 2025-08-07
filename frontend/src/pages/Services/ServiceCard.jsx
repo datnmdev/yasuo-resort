@@ -18,6 +18,7 @@ export default function ServiceCard({ service }) {
   const { id, name, description, price } = service;
   const { booking, add } = useCart();
   const { startDate, endDate } = booking;
+  console.log(booking);
 
   // State for in-card configuration
   const [isBooking, setIsBooking] = useState(false);
@@ -41,7 +42,7 @@ export default function ServiceCard({ service }) {
             <div className="p-2 bg-teal-100 rounded-lg">{iconMap[id % 3]}</div>
             <span>{name}</span>
           </div>
-          <p className="text-sm text-gray-600 mt-1">{description}</p>
+          <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: description }} />
         </div>
         <div className="text-right">
           <p className="font-bold text-teal-700 text-lg">{formatCurrencyUSD(price)}/person/day</p>
@@ -67,6 +68,7 @@ export default function ServiceCard({ service }) {
                 id={`num-people-${service.id}`}
                 type="number"
                 min="1"
+                max={booking.room.maxPeople}
                 value={tempNumPeople}
                 onChange={(e) => setTempNumPeople(Number(e.target.value))}
                 className="w-full"
