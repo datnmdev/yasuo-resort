@@ -16,6 +16,7 @@ import * as path from 'path';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ServiceModule } from 'modules/service/service.module';
 import { BookingModule } from 'modules/booking/booking.module';
+import { BackgroundModule } from 'modules/background/background.module';
 
 @Module({
   imports: [
@@ -51,7 +52,8 @@ import { BookingModule } from 'modules/booking/booking.module';
     RoomTypeModule,
     RoomModule,
     ServiceModule,
-    BookingModule
+    BookingModule,
+    BackgroundModule
   ],
   controllers: [],
   providers: [],

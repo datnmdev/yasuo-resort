@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -14,6 +15,7 @@ import { Media } from './entities/media.entity';
 import { access, unlink } from 'fs/promises';
 import * as path from 'path';
 import * as moment from 'moment';
+import { Booking } from 'modules/booking/entities/booking.entity';
 
 @Injectable()
 export class RoomService {
@@ -166,6 +168,22 @@ export class RoomService {
   }
 
   async updateRoom(roomId: number, body: UpdateRoomReqDto) {
+    if (body.status === 'maintenance' && !body.maintenanceStartDate) {
+      throw new BadRequestException({
+        message:
+          'Maintenance start date is required when status is set to maintenance',
+        error: 'BadRequest',
+      });
+    }
+
+    if (body.status != 'maintenance' && body.maintenanceStartDate) {
+      throw new BadRequestException({
+        message:
+          'Maintenance start date should only be set when status is maintenance',
+        error: 'BadRequest',
+      });
+    }
+
     const queryRunner = this.datasource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -199,35 +217,42 @@ export class RoomService {
             {
               id: roomId,
             },
-            _.omit(body, 'media'),
+            {
+              ..._.omit(body, ['media']),
+              maintenanceStartDate: body.maintenanceStartDate
+                ? body.maintenanceStartDate
+                : null,
+            },
           );
         }
 
         // Cập nhật media
-        const oldMedia = await queryRunner.manager.find(Media, {
-          where: {
-            roomId,
-          },
-        });
-        for (const item of oldMedia) {
-          const filePath = path.join(process.cwd(), item.path);
-          try {
-            await access(filePath);
-            await unlink(filePath);
-          } catch (error) {
-            console.log('Delete File Error::', error);
+        if (body.media) {
+          const oldMedia = await queryRunner.manager.find(Media, {
+            where: {
+              roomId,
+            },
+          });
+          for (const item of oldMedia) {
+            const filePath = path.join(process.cwd(), item.path);
+            try {
+              await access(filePath);
+              await unlink(filePath);
+            } catch (error) {
+              console.log('Delete File Error::', error);
+            }
           }
-        }
-        await queryRunner.manager.delete(Media, {
-          roomId: room.id,
-        });
-        const mediaEntities = body.media.map((item) =>
-          queryRunner.manager.create(Media, {
+          await queryRunner.manager.delete(Media, {
             roomId: room.id,
-            path: item,
-          }),
-        );
-        await queryRunner.manager.save(mediaEntities);
+          });
+          const mediaEntities = body.media.map((item) =>
+            queryRunner.manager.create(Media, {
+              roomId: room.id,
+              path: item,
+            }),
+          );
+          await queryRunner.manager.save(mediaEntities);
+        }
         await queryRunner.commitTransaction();
         return null;
       }

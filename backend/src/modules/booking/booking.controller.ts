@@ -19,6 +19,10 @@ import { User } from 'common/decorators/user.decorator';
 import { BookingServicesReqDto } from './dtos/booking-service.dto';
 import { SignContractReqDto } from './dtos/sign-contract.dto';
 import { GetBookingReqDto } from './dtos/get-bookings.dto';
+import { ChangeRoomReqDto } from './dtos/change-room.dto';
+import { RejectBookingReqDto } from './dtos/reject-booking.dto';
+import { RejectServiceBookingReqDto } from './dtos/reject-service-booking.dto';
+import { UpdateServiceBookingReqDto } from './dtos/update-service-booking.dto';
 
 @Controller('booking')
 export class BookingController {
@@ -43,16 +47,27 @@ export class BookingController {
     );
   }
 
+  @Put(':bookingId/reject-room-booking')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async rejectRoomBooking(
+    @Param('bookingId') bookingId: number,
+    @Body() rejectBookingBody: RejectBookingReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.bookingService.rejectRoomBooking(bookingId, rejectBookingBody.reason),
+    );
+  }
+
   @Put(':bookingId/cancel-room-booking')
-  @Roles(Role.USER, Role.ADMIN)
+  @Roles(Role.USER)
   @UseGuards(RolesGuard)
   async cancelRoomBooking(
     @User('id') userId: number,
-    @User('role') role: Role,
     @Param('bookingId') bookingId: number,
   ) {
     return AppResponse.ok(
-      await this.bookingService.cancelRoomBooking(role, userId, bookingId),
+      await this.bookingService.cancelRoomBooking(userId, bookingId),
     );
   }
 
@@ -80,6 +95,28 @@ export class BookingController {
     );
   }
 
+  @Put('change-room')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async changeRoom(
+    @Body() changeRoomBody: ChangeRoomReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.bookingService.changeRoom(changeRoomBody),
+    );
+  }
+
+  @Put(':bookingId/undo-contract')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async undoContract(
+    @Param('bookingId') bookingId: number,
+  ) {
+    return AppResponse.ok(
+      await this.bookingService.undoContract(bookingId)
+    );
+  }
+
   @Post('service')
   @Roles(Role.USER, Role.ADMIN)
   @UseGuards(RolesGuard)
@@ -94,6 +131,54 @@ export class BookingController {
         userId,
         bookingServicesBody,
       ),
+    );
+  }
+
+  @Put('service/:bookingServiceId/confirm')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async confirmServiceBooking(
+    @Param('bookingServiceId') bookingServiceId: number,
+  ) {
+    return AppResponse.ok(
+      await this.bookingService.confirmServiceBooking(bookingServiceId)
+    );
+  }
+
+  @Put('service/:bookingServiceId/reject')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async rejectServiceBooking(
+    @Param('bookingServiceId') bookingServiceId: number,
+    @Body() rejectServiceBookingBody: RejectServiceBookingReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.bookingService.rejectServiceBooking(bookingServiceId, rejectServiceBookingBody.reasonForRejection)
+    );
+  }
+
+  @Put('service/:bookingServiceId')
+  @Roles(Role.USER)
+  @UseGuards(RolesGuard)
+  async updateServiceBooking(
+    @User('id') userId: number,
+    @Param('bookingServiceId') bookingServiceId: number,
+    @Body() updateServiceBookingBody: UpdateServiceBookingReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.bookingService.updateServiceBooking(userId, bookingServiceId, updateServiceBookingBody)
+    );
+  }
+
+  @Put('service/:bookingServiceId/cancel')
+  @Roles(Role.USER)
+  @UseGuards(RolesGuard)
+  async cancelServiceBooking(
+    @User('id') userId: number,
+    @Param('bookingServiceId') bookingServiceId: number,
+  ) {
+    return AppResponse.ok(
+      await this.bookingService.cancelServiceBooking(userId, bookingServiceId)
     );
   }
 }

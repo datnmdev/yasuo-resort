@@ -1,5 +1,4 @@
 import { BookingService } from "modules/booking/entities/booking-service.entity";
-import { RoomTypeAddon } from "modules/room-type/entities/room-type-addon.entity";
 import {
   Column,
   Entity,
@@ -28,7 +27,4 @@ export class Service {
 
   @OneToMany(() => BookingService, (bookingService) => bookingService.service)
   bookingServices: BookingService[];
-
-  @OneToMany(() => RoomTypeAddon, (roomTypeAddon) => roomTypeAddon.service)
-  roomTypeAddons: RoomTypeAddon[];
 }

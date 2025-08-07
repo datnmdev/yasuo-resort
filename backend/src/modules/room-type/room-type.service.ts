@@ -9,7 +9,6 @@ import { Brackets, DataSource, QueryFailedError, Repository } from 'typeorm';
 import { CreateRoomTypeReqDto } from './dtos/create-room-type.dto';
 import { UpdateRoomTypeReqDto } from './dtos/update-room-type.dto';
 import { GetRoomTypesReqDto } from './dtos/get-room-type.dto';
-import { RoomTypeAddon } from './entities/room-type-addon.entity';
 
 @Injectable()
 export class RoomTypeService {
@@ -67,15 +66,6 @@ export class RoomTypeService {
       });
       const newRoomType = await this.roomTypeRepository.save(roomTypeEntity);
 
-      // Lưu dịch vụ đính kèm thuộc loại phòng
-      const serviceAddonEntities = body.serviceIds.map((serviceId) =>
-        queryRunner.manager.create(RoomTypeAddon, {
-          roomTypeId: newRoomType.id,
-          serviceId,
-        }),
-      );
-      await queryRunner.manager.save(serviceAddonEntities);
-
       await queryRunner.commitTransaction();
       return newRoomType;
     } catch (error) {
@@ -106,20 +96,6 @@ export class RoomTypeService {
           },
           body,
         );
-
-        // Cập nhật lại dịch vụ đính kèm (nếu có)
-        if (body.serviceIds) {
-          await queryRunner.manager.delete(RoomTypeAddon, {
-            roomTypeId,
-          });
-          const serviceAddonEntities = body.serviceIds.map((serviceId) =>
-            queryRunner.manager.create(RoomTypeAddon, {
-              roomTypeId,
-              serviceId,
-            }),
-          );
-          await queryRunner.manager.save(serviceAddonEntities);
-        }
 
         await queryRunner.commitTransaction();
         return updateResult;

@@ -2,6 +2,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsCurrency,
+  IsDateString,
   IsInt,
   IsOptional,
   IsString,
@@ -39,4 +40,8 @@ export class UpdateRoomReqDto {
   @IsString({ each: true })
   @ArrayMinSize(1)
   media: string[];
+
+  @IsOptional()
+  @IsDateString()
+  maintenanceStartDate: string;
 }
