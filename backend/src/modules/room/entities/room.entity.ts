@@ -10,6 +10,7 @@ import {
 } from "typeorm";
 import { Media } from "./media.entity";
 import { RoomType } from "modules/room-type/entities/room-type.entity";
+import { RoomChangeHistory } from "modules/booking/entities/room-change-history.entity";
 
 @Index("room_number_UNIQUE", ["roomNumber"], { unique: true })
 @Index("FK_room__room_type_idx", ["typeId"], {})
@@ -66,4 +67,16 @@ export class Room {
   })
   @JoinColumn([{ name: "type_id", referencedColumnName: "id" }])
   type: RoomType;
+
+  @OneToMany(
+    () => RoomChangeHistory,
+    (roomChangeHistory) => roomChangeHistory.fromRoom
+  )
+  roomChangeHistories: RoomChangeHistory[];
+
+  @OneToMany(
+    () => RoomChangeHistory,
+    (roomChangeHistory) => roomChangeHistory.toRoom
+  )
+  roomChangeHistories2: RoomChangeHistory[];
 }

@@ -1,5 +1,5 @@
 import { Button, Table, Space, Tooltip, Input, Pagination, Modal, Form, Tag, Select, Popover, Tree, InputNumber } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, FilterOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, FilterOutlined, GlobalOutlined, LockOutlined } from '@ant-design/icons';
 import useFetch from '../../hooks/fetch.hook';
 import apis from '../../apis/index';
 import { useEffect, useState } from 'react';
@@ -48,6 +48,8 @@ export default function RoomManagementPage() {
     isLoading: isDeletingRoom,
     setRefetch: setReDeleteRoom,
   } = useFetch(apis.room.deleteRoom, deleteRoomReq, false);
+  const [selectedRoomToPublish, setSelectedRoomToPublish] = useState(null);
+  const [selectedRoomToUnpublish, setSelectedRoomToUnpublish] = useState(null);
 
   const columns = [
     {
@@ -116,6 +118,32 @@ export default function RoomManagementPage() {
       key: 'action',
       render: (_, record) => (
         <Space size="middle">
+          {record.status === 'inactive' && (
+            <Tooltip title="Publish">
+              <Button
+                shape="circle"
+                icon={<GlobalOutlined />}
+                onClick={() =>
+                  setSelectedRoomToPublish(rooms?.data?.[0]?.find((item) => item.id === record.id) ?? null)
+                }
+                loading={selectedRoomToPublish?.id === record.id && isUpdatingRoom}
+              />
+            </Tooltip>
+          )}
+
+          {(record.status === 'active' || record.status === 'maintenance') && (
+            <Tooltip title="Unpublish">
+              <Button
+                shape="circle"
+                icon={<LockOutlined />}
+                onClick={() =>
+                  setSelectedRoomToUnpublish(rooms?.data?.[0]?.find((item) => item.id === record.id) ?? null)
+                }
+                loading={selectedRoomToUnpublish?.id === record.id && isUpdatingRoom}
+              />
+            </Tooltip>
+          )}
+
           <Tooltip title="Edit">
             <Button
               shape="circle"
@@ -292,6 +320,34 @@ export default function RoomManagementPage() {
       }
     }
   }, [isDeletingRoom]);
+
+  useEffect(() => {
+    if (selectedRoomToPublish) {
+      setUpdateRoomReq({
+        param: {
+          roomId: selectedRoomToPublish.id,
+        },
+        body: {
+          status: 'active',
+        },
+      });
+      setSelectedRoomToPublish(null);
+    }
+  }, [selectedRoomToPublish]);
+
+  useEffect(() => {
+    if (selectedRoomToUnpublish) {
+      setUpdateRoomReq({
+        param: {
+          roomId: selectedRoomToUnpublish.id,
+        },
+        body: {
+          status: 'inactive',
+        },
+      });
+      setSelectedRoomToUnpublish(null);
+    }
+  }, [selectedRoomToUnpublish]);
 
   return (
     <div className="p-4">
@@ -495,6 +551,20 @@ export default function RoomManagementPage() {
               <Input disabled={isUpdatingRoom} />
             </Form.Item>
 
+            <Form.Item
+              name="maxPeople"
+              label="Max Peple"
+              rules={[{ required: true }]}
+            >
+              <InputNumber
+                addonAfter="Người"
+                min={1}
+                step={1}
+                style={{ width: "100%" }}
+                disabled={isUpdatingRoom}
+              />
+            </Form.Item>
+
             <Form.Item name="typeId" label="Room type" rules={[{ required: true }]}>
               <Select
                 showSearch
@@ -529,30 +599,25 @@ export default function RoomManagementPage() {
                     label: 'ACTIVE',
                   },
                   {
-                    value: 'under_maintenance',
-                    label: 'UNDER_MAINTENANCE',
-                  },
-                  {
-                    value: 'retired',
-                    label: 'RETIRED',
+                    value: 'maintenance',
+                    label: 'MAINTENANCE',
                   },
                 ]}
               />
             </Form.Item>
 
-            <Form.Item name="currentCondition" label="Current condition" rules={[{ required: true }]}>
-              <Select
-                showSearch
-                placeholder="Select a current condition..."
-                optionFilterProp="label"
-                onChange={(value) => updateRoomForm.setFieldValue('currentCondition', value)}
-                disabled={selectedRoomToUpdate?.currentCondition === 'booked'}
-                options={[
-                  {
-                    value: 'available',
-                    label: 'AVAILABLE',
-                  },
-                ]}
+            <Form.Item
+              name="price"
+              label="Price"
+              rules={[{ required: true }]}
+            >
+              <InputNumber
+                addonAfter="$"
+                min={0.0}
+                step={0.01}
+                stringMode
+                style={{ width: "100%" }}
+                disabled={isUpdatingRoom}
               />
             </Form.Item>
 

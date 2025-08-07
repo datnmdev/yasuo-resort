@@ -16,6 +16,7 @@ import { access, unlink } from 'fs/promises';
 import * as path from 'path';
 import * as moment from 'moment';
 import { Booking } from 'modules/booking/entities/booking.entity';
+import { RoomType } from 'modules/room-type/entities/room-type.entity';
 
 @Injectable()
 export class RoomService {
@@ -119,20 +120,29 @@ export class RoomService {
     await queryRunner.startTransaction();
     try {
       // Kiểm tra room number
-      const room = await this.roomRepository.findOne({
+      const room = await queryRunner.manager.findOne(Room, {
         where: {
           roomNumber: body.roomNumber,
-        },
-        relations: ['type'],
+        }
       });
       if (room) {
         throw new ConflictException('Room number already exists');
       }
 
+      // Kiểm tra room type có hợp lệ không
+      const roomType = await queryRunner.manager.findOne(RoomType, {
+        where: {
+          id: body.typeId
+        }
+      });
+      if (!roomType) {
+        throw new NotFoundException('Room type not found');
+      }
+
       // Kiểm tra giá phòng có nằm trong khoảng giá quy định không
       if (
-        Number(body.price) < Number(room.type.minPrice) ||
-        Number(body.price) > Number(room.type.maxPrice)
+        Number(body.price) < Number(roomType.minPrice) ||
+        Number(body.price) > Number(roomType.maxPrice)
       ) {
         throw new ConflictException(
           'The room price is outside the allowed price range for this room type',
@@ -193,10 +203,11 @@ export class RoomService {
       }
 
       // Kiểm tra room
-      const room = await this.roomRepository.findOne({
+      const room = await queryRunner.manager.findOne(Room, {
         where: {
           id: roomId,
         },
+        relations: ['type'],
       });
       if (room) {
         // Kiểm tra giá phòng có nằm trong khoảng giá quy định không
