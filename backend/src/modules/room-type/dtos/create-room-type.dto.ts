@@ -1,7 +1,5 @@
 import {
-  IsArray,
   IsCurrency,
-  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -23,9 +21,4 @@ export class CreateRoomTypeReqDto {
   @IsOptional()
   @IsString()
   description: string;
-
-  @IsNotEmpty()
-  @IsArray()
-  @IsInt({ each: true })
-  serviceIds: number[];
 }

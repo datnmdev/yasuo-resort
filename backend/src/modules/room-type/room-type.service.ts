@@ -56,6 +56,13 @@ export class RoomTypeService {
         throw new ConflictException('Room type name already exists');
       }
 
+      // Kiểm tra minPrice và maxPrice
+      if (Number(body.minPrice) > Number(body.maxPrice)) {
+        throw new ConflictException(
+          'Min price cannot be greater than max price',
+        );
+      }
+
       // Tạo room type mới
       const roomTypeEntity = this.roomTypeRepository.create({
         name: body.name,
@@ -87,6 +94,33 @@ export class RoomTypeService {
         },
       });
       if (roomType) {
+        // Kiểm tra min and max price
+        if (
+          body.minPrice &&
+          Number(body.minPrice) > Number(roomType.minPrice)
+        ) {
+          throw new ConflictException(
+            'Min price cannot be greater than current min price',
+          );
+        }
+
+        if (
+          body.maxPrice &&
+          Number(body.maxPrice) < Number(roomType.maxPrice)
+        ) {
+          throw new ConflictException(
+            'Max price cannot be less than current max price',
+          );
+        }
+
+        if (body.minPrice && body.maxPrice) {
+          if (Number(body.minPrice) > Number(body.maxPrice)) {
+            throw new ConflictException(
+              'Min price cannot be greater than max price',
+            );
+          }
+        }
+
         // Cập nhật thông tin room type vào CSDL
         const updateResult = await queryRunner.manager.update(
           RoomType,

@@ -67,9 +67,14 @@ export default function RoomTypeManagementPage() {
       key: "name",
     },
     {
-      title: "Price Per Day",
-      dataIndex: "pricePerDay",
-      key: "pricePerDay",
+      title: "Min Price",
+      dataIndex: "minPrice",
+      key: "minPrice",
+    },
+    {
+      title: "Max Price",
+      dataIndex: "maxPrice",
+      key: "maxPrice",
     },
     {
       title: "Description",
@@ -156,7 +161,8 @@ export default function RoomTypeManagementPage() {
             key: roomType.id,
             id: roomType.id,
             name: roomType.name,
-            pricePerDay: `$${roomType.pricePerDay}`,
+            minPrice: `$${roomType.minPrice}`,
+            maxPrice: `$${roomType.maxPrice}`,
             description: roomType.description,
           })),
           roomTypes.data[1],
@@ -346,8 +352,24 @@ export default function RoomTypeManagementPage() {
             </Form.Item>
 
             <Form.Item
-              name="pricePerDay"
-              label="Price per day"
+              name="minPrice"
+              label="Min Price"
+              rules={[{ required: true }]}
+            >
+              <InputNumber
+                addonAfter="$"
+                defaultValue={0.0}
+                min={0.0}
+                step={0.01}
+                stringMode
+                style={{ width: "100%" }}
+                disabled={isCreatingRoomType}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="maxPrice"
+              label="Max Price"
               rules={[{ required: true }]}
             >
               <InputNumber
@@ -412,14 +434,35 @@ export default function RoomTypeManagementPage() {
               <Input disabled={isUpdatingRoomType} />
             </Form.Item>
 
-            <Form.Item name="pricePerDay" label="Price per day">
+            <Form.Item
+              name="minPrice"
+              label="Min Price"
+              rules={[{ required: true }]}
+            >
               <InputNumber
                 addonAfter="$"
+                defaultValue={0.0}
                 min={0.0}
                 step={0.01}
                 stringMode
                 style={{ width: "100%" }}
-                disabled={isUpdatingRoomType}
+                disabled={isCreatingRoomType}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="maxPrice"
+              label="Max Price"
+              rules={[{ required: true }]}
+            >
+              <InputNumber
+                addonAfter="$"
+                defaultValue={0.0}
+                min={0.0}
+                step={0.01}
+                stringMode
+                style={{ width: "100%" }}
+                disabled={isCreatingRoomType}
               />
             </Form.Item>
 

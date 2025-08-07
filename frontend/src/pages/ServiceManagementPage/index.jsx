@@ -1,20 +1,10 @@
-import {
-  Button,
-  Table,
-  Space,
-  Tooltip,
-  Input,
-  Pagination,
-  Modal,
-  Form,
-  InputNumber,
-} from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
-import useFetch from "../../hooks/fetch.hook";
-import apis from "../../apis/index";
-import { useEffect, useState } from "react";
-import TextEditor from "../../components/TextEditor";
-import useToast from "../../hooks/toast.hook";
+import { Button, Table, Space, Tooltip, Input, Pagination, Modal, Form, InputNumber, Tag } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, GlobalOutlined, LockOutlined } from '@ant-design/icons';
+import useFetch from '../../hooks/fetch.hook';
+import apis from '../../apis/index';
+import { useEffect, useState } from 'react';
+import TextEditor from '../../components/TextEditor';
+import useToast from '../../hooks/toast.hook';
 
 export default function ServiceManagementPage() {
   const [getServicesReq, setGetServicesReq] = useState({
@@ -51,51 +41,91 @@ export default function ServiceManagementPage() {
     isLoading: isDeletingService,
     setRefetch: setReDeleteService,
   } = useFetch(apis.service.deleteService, deleteServiceReq, false);
+  const [selectedServiceToPublish, setSelectedServiceToPublish] = useState(null);
+  const [selectedServiceToUnpublish, setSelectedServiceToUnpublish] = useState(null);
 
   const columns = [
     {
-      title: "Id",
-      dataIndex: "id",
-      key: "id",
+      title: 'Id',
+      dataIndex: 'id',
+      key: 'id',
     },
     {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
     },
     {
-      title: "Price",
-      dataIndex: "price",
-      key: "price",
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (_, record) => {
+        let color;
+        switch (record.status) {
+          case 'inactive':
+            color = 'gray';
+            break;
+          case 'active':
+            color = 'green';
+            break;
+        }
+
+        return <Tag color={color}>{record.status.toUpperCase()}</Tag>;
+      },
     },
     {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      render: (htmlText) => (
-        <div dangerouslySetInnerHTML={{ __html: htmlText }}></div>
-      ),
+      title: 'Price',
+      dataIndex: 'price',
+      key: 'price',
     },
     {
-      title: "Action",
-      key: "action",
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      render: (htmlText) => <div dangerouslySetInnerHTML={{ __html: htmlText }}></div>,
+    },
+    {
+      title: 'Action',
+      key: 'action',
       render: (_, record) => (
         <Space size="middle">
+          {record.status === 'inactive' && (
+            <Tooltip title="Publish">
+              <Button
+                shape="circle"
+                icon={<GlobalOutlined />}
+                onClick={() =>
+                  setSelectedServiceToPublish(services?.data?.[0]?.find((item) => item.id === record.id) ?? null)
+                }
+                loading={selectedServiceToPublish?.id === record.id && isUpdatingService}
+              />
+            </Tooltip>
+          )}
+
+          {record.status === 'active' && (
+            <Tooltip title="Unpublish">
+              <Button
+                shape="circle"
+                icon={<LockOutlined />}
+                onClick={() =>
+                  setSelectedServiceToUnpublish(services?.data?.[0]?.find((item) => item.id === record.id) ?? null)
+                }
+                loading={selectedServiceToUnpublish?.id === record.id && isUpdatingService}
+              />
+            </Tooltip>
+          )}
+
           <Tooltip title="Edit">
             <Button
               shape="circle"
               icon={<EditOutlined />}
               onClick={() =>
-                setSelectedServiceToUpdate(
-                  services?.data?.[0]?.find((item) => item.id === record.id) ??
-                    null
-                )
+                setSelectedServiceToUpdate(services?.data?.[0]?.find((item) => item.id === record.id) ?? null)
               }
-              loading={
-                selectedServiceToUpdate?.id === record.id && isUpdatingService
-              }
+              loading={selectedServiceToUpdate?.id === record.id && isUpdatingService}
             />
           </Tooltip>
+
           <Tooltip title="Delete">
             <Button
               shape="circle"
@@ -105,9 +135,7 @@ export default function ServiceManagementPage() {
                   serviceId: record.id,
                 })
               }
-              loading={
-                deleteServiceReq?.serviceId === record.id && isDeletingService
-              }
+              loading={deleteServiceReq?.serviceId === record.id && isDeletingService}
             />
           </Tooltip>
         </Space>
@@ -152,6 +180,7 @@ export default function ServiceManagementPage() {
             key: service.id,
             id: service.id,
             name: service.name,
+            status: service.status,
             price: `${service.price}`,
             description: service.description,
           })),
@@ -182,7 +211,7 @@ export default function ServiceManagementPage() {
       if (createServiceResData) {
         if (createServiceResData.isSuccess) {
           openNotification({
-            title: "Service created successfully!",
+            title: 'Service created successfully!',
           });
           setReGetServices({
             value: true,
@@ -210,7 +239,7 @@ export default function ServiceManagementPage() {
       if (updateServiceResData) {
         if (updateServiceResData.isSuccess) {
           openNotification({
-            title: "Service updated successfully!",
+            title: 'Service updated successfully!',
           });
           setReGetServices({
             value: true,
@@ -239,7 +268,7 @@ export default function ServiceManagementPage() {
       if (deleteServiceResData) {
         if (deleteServiceResData.isSuccess) {
           openNotification({
-            title: "Service deleted successfully!",
+            title: 'Service deleted successfully!',
           });
           setReGetServices({
             value: true,
@@ -253,15 +282,39 @@ export default function ServiceManagementPage() {
     }
   }, [isDeletingService]);
 
+  useEffect(() => {
+    if (selectedServiceToPublish) {
+      setUpdateServiceReq({
+        param: {
+          serviceId: selectedServiceToPublish.id,
+        },
+        body: {
+          status: 'active',
+        },
+      });
+      setSelectedServiceToPublish(null);
+    }
+  }, [selectedServiceToPublish]);
+
+  useEffect(() => {
+    if (selectedServiceToUnpublish) {
+      setUpdateServiceReq({
+        param: {
+          serviceId: selectedServiceToUnpublish.id,
+        },
+        body: {
+          status: 'inactive',
+        },
+      });
+      setSelectedServiceToUnpublish(null);
+    }
+  }, [selectedServiceToUnpublish]);
+
   return (
     <div className="p-4">
       <div className="flex justify-between items-center">
         <div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setOpenCreateServiceModal(true)}
-          >
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpenCreateServiceModal(true)}>
             Create
           </Button>
         </div>
@@ -315,22 +368,12 @@ export default function ServiceManagementPage() {
             <Button key="reset" onClick={() => createServiceForm.resetFields()}>
               Reset
             </Button>,
-            <Button
-              key="submit"
-              type="primary"
-              loading={isCreatingService}
-              onClick={handleCreateServiceSubmit}
-            >
+            <Button key="submit" type="primary" loading={isCreatingService} onClick={handleCreateServiceSubmit}>
               Submit
             </Button>,
           ]}
         >
-          <Form
-            layout="vertical"
-            form={createServiceForm}
-            name="control-hooks"
-            style={{ marginTop: 16 }}
-          >
+          <Form layout="vertical" form={createServiceForm} name="control-hooks" style={{ marginTop: 16 }}>
             <Form.Item name="name" label="Name" rules={[{ required: true }]}>
               <Input disabled={isCreatingService} />
             </Form.Item>
@@ -342,16 +385,12 @@ export default function ServiceManagementPage() {
                 min={0.0}
                 step={0.01}
                 stringMode
-                style={{ width: "100%" }}
+                style={{ width: '100%' }}
                 disabled={isCreatingService}
               />
             </Form.Item>
 
-            <Form.Item
-              name="description"
-              label="Description"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="description" label="Description" rules={[{ required: true }]}>
               <TextEditor disabled={isCreatingService} />
             </Form.Item>
           </Form>
@@ -371,12 +410,7 @@ export default function ServiceManagementPage() {
             <Button key="reset" onClick={() => updateServiceForm.resetFields()}>
               Reset
             </Button>,
-            <Button
-              key="submit"
-              type="primary"
-              loading={isUpdatingService}
-              onClick={handleUpdateServiceSubmit}
-            >
+            <Button key="submit" type="primary" loading={isUpdatingService} onClick={handleUpdateServiceSubmit}>
               Submit
             </Button>,
           ]}
@@ -396,22 +430,23 @@ export default function ServiceManagementPage() {
               <Input disabled={isUpdatingService} />
             </Form.Item>
 
+            <Form.Item name="status" label="Status">
+              <Input disabled />
+            </Form.Item>
+
             <Form.Item name="price" label="Price">
               <InputNumber
                 addonAfter="$"
                 min={0.0}
                 step={0.01}
                 stringMode
-                style={{ width: "100%" }}
+                style={{ width: '100%' }}
                 disabled={isUpdatingService}
               />
             </Form.Item>
 
             <Form.Item name="description" label="Description">
-              <TextEditor
-                disabled={isUpdatingService}
-                initialValue={updateServiceForm.getFieldValue("description")}
-              />
+              <TextEditor disabled={isUpdatingService} initialValue={updateServiceForm.getFieldValue('description')} />
             </Form.Item>
           </Form>
         </Modal>

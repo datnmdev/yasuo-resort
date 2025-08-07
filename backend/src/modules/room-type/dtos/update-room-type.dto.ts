@@ -1,7 +1,5 @@
 import {
-  IsArray,
   IsCurrency,
-  IsInt,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -22,9 +20,4 @@ export class UpdateRoomTypeReqDto {
   @IsOptional()
   @IsString()
   description: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsInt({ each: true })
-  serviceIds: number[];
 }
