@@ -35,7 +35,6 @@ export class BookingService {
     private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(BookingServiceEntity)
     private readonly bookingServiceRepository: Repository<BookingServiceEntity>,
-    @InjectRepository(Contract)
     private readonly dataSource: DataSource,
   ) {}
 

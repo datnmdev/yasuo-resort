@@ -222,6 +222,7 @@ export class RoomService {
               maintenanceStartDate: body.maintenanceStartDate
                 ? body.maintenanceStartDate
                 : null,
+              updatedAt: new Date(),
             },
           );
         }

@@ -1,35 +1,18 @@
-import {
-  Button,
-  Table,
-  Space,
-  Tooltip,
-  Input,
-  Pagination,
-  Modal,
-  Form,
-  Tag,
-  Select,
-  Popover,
-  Tree,
-} from "antd";
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  FilterOutlined,
-} from "@ant-design/icons";
-import useFetch from "../../hooks/fetch.hook";
-import apis from "../../apis/index";
-import { useEffect, useState } from "react";
-import TextEditor from "../../components/TextEditor";
-import useToast from "../../hooks/toast.hook";
-import moment from "moment";
-import PictureWall from "../../components/PictureWall";
+import { Button, Table, Space, Tooltip, Input, Pagination, Modal, Form, Tag, Select, Popover, Tree, InputNumber } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, FilterOutlined } from '@ant-design/icons';
+import useFetch from '../../hooks/fetch.hook';
+import apis from '../../apis/index';
+import { useEffect, useState } from 'react';
+import TextEditor from '../../components/TextEditor';
+import useToast from '../../hooks/toast.hook';
+import moment from 'moment';
+import PictureWall from '../../components/PictureWall';
 
 export default function RoomManagementPage() {
   const [getRoomsReq, setGetRoomsReq] = useState({
     page: 1,
     limit: 10,
+    status: JSON.stringify(['active', 'inactive', 'maintenance'])
   });
   const {
     data: rooms,
@@ -68,69 +51,69 @@ export default function RoomManagementPage() {
 
   const columns = [
     {
-      title: "Id",
-      dataIndex: "id",
-      key: "id",
+      title: 'Id',
+      dataIndex: 'id',
+      key: 'id',
     },
     {
-      title: "Room Number",
-      dataIndex: "roomNumber",
-      key: "roomNumber",
+      title: 'Room Number',
+      dataIndex: 'roomNumber',
+      key: 'roomNumber',
     },
     {
-      title: "Room Type",
-      dataIndex: "roomTypeName",
-      key: "roomTypeName",
+      title: 'Max People',
+      dataIndex: 'maxPeople',
+      key: 'maxPeople',
     },
     {
-      title: "Status",
-      key: "status",
-      dataIndex: "status",
+      title: 'Room Type',
+      dataIndex: 'roomTypeName',
+      key: 'roomTypeName',
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      dataIndex: 'status',
       render: (_, record) => {
         let color;
         switch (record.status) {
-          case "inactive":
-            color = "gray";
+          case 'inactive':
+            color = 'gray';
             break;
-          case "active":
-            color = "green";
+          case 'active':
+            color = 'green';
             break;
-          case "under_maintenance":
-            color = "orange";
+          case 'maintenance':
+            color = 'orange';
             break;
-          default:
-            color = "volcano";
         }
 
         return <Tag color={color}>{record.status.toUpperCase()}</Tag>;
       },
     },
     {
-      title: "Current Condition",
-      key: "currentCondition",
-      dataIndex: "currentCondition",
-      render: (_, record) => {
-        let color;
-        switch (record.currentCondition) {
-          case "available":
-            color = "green";
-            break;
-          default:
-            color = "volcano";
-            break;
-        }
-
-        return <Tag color={color}>{record.currentCondition.toUpperCase()}</Tag>;
-      },
+      title: 'Maintenance Start Date',
+      dataIndex: 'maintenanceStartDate',
+      key: 'maintenanceStartDate',
     },
     {
-      title: "Created At",
-      dataIndex: "createdAt",
-      key: "createdAt",
+      title: 'Price',
+      dataIndex: 'price',
+      key: 'price',
     },
     {
-      title: "Action",
-      key: "action",
+      title: 'Created At',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+    },
+    {
+      title: 'Updated At',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
+    },
+    {
+      title: 'Action',
+      key: 'action',
       render: (_, record) => (
         <Space size="middle">
           <Tooltip title="Edit">
@@ -138,9 +121,7 @@ export default function RoomManagementPage() {
               shape="circle"
               icon={<EditOutlined />}
               onClick={() => {
-                const selectedItem = rooms?.data?.[0]?.find(
-                  (item) => item.id === record.id
-                );
+                const selectedItem = rooms?.data?.[0]?.find((item) => item.id === record.id);
                 setSelectedRoomToUpdate(
                   selectedItem
                     ? {
@@ -206,8 +187,13 @@ export default function RoomManagementPage() {
           rooms.data[0].map((room) => ({
             ...room,
             key: room.id,
+            price: `$${room.price}`,
             roomTypeName: room.type.name,
-            createdAt: moment(room.createdAt).format("DD/MM/YYYY HH:mm:ss"),
+            createdAt: moment(room.createdAt).format('DD/MM/YYYY HH:mm:ss'),
+            updatedAt: moment(room.updatedAt).format('DD/MM/YYYY HH:mm:ss'),
+            maintenanceStartDate: room.maintenanceStartDate
+              ? moment(room.maintenanceStartDate).format('DD/MM/YYYY')
+              : '--/--/--',
           })),
           rooms.data[1],
         ]);
@@ -236,7 +222,7 @@ export default function RoomManagementPage() {
       if (createRoomResData) {
         if (createRoomResData.isSuccess) {
           openNotification({
-            title: "Room created successfully!",
+            title: 'Room created successfully!',
           });
           setReGetRooms({
             value: true,
@@ -264,7 +250,7 @@ export default function RoomManagementPage() {
       if (updateRoomResData) {
         if (updateRoomResData.isSuccess) {
           openNotification({
-            title: "Room updated successfully!",
+            title: 'Room updated successfully!',
           });
           setReGetRooms({
             value: true,
@@ -293,7 +279,7 @@ export default function RoomManagementPage() {
       if (deleteRoomResData) {
         if (deleteRoomResData.isSuccess) {
           openNotification({
-            title: "Room deleted successfully!",
+            title: 'Room deleted successfully!',
           });
           setReGetRooms({
             value: true,
@@ -311,11 +297,7 @@ export default function RoomManagementPage() {
     <div className="p-4">
       <div className="flex justify-between items-center">
         <div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setOpenCreateRoomModal(true)}
-          >
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpenCreateRoomModal(true)}>
             Create
           </Button>
         </div>
@@ -342,30 +324,26 @@ export default function RoomManagementPage() {
                   <Tree
                     style={{ minWidth: 242 }}
                     selectable={false}
-                    defaultExpandedKeys={["status"]}
-                    defaultSelectedKeys={["status"]}
-                    defaultCheckedKeys={["status"]}
+                    defaultExpandedKeys={['status']}
+                    defaultSelectedKeys={['status']}
+                    defaultCheckedKeys={['status']}
                     checkable
                     treeData={[
                       {
-                        title: "Status",
-                        key: "status",
+                        title: 'Status',
+                        key: 'status',
                         children: [
                           {
-                            title: "INACTIVE",
-                            key: "inactive",
+                            title: 'INACTIVE',
+                            key: 'inactive',
                           },
                           {
-                            title: "ACTIVE",
-                            key: "active",
+                            title: 'ACTIVE',
+                            key: 'active',
                           },
                           {
-                            title: "UNDER_MAINTENANCE",
-                            key: "under_maintenance",
-                          },
-                          {
-                            title: "RETIRED",
-                            key: "retired",
+                            title: 'MAINTENANCE',
+                            key: 'maintenance',
                           },
                         ],
                       },
@@ -374,61 +352,15 @@ export default function RoomManagementPage() {
                       setGetRoomsReq({
                         ...getRoomsReq,
                         status:
-                          selectedStatus.filter((status) => status != "status")
-                            .length > 0
-                            ? JSON.stringify(
-                                selectedStatus.filter(
-                                  (status) => status != "status"
-                                )
-                              )
-                            : [],
-                      })
-                    }
-                  />
-                  <Tree
-                    style={{ minWidth: 242 }}
-                    selectable={false}
-                    defaultExpandedKeys={["currentCondition"]}
-                    defaultSelectedKeys={["currentCondition"]}
-                    defaultCheckedKeys={["currentCondition"]}
-                    checkable
-                    treeData={[
-                      {
-                        title: "Current condition",
-                        key: "currentCondition",
-                        children: [
-                          {
-                            title: "AVAILABLE",
-                            key: "available",
-                          },
-                          {
-                            title: "BOOKED",
-                            key: "booked",
-                          },
-                        ],
-                      },
-                    ]}
-                    onCheck={(selectedCurrentCondition) =>
-                      setGetRoomsReq({
-                        ...getRoomsReq,
-                        currentCondition:
-                          selectedCurrentCondition.filter(
-                            (currentCondition) =>
-                              currentCondition != "currentCondition"
-                          ).length > 0
-                            ? JSON.stringify(
-                                selectedCurrentCondition.filter(
-                                  (currentCondition) =>
-                                    currentCondition != "currentCondition"
-                                )
-                              )
+                          selectedStatus.filter((status) => status != 'status').length > 0
+                            ? JSON.stringify(selectedStatus.filter((status) => status != 'status'))
                             : [],
                       })
                     }
                   />
                 </>
               }
-              trigger={["click"]}
+              trigger={['click']}
             >
               <Button>
                 <FilterOutlined />
@@ -473,42 +405,36 @@ export default function RoomManagementPage() {
             <Button key="reset" onClick={() => createRoomForm.resetFields()}>
               Reset
             </Button>,
-            <Button
-              key="submit"
-              type="primary"
-              loading={isCreatingRoom}
-              onClick={handleCreateRoomSubmit}
-            >
+            <Button key="submit" type="primary" loading={isCreatingRoom} onClick={handleCreateRoomSubmit}>
               Submit
             </Button>,
           ]}
         >
-          <Form
-            layout="vertical"
-            form={createRoomForm}
-            name="control-hooks"
-            style={{ marginTop: 16 }}
-          >
-            <Form.Item
-              name="roomNumber"
-              label="Room number"
-              rules={[{ required: true }]}
-            >
+          <Form layout="vertical" form={createRoomForm} name="control-hooks" style={{ marginTop: 16 }}>
+            <Form.Item name="roomNumber" label="Room number" rules={[{ required: true }]}>
               <Input disabled={isCreatingRoom} />
             </Form.Item>
 
             <Form.Item
-              name="typeId"
-              label="Room type"
+              name="maxPeople"
+              label="Max Peple"
               rules={[{ required: true }]}
             >
+              <InputNumber
+                addonAfter="Người"
+                min={1}
+                step={1}
+                style={{ width: "100%" }}
+                disabled={isCreatingRoom}
+              />
+            </Form.Item>
+
+            <Form.Item name="typeId" label="Room type" rules={[{ required: true }]}>
               <Select
                 showSearch
                 placeholder="Select a room type..."
                 optionFilterProp="label"
-                onChange={(value) =>
-                  createRoomForm.setFieldValue("typeId", value)
-                }
+                onChange={(value) => createRoomForm.setFieldValue('typeId', value)}
                 options={
                   roomTypes?.isSuccess
                     ? roomTypes.data[0].map((roomType) => ({
@@ -521,73 +447,26 @@ export default function RoomManagementPage() {
             </Form.Item>
 
             <Form.Item
-              name="status"
-              label="Status"
+              name="price"
+              label="Price"
               rules={[{ required: true }]}
             >
-              <Select
-                showSearch
-                placeholder="Select a status..."
-                optionFilterProp="label"
-                onChange={(value) =>
-                  createRoomForm.setFieldValue("status", value)
-                }
-                options={[
-                  {
-                    value: "inactive",
-                    label: "INACTIVE",
-                  },
-                  {
-                    value: "active",
-                    label: "ACTIVE",
-                  },
-                  {
-                    value: "under_maintenance",
-                    label: "UNDER_MAINTENANCE",
-                  },
-                  {
-                    value: "retired",
-                    label: "RETIRED",
-                  },
-                ]}
+              <InputNumber
+                addonAfter="$"
+                min={0.0}
+                step={0.01}
+                stringMode
+                style={{ width: "100%" }}
+                disabled={isCreatingRoom}
               />
             </Form.Item>
 
-            <Form.Item
-              name="currentCondition"
-              label="Current condition"
-              rules={[{ required: true }]}
-            >
-              <Select
-                showSearch
-                placeholder="Select a current condition..."
-                optionFilterProp="label"
-                onChange={(value) =>
-                  createRoomForm.setFieldValue("currentCondition", value)
-                }
-                options={[
-                  {
-                    value: "available",
-                    label: "AVAILABLE",
-                  },
-                ]}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="description"
-              label="Description"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="description" label="Description" rules={[{ required: true }]}>
               <TextEditor disabled={isCreatingRoom} />
             </Form.Item>
 
             <Form.Item name="media" label="Media">
-              <PictureWall
-                onChange={(value) =>
-                  createRoomForm.setFieldValue("media", value)
-                }
-              />
+              <PictureWall onChange={(value) => createRoomForm.setFieldValue('media', value)} />
             </Form.Item>
           </Form>
         </Modal>
@@ -606,42 +485,22 @@ export default function RoomManagementPage() {
             <Button key="reset" onClick={() => updateRoomForm.resetFields()}>
               Reset
             </Button>,
-            <Button
-              key="submit"
-              type="primary"
-              loading={isUpdatingRoom}
-              onClick={handleUpdateRoomSubmit}
-            >
+            <Button key="submit" type="primary" loading={isUpdatingRoom} onClick={handleUpdateRoomSubmit}>
               Submit
             </Button>,
           ]}
         >
-          <Form
-            layout="vertical"
-            form={updateRoomForm}
-            name="control-hooks"
-            style={{ marginTop: 16 }}
-          >
-            <Form.Item
-              name="roomNumber"
-              label="Room number"
-              rules={[{ required: true }]}
-            >
+          <Form layout="vertical" form={updateRoomForm} name="control-hooks" style={{ marginTop: 16 }}>
+            <Form.Item name="roomNumber" label="Room number" rules={[{ required: true }]}>
               <Input disabled={isUpdatingRoom} />
             </Form.Item>
 
-            <Form.Item
-              name="typeId"
-              label="Room type"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="typeId" label="Room type" rules={[{ required: true }]}>
               <Select
                 showSearch
                 placeholder="Select a room type..."
                 optionFilterProp="label"
-                onChange={(value) =>
-                  createRoomForm.setFieldValue("typeId", value)
-                }
+                onChange={(value) => createRoomForm.setFieldValue('typeId', value)}
                 options={
                   roomTypes?.isSuccess
                     ? roomTypes.data[0].map((roomType) => ({
@@ -653,85 +512,64 @@ export default function RoomManagementPage() {
               />
             </Form.Item>
 
-            <Form.Item
-              name="status"
-              label="Status"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="status" label="Status" rules={[{ required: true }]}>
               <Select
                 showSearch
                 placeholder="Select a status..."
                 optionFilterProp="label"
-                onChange={(value) =>
-                  updateRoomForm.setFieldValue("status", value)
-                }
-                disabled={selectedRoomToUpdate?.currentCondition === "booked"}
+                onChange={(value) => updateRoomForm.setFieldValue('status', value)}
+                disabled={selectedRoomToUpdate?.currentCondition === 'booked'}
                 options={[
                   {
-                    value: "inactive",
-                    label: "INACTIVE",
+                    value: 'inactive',
+                    label: 'INACTIVE',
                   },
                   {
-                    value: "active",
-                    label: "ACTIVE",
+                    value: 'active',
+                    label: 'ACTIVE',
                   },
                   {
-                    value: "under_maintenance",
-                    label: "UNDER_MAINTENANCE",
+                    value: 'under_maintenance',
+                    label: 'UNDER_MAINTENANCE',
                   },
                   {
-                    value: "retired",
-                    label: "RETIRED",
+                    value: 'retired',
+                    label: 'RETIRED',
                   },
                 ]}
               />
             </Form.Item>
 
-            <Form.Item
-              name="currentCondition"
-              label="Current condition"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="currentCondition" label="Current condition" rules={[{ required: true }]}>
               <Select
                 showSearch
                 placeholder="Select a current condition..."
                 optionFilterProp="label"
-                onChange={(value) =>
-                  updateRoomForm.setFieldValue("currentCondition", value)
-                }
-                disabled={selectedRoomToUpdate?.currentCondition === "booked"}
+                onChange={(value) => updateRoomForm.setFieldValue('currentCondition', value)}
+                disabled={selectedRoomToUpdate?.currentCondition === 'booked'}
                 options={[
                   {
-                    value: "available",
-                    label: "AVAILABLE",
+                    value: 'available',
+                    label: 'AVAILABLE',
                   },
                 ]}
               />
             </Form.Item>
 
-            <Form.Item
-              name="description"
-              label="Description"
-              rules={[{ required: true }]}
-            >
-              <TextEditor
-                disabled={isUpdatingRoom}
-                initialValue={updateRoomForm.getFieldValue("description")}
-              />
+            <Form.Item name="description" label="Description" rules={[{ required: true }]}>
+              <TextEditor disabled={isUpdatingRoom} initialValue={updateRoomForm.getFieldValue('description')} />
             </Form.Item>
 
             <Form.Item name="media" label="Media">
               <PictureWall
                 initialValue={
-                  updateRoomForm?.getFieldValue("media")?.map((path) => ({
-                    name: path.substring(path.lastIndexOf("/") + 1),
+                  updateRoomForm?.getFieldValue('media')?.map((path) => ({
+                    name: path.substring(path.lastIndexOf('/') + 1),
                     url: `${import.meta.env.VITE_API_BASE_URL}/${path}`,
-                    status: "done",
+                    status: 'done',
                   })) ?? []
                 }
-                onChange={(value) =>
-                  updateRoomForm.setFieldValue("media", value)
-                }
+                onChange={(value) => updateRoomForm.setFieldValue('media', value)}
               />
             </Form.Item>
           </Form>
