@@ -10,11 +10,12 @@ import uploadApi from '@apis/upload';
 import { motion } from "framer-motion";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useReactToPrint } from 'react-to-print';
 
 export default function Contract() {
   const user = useSelector(userSelector.selectUser);
   const [contracts, setContracts] = useState([]);
-  console.log("contracts", contracts);
+  console.log("check contract abc", contracts);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -37,6 +38,8 @@ export default function Contract() {
   // Modal for viewing contract appendix
   const [isOpenAppendixModal, setIsOpenAppendixModal] = useState(false);
   const [contractToViewAppendix, setContractToViewAppendix] = useState(null);
+  const [shouldPrint, setShouldPrint] = useState(false);
+  console.log("contractToViewAppendix", contractToViewAppendix);
 
   const serviceStatusMap = {
     pending: { label: '⏳ Pending', className: 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs' },
@@ -45,24 +48,23 @@ export default function Contract() {
     rejected: { label: '🚫 Rejected', className: 'bg-red-100 text-red-700 px-2 py-1 rounded text-xs' },
   };
 
-  // const statusMap = {
-  //   confirmed: {
-  //     label: '✅ Confirmed',
-  //     className: 'bg-green-100 text-green-700',
-  //   },
-  //   pending: {
-  //     label: '⏳ Pending',
-  //     className: 'bg-yellow-100 text-yellow-700',
-  //   },
-  //   cancelled: {
-  //     label: '❌ Cancelled',
-  //     className: 'bg-gray-100 text-gray-600',
-  //   },
-  //   rejected: {
-  //     label: '🚫 Rejected',
-  //     className: 'bg-red-100 text-red-700',
-  //   },
-  // };
+  const printRef = useRef(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Contract-Appendix-${contractToViewAppendix?.id || ''}`,
+    removeAfterPrint: true,
+  });
+
+  useEffect(() => {
+    if (contractToViewAppendix && printRef.current) {
+      setTimeout(() => {
+        console.log("In ref:", printRef.current);
+        handlePrint();
+      }, 200);
+    }
+  }, [contractToViewAppendix]);
+
   const getContractStatusDisplay = (contract) => {
     const today = new Date().toISOString().split("T")[0];
     const isEnded = contract.status === 'confirmed' && contract.endDate < today;
@@ -483,7 +485,8 @@ export default function Contract() {
                                     const isStarted = s.startDate <= today;
                                     const isCancelled = s.status === 'cancelled';
                                     const isConfirmed = s.status === 'confirmed';
-                                    const isDisabled = isStarted || isCancelled || isConfirmed || contract.status === 'cancelled';
+                                    const isRejected = s.status === 'rejected';
+                                    const isDisabled = isStarted || isCancelled || isConfirmed || contract.status === 'cancelled' || isRejected;
 
                                     return (
                                       <button
@@ -538,12 +541,217 @@ export default function Contract() {
                           </button>
                         )}
 
+                        <div ref={printRef} style={{ display: 'none' }}>
+                          {contractToViewAppendix && (
+                            <>
+                              <h2 className="font-bold text-lg mb-2">Service Appendix</h2>
+                              <table className="min-w-full text-sm border">
+                                <thead className="bg-gray-100">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left">Service</th>
+                                    <th className="px-3 py-2 text-left">Quantity</th>
+                                    <th className="px-3 py-2 text-left">Start</th>
+                                    <th className="px-3 py-2 text-left">End</th>
+                                    <th className="px-3 py-2 text-left">Price</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {contractToViewAppendix?.bookingServices?.map((s) => (
+                                    <tr key={s.id} className="border-t">
+                                      <td className="px-3 py-2">{s.service?.name}</td>
+                                      <td className="px-3 py-2">{s.quantity}</td>
+                                      <td className="px-3 py-2">{s.startDate}</td>
+                                      <td className="px-3 py-2">{s.endDate}</td>
+                                      <td className="px-3 py-2">{s.price}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </>)}
+                        </div>
+
                         {/* show phụ lục hợp đồng */}
-                        {contract.status === 'confirmed' && new Date(contract.endDate) < new Date() && (
+                        {contract.status === 'confirmed' && new Date(contract.endDate) > new Date() && (
                           <button
                             onClick={() => {
-                              setContractToViewAppendix(contract);
-                              setIsOpenAppendixModal(true);
+                              // Tạo nội dung in động cho hợp đồng cụ thể này
+                              const currentDate = new Date().toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              });
+
+                              // Tính tổng tiền dịch vụ
+                              const totalServicePrice = contract.bookingServices?.reduce((total, s) => {
+                                const quantity = s.quantity || 0;
+                                const price = parseFloat(s.price || 0);
+                                const start = new Date(s.startDate);
+                                const end = new Date(s.endDate);
+                                const timeDiff = end.getTime() - start.getTime();
+                                const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                                const serviceTotal = quantity * price * numberOfDays;
+                                return total + serviceTotal;
+                              }, 0) || 0;
+
+                              const printContent = `
+                                <div style="max-width: 800px; margin: 0 auto; font-family: Arial, sans-serif;">
+                                  <!-- Header -->
+                                  <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
+                                    <h1 style="color: #2563eb; margin: 0; font-size: 24px;">YASUO RESORT SYSTEM</h1>
+                                    <h2 style="color: #1f2937; margin: 10px 0; font-size: 20px;">SERVICE APPENDIX</h2>
+                                    <p style="margin: 5px 0; color: #6b7280;">Contract #${contract.id}</p>
+                                  </div>
+
+                                  <!-- Contract Information -->
+                                  <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+                                    <div style="flex: 1;">
+                                      <h3 style="color: #1f2937; margin-bottom: 10px; font-size: 16px;">CONTRACT DETAILS</h3>
+                                      <p style="margin: 5px 0;"><strong>Booking ID:</strong> #${contract.id}</p>
+                                      <p style="margin: 5px 0;"><strong>Customer:</strong> ${contract.user?.name || user?.name || 'N/A'}</p>
+                                      <p style="margin: 5px 0;"><strong>Email:</strong> ${contract.user?.email || user?.email || 'N/A'}</p>
+                                      <p style="margin: 5px 0;"><strong>Phone:</strong> ${contract.user?.phone || user?.phone || 'N/A'}</p>
+                                      <p style="margin: 5px 0;"><strong>CCCD:</strong> ${contract.user?.cccd || 'N/A'}</p>
+                                      <p style="margin: 5px 0;"><strong>Address:</strong> ${contract.user?.permanentAddress || 'N/A'}</p>
+                                    </div>
+                                    <div style="flex: 1; text-align: right;">
+                                      <h3 style="color: #1f2937; margin-bottom: 10px; font-size: 16px;">BOOKING DETAILS</h3>
+                                      <p style="margin: 5px 0;"><strong>Check-in:</strong> ${contract.startDate}</p>
+                                      <p style="margin: 5px 0;"><strong>Check-out:</strong> ${contract.endDate}</p>
+                                      <p style="margin: 5px 0;"><strong>Room:</strong> ${contract.room?.roomNumber || contract.roomNumber || 'N/A'}</p>
+                                      <p style="margin: 5px 0;"><strong>Room Type:</strong> ${contract.room?.type?.name || 'Standard'}</p>
+                                      <p style="margin: 5px 0;"><strong>Max Guests:</strong> ${contract.room?.maxPeople || 'N/A'} people</p>
+                                      <p style="margin: 5px 0;"><strong>Room Price:</strong> $${contract.roomPrice}/night</p>
+                                      <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: ${contract.status === 'confirmed' ? '#059669' : contract.status === 'pending' ? '#d97706' : '#dc2626'}; font-weight: bold; text-transform: uppercase;">${contract.status}</span></p>
+                                    </div>
+                                  </div>
+
+                                  <!-- Room Total -->
+                                  <div style="background-color: #f8fafc; padding: 15px; margin-bottom: 20px; border-left: 4px solid #2563eb;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                      <div>
+                                        <h4 style="margin: 0; color: #1f2937;">ROOM ACCOMMODATION</h4>
+                                        <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">
+                                          ${contract.room?.roomNumber || contract.roomNumber} - 
+                                          ${(() => {
+                                  const start = new Date(contract.startDate);
+                                  const end = new Date(contract.endDate);
+                                  const timeDiff = end.getTime() - start.getTime();
+                                  const numberOfNights = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                                  return numberOfNights;
+                                })()} nights × $${contract.roomPrice}/night
+                                        </p>
+                                      </div>
+                                      <div style="text-align: right;">
+                                        <p style="margin: 0; font-size: 18px; font-weight: bold; color: #059669;">$${contract.totalPrice}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <!-- Services Table -->
+                                  <div style="margin-bottom: 30px;">
+                                    <h3 style="color: #1f2937; margin-bottom: 15px; font-size: 18px;">ADDITIONAL SERVICES</h3>
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                      <thead>
+                                        <tr style="background-color: #f8fafc;">
+                                          <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0; font-weight: bold;">Service Name</th>
+                                          <th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0; font-weight: bold;">Quantity</th>
+                                          <th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0; font-weight: bold;">Start Date</th>
+                                          <th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0; font-weight: bold;">End Date</th>
+                                          <th style="padding: 12px; text-align: center; border: 1px solid #e2e8f0; font-weight: bold;">Days</th>
+                                          <th style="padding: 12px; text-align: right; border: 1px solid #e2e8f0; font-weight: bold;">Unit Price</th>
+                                          <th style="padding: 12px; text-align: right; border: 1px solid #e2e8f0; font-weight: bold;">Total</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        ${contract.bookingServices?.map(s => {
+                                  const start = new Date(s.startDate);
+                                  const end = new Date(s.endDate);
+                                  const timeDiff = end.getTime() - start.getTime();
+                                  const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                                  const serviceTotal = (s.quantity || 0) * parseFloat(s.price || 0) * numberOfDays;
+                                  return `
+                                            <tr>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0;">${s.service?.name || 'N/A'}</td>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: center;">${s.quantity}</td>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: center;">${s.startDate}</td>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: center;">${s.endDate}</td>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: center;">${numberOfDays}</td>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: right;">$${s.price}/person/day</td>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold;">$${serviceTotal.toFixed(2)}</td>
+                                            </tr>
+                                          `;
+                                }).join('') || '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #9ca3af; border: 1px solid #e2e8f0;">No additional services</td></tr>'}
+                                      </tbody>
+                                      <tfoot>
+                                        <tr style="background-color: #f1f5f9;">
+                                          <td colspan="6" style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold; font-size: 16px;">TOTAL SERVICE AMOUNT:</td>
+                                          <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold; font-size: 16px; color: #059669;">$${totalServicePrice.toFixed(2)}</td>
+                                        </tr>
+                                      </tfoot>
+                                    </table>
+                                  </div>
+
+                                  <!-- Summary Section -->
+                                  <div style="background-color: #f8fafc; padding: 20px; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                    <h3 style="color: #1f2937; margin-bottom: 15px; font-size: 18px; text-align: center;">BOOKING SUMMARY</h3>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                                      <span style="font-weight: 500;">Room Accommodation:</span>
+                                      <span style="font-weight: bold;">$${contract.totalPrice}</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                                      <span style="font-weight: 500;">Additional Services:</span>
+                                      <span style="font-weight: bold;">$${totalServicePrice.toFixed(2)}</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #2563eb; margin-top: 15px;">
+                                      <span style="font-weight: bold; font-size: 18px; color: #1f2937;">GRAND TOTAL:</span>
+                                      <span style="font-weight: bold; font-size: 20px; color: #059669;">$${(parseFloat(contract.totalPrice) + totalServicePrice).toFixed(2)}</span>
+                                    </div>
+                                  </div>
+
+                                  <!-- Footer -->
+                                  <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                      <div>
+                                        <p style="margin: 0; font-size: 12px; color: #6b7280;">Generated on: ${currentDate}</p>
+                                        <p style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280;">This is an official service appendix document</p>
+                                      </div>
+                                      <div style="text-align: right;">
+                                        <p style="margin: 0; font-size: 12px; color: #6b7280;">Yasou Resort System</p>
+                                        <p style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280;">Customer Service: support@resort.com</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              `;
+
+                              // Tạo cửa sổ in mới với nội dung cụ thể ở giữa màn hình
+                              const screenWidth = window.screen.width;
+                              const screenHeight = window.screen.height;
+                              const windowWidth = 900;
+                              const windowHeight = 700;
+                              const left = (screenWidth - windowWidth) / 2;
+                              const top = (screenHeight - windowHeight) / 2;
+
+                              const printWindow = window.open('', '_blank', `width=${windowWidth},height=${windowHeight},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+                              printWindow.document.write(`
+                                <html>
+                                  <head>
+                                    <title>Contract Appendix - #${contract.id}</title>
+                                    <style>
+                                      body { font-family: Arial, sans-serif; margin: 20px; }
+                                      table { border-collapse: collapse; width: 100%; }
+                                      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                                      th { background-color: #f2f2f2; }
+                                    </style>
+                                  </head>
+                                  <body>
+                                    ${printContent}
+                                  </body>
+                                </html>
+                              `);
+                              printWindow.document.close();
+                              printWindow.focus();
+                              printWindow.print();
                             }}
                             className="inline-flex items-center px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 rounded text-sm"
                           >
@@ -649,8 +857,10 @@ export default function Contract() {
           width={800}
         >
           {contractToViewAppendix?.bookingServices?.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm border rounded">
+            <div className="overflow-x-auto" ref={printRef}>
+
+              <ServiceAppendix contract={contractToViewAppendix} />
+              {/* <table className="min-w-full text-sm border rounded">
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="px-3 py-2 text-left">Service Name</th>
@@ -671,7 +881,7 @@ export default function Contract() {
                     </tr>
                   ))}
 
-                  {/* Hàng tính tổng */}
+
                   <tr className="bg-gray-50 font-semibold">
                     <td className="px-3 py-2" colSpan={4}>Total Service Price</td>
                     <td className="px-3 py-2">
@@ -691,14 +901,12 @@ export default function Contract() {
                     </td>
                   </tr>
                 </tbody>
-              </table>
+              </table> */}
             </div>
           ) : (
             <div className="text-gray-500 text-sm">No services found in appendix.</div>
           )}
         </Modal>
-
-
       </div>
       <ToastContainer position="top-right" autoClose={3000} />
     </motion.div>
