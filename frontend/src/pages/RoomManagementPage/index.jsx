@@ -1,5 +1,27 @@
-import { Button, Table, Space, Tooltip, Input, Pagination, Modal, Form, Tag, Select, Popover, Tree, InputNumber } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, FilterOutlined, GlobalOutlined, LockOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Table,
+  Space,
+  Tooltip,
+  Input,
+  Pagination,
+  Modal,
+  Form,
+  Tag,
+  Select,
+  Popover,
+  Tree,
+  InputNumber,
+  DatePicker,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  FilterOutlined,
+  GlobalOutlined,
+  LockOutlined,
+} from '@ant-design/icons';
 import useFetch from '../../hooks/fetch.hook';
 import apis from '../../apis/index';
 import { useEffect, useState } from 'react';
@@ -7,12 +29,13 @@ import TextEditor from '../../components/TextEditor';
 import useToast from '../../hooks/toast.hook';
 import moment from 'moment';
 import PictureWall from '../../components/PictureWall';
+import dayjs from 'dayjs';
 
 export default function RoomManagementPage() {
   const [getRoomsReq, setGetRoomsReq] = useState({
     page: 1,
     limit: 10,
-    status: JSON.stringify(['active', 'inactive', 'maintenance'])
+    status: JSON.stringify(['active', 'inactive', 'maintenance']),
   });
   const {
     data: rooms,
@@ -50,6 +73,8 @@ export default function RoomManagementPage() {
   } = useFetch(apis.room.deleteRoom, deleteRoomReq, false);
   const [selectedRoomToPublish, setSelectedRoomToPublish] = useState(null);
   const [selectedRoomToUnpublish, setSelectedRoomToUnpublish] = useState(null);
+  const statusFieldInUpdateRoomForm = Form.useWatch('status', updateRoomForm);
+  const maintenanceStartDateFieldInUpdateRoomForm = Form.useWatch('maintenanceStartDate', updateRoomForm);
 
   const columns = [
     {
@@ -195,7 +220,12 @@ export default function RoomManagementPage() {
         param: {
           roomId: selectedRoomToUpdate?.id,
         },
-        body: values,
+        body: {
+          ...values,
+          maintenanceStartDate: values.maintenanceStartDate
+            ? dayjs(values.maintenanceStartDate).format('YYYY-MM-DD')
+            : null,
+        },
       });
     } catch (error) {
       console.log(error);
@@ -268,7 +298,13 @@ export default function RoomManagementPage() {
 
   useEffect(() => {
     if (selectedRoomToUpdate) {
-      updateRoomForm.setFieldsValue(selectedRoomToUpdate);
+      updateRoomForm.resetFields();
+      updateRoomForm.setFieldsValue({
+        ...selectedRoomToUpdate,
+        maintenanceStartDate: selectedRoomToUpdate.maintenanceStartDate
+          ? dayjs(selectedRoomToUpdate.maintenanceStartDate, "YYYY-MM-DD")
+          : null,
+      });
       setOpenUpdateRoomModal(true);
     }
   }, [selectedRoomToUpdate]);
@@ -348,6 +384,12 @@ export default function RoomManagementPage() {
       setSelectedRoomToUnpublish(null);
     }
   }, [selectedRoomToUnpublish]);
+
+  useEffect(() => {
+    if (maintenanceStartDateFieldInUpdateRoomForm) {
+      updateRoomForm;
+    }
+  }, [maintenanceStartDateFieldInUpdateRoomForm]);
 
   return (
     <div className="p-4">
@@ -471,18 +513,8 @@ export default function RoomManagementPage() {
               <Input disabled={isCreatingRoom} />
             </Form.Item>
 
-            <Form.Item
-              name="maxPeople"
-              label="Max Peple"
-              rules={[{ required: true }]}
-            >
-              <InputNumber
-                addonAfter="Người"
-                min={1}
-                step={1}
-                style={{ width: "100%" }}
-                disabled={isCreatingRoom}
-              />
+            <Form.Item name="maxPeople" label="Max Peple" rules={[{ required: true }]}>
+              <InputNumber addonAfter="Người" min={1} step={1} style={{ width: '100%' }} disabled={isCreatingRoom} />
             </Form.Item>
 
             <Form.Item name="typeId" label="Room type" rules={[{ required: true }]}>
@@ -502,17 +534,13 @@ export default function RoomManagementPage() {
               />
             </Form.Item>
 
-            <Form.Item
-              name="price"
-              label="Price"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="price" label="Price" rules={[{ required: true }]}>
               <InputNumber
                 addonAfter="$"
                 min={0.0}
                 step={0.01}
                 stringMode
-                style={{ width: "100%" }}
+                style={{ width: '100%' }}
                 disabled={isCreatingRoom}
               />
             </Form.Item>
@@ -538,7 +566,13 @@ export default function RoomManagementPage() {
             <Button key="back" onClick={() => setOpenUpdateRoomModal(false)}>
               Cancel
             </Button>,
-            <Button key="reset" onClick={() => updateRoomForm.resetFields()}>
+            <Button
+              key="reset"
+              onClick={() => {
+                updateRoomForm.resetFields();
+                updateRoomForm.setFieldsValue(selectedRoomToUpdate);
+              }}
+            >
               Reset
             </Button>,
             <Button key="submit" type="primary" loading={isUpdatingRoom} onClick={handleUpdateRoomSubmit}>
@@ -551,18 +585,8 @@ export default function RoomManagementPage() {
               <Input disabled={isUpdatingRoom} />
             </Form.Item>
 
-            <Form.Item
-              name="maxPeople"
-              label="Max Peple"
-              rules={[{ required: true }]}
-            >
-              <InputNumber
-                addonAfter="Người"
-                min={1}
-                step={1}
-                style={{ width: "100%" }}
-                disabled={isUpdatingRoom}
-              />
+            <Form.Item name="maxPeople" label="Max Peple" rules={[{ required: true }]}>
+              <InputNumber addonAfter="Người" min={1} step={1} style={{ width: '100%' }} disabled={isUpdatingRoom} />
             </Form.Item>
 
             <Form.Item name="typeId" label="Room type" rules={[{ required: true }]}>
@@ -582,42 +606,70 @@ export default function RoomManagementPage() {
               />
             </Form.Item>
 
-            <Form.Item name="status" label="Status" rules={[{ required: true }]}>
-              <Select
-                showSearch
-                placeholder="Select a status..."
-                optionFilterProp="label"
-                onChange={(value) => updateRoomForm.setFieldValue('status', value)}
-                disabled={selectedRoomToUpdate?.currentCondition === 'booked'}
-                options={[
-                  {
-                    value: 'inactive',
-                    label: 'INACTIVE',
-                  },
-                  {
-                    value: 'active',
-                    label: 'ACTIVE',
-                  },
-                  {
-                    value: 'maintenance',
-                    label: 'MAINTENANCE',
-                  },
-                ]}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="price"
-              label="Price"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="price" label="Price" rules={[{ required: true }]}>
               <InputNumber
                 addonAfter="$"
                 min={0.0}
                 step={0.01}
                 stringMode
-                style={{ width: "100%" }}
+                style={{ width: '100%' }}
                 disabled={isUpdatingRoom}
+              />
+            </Form.Item>
+
+            <Form.Item name="status" label="Status" rules={[{ required: true }]}>
+              <Select
+                showSearch
+                placeholder="Select a status..."
+                optionFilterProp="label"
+                onChange={(value) => {
+                  updateRoomForm.setFieldValue('status', value);
+                  if (value !== 'maintenance') {
+                    updateRoomForm.setFieldValue('maintenanceStartDate', null);
+                  }
+                }}
+                disabled={isUpdatingRoom}
+                options={
+                  selectedRoomToUpdate?.status === 'active'
+                    ? [
+                        {
+                          value: 'active',
+                          label: 'ACTIVE',
+                        },
+                        {
+                          value: 'maintenance',
+                          label: 'MAINTENANCE',
+                        },
+                      ]
+                    : selectedRoomToUpdate?.status === 'inactive'
+                    ? [
+                        {
+                          value: 'inactive',
+                          label: 'INACTIVE',
+                        },
+                      ]
+                    : [
+                        {
+                          value: 'maintenance',
+                          label: 'MAINTENANCE',
+                        },
+                      ]
+                }
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="maintenanceStartDate"
+              label="Maintenance Start Date"
+              rules={[{ required: statusFieldInUpdateRoomForm === 'maintenance' }]}
+            >
+              <DatePicker
+                format="DD-MM-YYYY"
+                disabledDate={(current) => {
+                  return current && current < moment().startOf('days');
+                }}
+                style={{ width: '100%' }}
+                disabled={isUpdatingRoom || statusFieldInUpdateRoomForm !== 'maintenance'}
               />
             </Form.Item>
 
@@ -628,11 +680,14 @@ export default function RoomManagementPage() {
             <Form.Item name="media" label="Media">
               <PictureWall
                 initialValue={
-                  updateRoomForm?.getFieldValue('media')?.map((path) => ({
-                    name: path.substring(path.lastIndexOf('/') + 1),
-                    url: `${import.meta.env.VITE_API_BASE_URL}/${path}`,
-                    status: 'done',
-                  })) ?? []
+                  selectedRoomToUpdate
+                    ? selectedRoomToUpdate.media.map((path) => ({
+                        name: path.substring(path.lastIndexOf('/') + 1),
+                        url: `${import.meta.env.VITE_API_BASE_URL}/${path}`,
+                        status: 'done',
+                        relativePath: path,
+                      }))
+                    : []
                 }
                 onChange={(value) => updateRoomForm.setFieldValue('media', value)}
               />

@@ -123,7 +123,7 @@ export class RoomService {
       const room = await queryRunner.manager.findOne(Room, {
         where: {
           roomNumber: body.roomNumber,
-        }
+        },
       });
       if (room) {
         throw new ConflictException('Room number already exists');
@@ -132,8 +132,8 @@ export class RoomService {
       // Kiểm tra room type có hợp lệ không
       const roomType = await queryRunner.manager.findOne(RoomType, {
         where: {
-          id: body.typeId
-        }
+          id: body.typeId,
+        },
       });
       if (!roomType) {
         throw new NotFoundException('Room type not found');
@@ -194,6 +194,16 @@ export class RoomService {
       });
     }
 
+    if (
+      body.status === 'maintenance' &&
+      moment(body.maintenanceStartDate).isBefore(moment(), 'days')
+    ) {
+      throw new BadRequestException({
+        message: 'Maintenance start date cannot be in the past',
+        error: 'BadRequest',
+      });
+    }
+
     const queryRunner = this.datasource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -245,7 +255,7 @@ export class RoomService {
               roomId,
             },
           });
-          for (const item of oldMedia) {
+          for (const item of oldMedia.filter(item => !body.media.includes(item.path))) {
             const filePath = path.join(process.cwd(), item.path);
             try {
               await access(filePath);
@@ -278,12 +288,20 @@ export class RoomService {
   }
 
   async deleteRoom(roomId: number) {
+    const queryRunner = this.datasource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
-      const deleteResult = await this.roomRepository.delete({
+      await queryRunner.manager.delete(Media, {
+        roomId
+      });
+      const deleteResult = await queryRunner.manager.delete(Room, {
         id: roomId,
       });
+      await queryRunner.commitTransaction();
       return deleteResult;
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       if (error instanceof QueryFailedError) {
         throw new ConflictException({
           error: 'DeleteConflict',
@@ -291,6 +309,8 @@ export class RoomService {
         });
       }
       throw error;
+    } finally {
+      await queryRunner.release();
     }
   }
 }

@@ -61,9 +61,13 @@ export default function PictureWall({ initialValue, onChange }) {
 
   useEffect(() => {
     onChange?.(
-      fileList.filter((item) => item.response).map((item) => item.response.path)
+      fileList.filter((item) => item?.response || item?.relativePath).map((item) => item?.response?.path || item?.relativePath)
     );
   }, [fileList]);
+
+  useEffect(() => {
+    setFileList(initialValue ?? []);
+  }, [initialValue])
 
   return (
     <>
