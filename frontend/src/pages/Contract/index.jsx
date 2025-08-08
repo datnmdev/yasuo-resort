@@ -5,6 +5,7 @@ import { userSelector } from '@src/stores/reducers/userReducer';
 import { formatCurrencyUSD } from '@src/libs/utils';
 import SignaturePad from 'signature_pad';
 import bookingApi from '@apis/booking';
+import service from '@apis/service';
 import uploadApi from '@apis/upload';
 import { motion } from "framer-motion";
 import { ToastContainer, toast } from 'react-toastify';
@@ -13,40 +14,91 @@ import 'react-toastify/dist/ReactToastify.css';
 export default function Contract() {
   const user = useSelector(userSelector.selectUser);
   const [contracts, setContracts] = useState([]);
+  console.log("contracts", contracts);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-
+  // State for PDF preview
   const [pdfUrlToPreview, setPdfUrlToPreview] = useState(null);
   const [isOpenPdfModal, setOpenPdfModal] = useState(false);
-
+  // State for booking to sign
   const [bookingToSign, setBookingToSign] = useState(null);
   const [bookingToCancel, setBookingToCancel] = useState(null);
+  // Refs for signature pad
   const canvasRef = useRef(null);
   const signaturePadRef = useRef(null);
-
+  // State for modal to sign contract
   const [isOpenSignModal, setOpenSignModal] = useState(false);
-
+  // State for cancel booking modal
   const [isOpenCancelBooking, setIsOpenCancelBooking] = useState(false);
-
+  // State for editing service
   const [editingServiceId, setEditingServiceId] = useState(null);
   const [editedService, setEditedService] = useState({});
+  // Modal for viewing contract appendix
+  const [isOpenAppendixModal, setIsOpenAppendixModal] = useState(false);
+  const [contractToViewAppendix, setContractToViewAppendix] = useState(null);
 
-
-  const statusMap = {
-    confirmed: {
-      label: 'Confirmed',
-      className: 'bg-green-100 text-green-700',
-    },
-    pending: {
-      label: 'Pending',
-      className: 'bg-yellow-100 text-yellow-700',
-    },
-    cancelled: {
-      label: 'Canceled',
-      className: 'bg-red-100 text-red-700',
-    },
+  const serviceStatusMap = {
+    pending: { label: '⏳ Pending', className: 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs' },
+    confirmed: { label: '✅ Confirmed', className: 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs' },
+    cancelled: { label: '❌ Cancelled', className: 'bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs' },
+    rejected: { label: '🚫 Rejected', className: 'bg-red-100 text-red-700 px-2 py-1 rounded text-xs' },
   };
+
+  // const statusMap = {
+  //   confirmed: {
+  //     label: '✅ Confirmed',
+  //     className: 'bg-green-100 text-green-700',
+  //   },
+  //   pending: {
+  //     label: '⏳ Pending',
+  //     className: 'bg-yellow-100 text-yellow-700',
+  //   },
+  //   cancelled: {
+  //     label: '❌ Cancelled',
+  //     className: 'bg-gray-100 text-gray-600',
+  //   },
+  //   rejected: {
+  //     label: '🚫 Rejected',
+  //     className: 'bg-red-100 text-red-700',
+  //   },
+  // };
+  const getContractStatusDisplay = (contract) => {
+    const today = new Date().toISOString().split("T")[0];
+    const isEnded = contract.status === 'confirmed' && contract.endDate < today;
+
+    if (isEnded) {
+      return {
+        label: '📅 Contract Ended',
+        className: 'bg-blue-100 text-blue-700',
+      };
+    }
+
+    const map = {
+      pending: {
+        label: '⏳ Pending',
+        className: 'bg-yellow-100 text-yellow-700',
+      },
+      confirmed: {
+        label: '✅ Confirmed',
+        className: 'bg-green-100 text-green-700',
+      },
+      rejected: {
+        label: '🚫 Rejected',
+        className: 'bg-red-100 text-red-700',
+      },
+      cancelled: {
+        label: '❌ Cancelled',
+        className: 'bg-gray-200 text-gray-600',
+      },
+    };
+
+    return map[contract.status] || {
+      label: contract.status,
+      className: 'bg-gray-200 text-gray-600',
+    };
+  };
+
 
   const fetchContracts = async () => {
     setLoading(true);
@@ -144,10 +196,32 @@ export default function Contract() {
     }
   };
   // xử lý edit, cancel service
-  
-  const handleCancelService = () => {
-    console.log("đây là hủy service")
-  }
+
+  const handleCancelService = async (serviceId) => {
+    try {
+      const serviceCheck = contracts
+        .flatMap(c => c.bookingServices || [])
+        .find(s => s.id === serviceId);
+
+      if (!serviceCheck) return toast.error("Service not found");
+
+      const today = new Date().toISOString().split("T")[0];
+      const isStarted = service.startDate <= today;
+
+      if (isStarted) {
+        return toast.warning("Service has already started. You cannot cancel it.");
+      }
+      console.log("serviceId", serviceId);
+      await service.cancelBookedService({ serviceId });
+      console.log("Service cancelled successfully");
+      toast.success("Service cancelled successfully");
+      await fetchContracts(); // làm mới danh sách
+
+    } catch (err) {
+      console.error("Failed to cancel service", err);
+      toast.error("Failed to cancel service");
+    }
+  };
 
   const formatDate = (date) => new Date(date).toISOString().split("T")[0];
   //const getToday = () => formatDate(new Date());
@@ -253,6 +327,12 @@ export default function Contract() {
                   <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
                     <div>
                       <div className="font-semibold text-lg text-teal-700">Booking code: #{contract.id}</div>
+                      {/* hiện lí do từ chối của admin */}
+                      {contract.status === 'rejected' && contract.reasonForRejection && (
+                        <div className="text-red-600 font-medium mb-4">
+                          <span className="font-semibold">Rejected by admin:</span> {contract.reasonForRejection}
+                        </div>
+                      )}
                       <div className="text-sm text-gray-500">
                         Date created: {new Date(contract.createdAt).toLocaleDateString()}
                       </div>
@@ -260,11 +340,7 @@ export default function Contract() {
                     {/* status hợp đồng - span */}
                     <div>
                       {(() => {
-                        const status = contract.status;
-                        const statusInfo = statusMap[status] || {
-                          label: status,
-                          className: 'bg-gray-200 text-gray-600',
-                        };
+                        const statusInfo = getContractStatusDisplay(contract);
 
                         return (
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.className}`}>
@@ -302,6 +378,7 @@ export default function Contract() {
                           <th className="px-3 py-2 text-left">Number of people</th>
                           <th className="px-3 py-2 text-left">Start Date</th>
                           <th className="px-3 py-2 text-left">End Date</th>
+                          <th className="px-3 py-2 text-left">Status</th>
                           <th className="px-3 py-2 text-left">Price</th>
                           <th className="px-3 py-2 text-left">Actions</th>
                         </tr>
@@ -356,7 +433,12 @@ export default function Contract() {
                                     s.endDate
                                   )}
                                 </td>
-                                <td className="px-3 py-2">{formatCurrencyUSD(s.price)}</td>
+                                <td className="px-3 py-2">
+                                  <span className={serviceStatusMap[s.status]?.className || 'text-gray-500'}>
+                                    {serviceStatusMap[s.status]?.label || s.status}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2">{formatCurrencyUSD(s.price)}/person/day</td>
                                 <td className="px-2 py-2"> {/* Cột chứa nút */}
                                   {isEditing ? (
                                     <>
@@ -382,8 +464,10 @@ export default function Contract() {
                                       disabled={contract.status === 'cancelled'}
                                       onClick={() => {
                                         const today = new Date().toISOString().split("T")[0];
-                                        if (s.startDate <= today) {
-                                          toast.warning("Unable to edit a service that has already started. You can cancel and book a new request service");
+                                        const isStarted = s.startDate <= today;
+                                        const isEditable = s.status === 'pending' && !isStarted;
+                                        if (!isEditable) {
+                                          toast.warning("Only services with 'pending' status and not yet started can be edited.");
                                           return;
                                         }
                                         setEditingServiceId(s.id);
@@ -394,17 +478,26 @@ export default function Contract() {
                                     </button>
                                   )}
 
-                                  <button
-                                    className={`px-3 py-1 rounded transition ${
-                                      contract.status === 'cancelled'
-                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                        : 'bg-red-100 text-red-600 hover:bg-red-200'
-                                    }`}
-                                    disabled={contract.status === 'cancelled'}
-                                    onClick={() => handleCancelService(s.id)}
-                                  >
-                                    Cancel
-                                  </button>
+                                  {(() => {
+                                    const today = new Date().toISOString().split("T")[0];
+                                    const isStarted = s.startDate <= today;
+                                    const isCancelled = s.status === 'cancelled';
+                                    const isConfirmed = s.status === 'confirmed';
+                                    const isDisabled = isStarted || isCancelled || isConfirmed || contract.status === 'cancelled';
+
+                                    return (
+                                      <button
+                                        className={`px-3 py-1 rounded transition ${isDisabled
+                                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                          : 'bg-red-100 text-red-600 hover:bg-red-200'
+                                          }`}
+                                        disabled={isDisabled}
+                                        onClick={() => handleCancelService(s.id)}
+                                      >
+                                        Cancel
+                                      </button>
+                                    );
+                                  })()}
                                 </td>
                               </tr>
                             )
@@ -424,10 +517,15 @@ export default function Contract() {
                       Status of contract: {contract.contract ? 'Created' : 'Not created'}
                     </div>
 
-                    {contract.status === 'cancelled' ? (
-                      <div className="text-sm font-medium text-red-600">❌ The contract has been cancelled.</div>
+                    {contract.status === 'cancelled' || contract.status === 'rejected' ? (
+                      <div className="text-sm font-medium text-red-600">
+                        {contract.status === 'cancelled'
+                          ? '❌ The request has been cancel by you'
+                          : '🚫 The request has been rejected by admin.'}
+                      </div>
                     ) : (
                       <>
+                        {/* show hợp đồng */}
                         {contract.contract?.contractUrl && (
                           <button
                             onClick={() => {
@@ -440,11 +538,22 @@ export default function Contract() {
                           </button>
                         )}
 
+                        {/* show phụ lục hợp đồng */}
+                        {contract.status === 'confirmed' && new Date(contract.endDate) < new Date() && (
+                          <button
+                            onClick={() => {
+                              setContractToViewAppendix(contract);
+                              setIsOpenAppendixModal(true);
+                            }}
+                            className="inline-flex items-center px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 rounded text-sm"
+                          >
+                            📎 View contract appendix
+                          </button>
+                        )}
                         {contract.contract && (
                           <div
-                            className={`text-sm font-medium ${
-                              contract.contract.signedByUser ? 'text-green-600' : 'text-yellow-600'
-                            }`}
+                            className={`text-sm font-medium ${contract.contract.signedByUser ? 'text-green-600' : 'text-yellow-600'
+                              }`}
                           >
                             {contract.contract.signedByUser
                               ? '✅ The contract has been signed by you'
@@ -528,6 +637,68 @@ export default function Contract() {
             </Button>
           </div>
         </Modal>
+        {/* show phụ lục hợp đồng */}
+        <Modal
+          title="Contract Appendix"
+          open={isOpenAppendixModal}
+          onCancel={() => {
+            setIsOpenAppendixModal(false);
+            setContractToViewAppendix(null);
+          }}
+          footer={null}
+          width={800}
+        >
+          {contractToViewAppendix?.bookingServices?.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border rounded">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="px-3 py-2 text-left">Service Name</th>
+                    <th className="px-3 py-2 text-left">Number of People</th>
+                    <th className="px-3 py-2 text-left">Start Date</th>
+                    <th className="px-3 py-2 text-left">End Date</th>
+                    <th className="px-3 py-2 text-left">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contractToViewAppendix.bookingServices.map((s) => (
+                    <tr key={s.id} className="border-b last:border-0">
+                      <td className="px-3 py-2">{s.service?.name}</td>
+                      <td className="px-3 py-2">{s.quantity}</td>
+                      <td className="px-3 py-2">{s.startDate}</td>
+                      <td className="px-3 py-2">{s.endDate}</td>
+                      <td className="px-3 py-2">{formatCurrencyUSD(s.price)}</td>
+                    </tr>
+                  ))}
+
+                  {/* Hàng tính tổng */}
+                  <tr className="bg-gray-50 font-semibold">
+                    <td className="px-3 py-2" colSpan={4}>Total Service Price</td>
+                    <td className="px-3 py-2">
+                      {formatCurrencyUSD(
+                        contractToViewAppendix.bookingServices.reduce((total, s) => {
+                          const quantity = s.quantity || 0;
+                          const price = parseFloat(s.price || 0);
+
+                          const start = new Date(s.startDate);
+                          const end = new Date(s.endDate);
+                          const timeDiff = end.getTime() - start.getTime();
+                          const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)); // Số ngày giữa 2 ngày
+                          const serviceTotal = quantity * price * numberOfDays;
+                          return total + serviceTotal;
+                        }, 0)
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-gray-500 text-sm">No services found in appendix.</div>
+          )}
+        </Modal>
+
+
       </div>
       <ToastContainer position="top-right" autoClose={3000} />
     </motion.div>
