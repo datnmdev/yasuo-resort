@@ -187,6 +187,7 @@ export default function RoomManagementPage() {
               loading={selectedRoomToUpdate?.id === record.id && isUpdatingRoom}
             />
           </Tooltip>
+          
           <Tooltip title="Delete">
             <Button
               shape="circle"

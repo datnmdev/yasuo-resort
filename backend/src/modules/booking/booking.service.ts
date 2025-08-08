@@ -214,7 +214,7 @@ export class BookingService {
         ]
       });
       if (booking) {
-        if (booking.status === 'pending' || booking.status === 'undo contract') {
+        if (booking.status === 'pending' && !booking.contract) {
           // Cập nhật trạng thái đặt phòng
           const result = await queryRunner.manager.update(
             Booking,
@@ -274,7 +274,7 @@ export class BookingService {
         ]
       });
       if (booking) {
-        if (booking.status === 'pending' || booking.status === 'undo contract') {
+        if (booking.status === 'pending') {
           const result = await queryRunner.manager.update(
             Booking,
             {
@@ -877,7 +877,7 @@ export class BookingService {
           id: bookingId,
         },
         {
-          status: 'undo contract',
+          status: 'pending',
         },
       );
 

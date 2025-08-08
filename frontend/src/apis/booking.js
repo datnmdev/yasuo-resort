@@ -22,6 +22,17 @@ export default {
       `/booking/${req.param.bookingId}/cancel-room-booking`
     );
   },
+  rejectBooking: (req) => {
+    return axiosInstance.put(
+      `/booking/${req.param.bookingId}/reject-room-booking`,
+      req.body
+    );
+  },
+  undoContract: (req) => {
+    return axiosInstance.put(
+      `/booking/${req.param.bookingId}/undo-contract`
+    );
+  },
   userSignTheContract: (req) => {
     return axiosInstance.put(
       `/booking/${req.param.bookingId}/sign-contract`,

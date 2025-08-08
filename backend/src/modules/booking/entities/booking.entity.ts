@@ -41,9 +41,9 @@ export class Booking {
 
   @Column("enum", {
     name: "status",
-    enum: ["pending", "confirmed", "undo contract", "rejected", "cancelled"],
+    enum: ["pending", "confirmed", "rejected", "cancelled"],
   })
-  status: "pending" | "confirmed" | "undo contract" | "rejected" | "cancelled";
+  status: "pending" | "confirmed" | "rejected" | "cancelled";
 
   @Column("text", { name: "reason_for_rejection", nullable: true })
   reasonForRejection: string;

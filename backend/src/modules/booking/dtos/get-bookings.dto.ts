@@ -21,8 +21,8 @@ export class GetBookingReqDto {
 
   @JsonToObject()
   @IsOptional()
-  @ArrayElementsIn(['pending', 'confirmed', 'cancelled'])
-  status: string[] = ['pending', 'confirmed', 'cancelled'];
+  @ArrayElementsIn(['pending', 'confirmed', 'rejected', 'cancelled'])
+  status: string[] = ['pending', 'confirmed', 'rejected', 'cancelled'];
 
   @Transform(({ value }) => Number(value))
   @IsNotEmpty()

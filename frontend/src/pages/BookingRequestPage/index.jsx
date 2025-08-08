@@ -12,13 +12,24 @@ import {
   Form,
   Avatar,
   Alert,
-} from "antd";
-import { FilterOutlined, FilePdfOutlined } from "@ant-design/icons";
-import useFetch from "../../hooks/fetch.hook";
-import apis from "../../apis/index";
-import { useEffect, useState } from "react";
-import useToast from "../../hooks/toast.hook";
-import moment from "moment";
+  Tooltip,
+  Flex,
+} from 'antd';
+import {
+  FilterOutlined,
+  FilePdfOutlined,
+  FileSearchOutlined,
+  FileAddOutlined,
+  EyeOutlined,
+  CloseCircleOutlined,
+  RollbackOutlined,
+} from '@ant-design/icons';
+import useFetch from '../../hooks/fetch.hook';
+import apis from '../../apis/index';
+import { useEffect, useState } from 'react';
+import useToast from '../../hooks/toast.hook';
+import moment from 'moment';
+import TextEditor from '@src/components/TextEditor';
 
 export default function BookingRequestPage() {
   const [getBookingsReq, setGetBookingsReq] = useState({
@@ -32,155 +43,177 @@ export default function BookingRequestPage() {
   } = useFetch(apis.booking.getBookings, getBookingsReq);
   const [tableData, setTableData] = useState([[], 0]);
   const { openNotification, contextHolder } = useToast();
-  const [cancelBookingReq, setCancelBookingReq] = useState(null);
+  const [rejectBookingReq, setRejectBookingReq] = useState(null);
   const {
-    data: cancelBookingResData,
-    isLoading: isCancellingBooking,
-    setRefetch: setReCancelBooking,
-  } = useFetch(apis.booking.cancelBooking, cancelBookingReq, false);
+    data: rejectBookingResData,
+    isLoading: isRejectingBooking,
+    setRefetch: setReRejectBooking,
+  } = useFetch(apis.booking.rejectBooking, rejectBookingReq, false);
   const [createContractReq, setCreateContractReq] = useState(null);
   const {
     data: createContractResData,
     isLoading: isCreatingContract,
     setRefetch: setReCreateContract,
   } = useFetch(apis.booking.createContract, createContractReq, false);
-  const [selectedBookingToPreview, setSelectedBookingToPreview] =
-    useState(null);
+  const [selectedBookingToPreview, setSelectedBookingToPreview] = useState(null);
   const [selectedBookingDetail, setSelectedBookingDetail] = useState(null);
-  const [isOpenContractPreviewModal, setOpenContractPreviewModal] =
-    useState(false);
+  const [isOpenContractPreviewModal, setOpenContractPreviewModal] = useState(false);
   const [isOpenBookingDetailModal, setOpenBookingDetailModal] = useState(false);
+  const [undoContractReq, setUndoContractReq] = useState(null);
+  const {
+    data: undoContractResData,
+    isLoading: isUndoingContract,
+    setRefetch: setReUndoContract,
+  } = useFetch(apis.booking.undoContract, undoContractReq, false);
+  const [isOpenReasonOfRejectionModal, setOpenReasonOfRejectionModal] = useState(false);
+  const [rejectBookingForm] = Form.useForm();
+  const [selectedRowToReject, setSelectedRowToReject] = useState(null);
 
   const columns = [
     {
-      title: "Id",
-      dataIndex: "id",
-      key: "id",
+      title: 'Id',
+      dataIndex: 'id',
+      key: 'id',
     },
     {
-      title: "User Id",
-      dataIndex: "userId",
-      key: "userId",
+      title: 'User Id',
+      dataIndex: 'userId',
+      key: 'userId',
     },
     {
-      title: "Room Id",
-      dataIndex: "roomId",
-      key: "roomId",
+      title: 'Room Id',
+      dataIndex: 'roomId',
+      key: 'roomId',
     },
     {
-      title: "Status",
-      key: "status",
-      dataIndex: "status",
+      title: 'Status',
+      key: 'status',
+      dataIndex: 'status',
       render: (_, record) => {
         let color;
         switch (record.status) {
-          case "pending":
-            color = "gray";
+          case 'pending':
+            color = 'gray';
             break;
-          case "confirmed":
-            color = "green";
+          case 'confirmed':
+            color = 'green';
             break;
           default:
-            color = "volcano";
+            color = 'volcano';
         }
 
         return <Tag color={color}>{record.status.toUpperCase()}</Tag>;
       },
     },
     {
-      title: "Start Date",
-      dataIndex: "startDate",
-      key: "startDate",
+      title: 'Start Date',
+      dataIndex: 'startDate',
+      key: 'startDate',
     },
     {
-      title: "End Date",
-      dataIndex: "endDate",
-      key: "endDate",
+      title: 'End Date',
+      dataIndex: 'endDate',
+      key: 'endDate',
     },
     {
-      title: "Total Price",
-      dataIndex: "totalPrice",
-      key: "totalPrice",
+      title: 'Total Price',
+      dataIndex: 'totalPrice',
+      key: 'totalPrice',
     },
     {
-      title: "Action",
-      key: "action",
+      title: 'Created At',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+    },
+    {
+      title: 'Action',
+      key: 'action',
       render: (_, record) => (
-        <Space size="small" wrap style={{ maxWidth: 142 }}>
-          <Button
-            shape="round"
-            color="cyan"
-            variant="solid"
-            onClick={() => {
-              const selectedRow = bookings?.data?.[0]?.find(
-                (item) => item.id === record.id
-              );
-              setSelectedBookingDetail(selectedRow ? { ...selectedRow } : null);
-            }}
-          >
-            View detail
-          </Button>
+        <Flex gap="small" wrap align="center" style={{ maxWidth: 120 }}>
+          <Tooltip title="View detail">
+            <Button
+              shape="circle"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                const selectedRow = bookings?.data?.[0]?.find((item) => item.id === record.id);
+                setSelectedBookingDetail(selectedRow ? { ...selectedRow } : null);
+              }}
+            />
+          </Tooltip>
 
-          <Button
-            shape="round"
-            color="primary"
-            variant="solid"
-            hidden={record.status != "pending" || record.contract}
-            onClick={() =>
-              setCreateContractReq({
-                param: {
-                  bookingId: record.id,
-                },
-              })
-            }
-            loading={
-              createContractReq?.param?.bookingId === record.id &&
-              isCreatingContract
-            }
-          >
-            Create contract
-          </Button>
+          <Tooltip title="Create contract">
+            <Button
+              shape="circle"
+              icon={<FileAddOutlined />}
+              onClick={() =>
+                setCreateContractReq({
+                  param: {
+                    bookingId: record.id,
+                  },
+                })
+              }
+              loading={createContractReq?.param?.bookingId === record.id && isCreatingContract}
+              hidden={!(record.status === 'pending' && !record.contract)}
+            />
+          </Tooltip>
 
-          <Button
-            shape="round"
-            color="primary"
-            variant="solid"
-            hidden={record.status != "confirmed"}
-            onClick={() => {
-              const selectedRow = bookings?.data?.[0]?.find(
-                (item) => item.id === record.id
-              );
-              setSelectedBookingToPreview(
-                selectedRow ? { ...selectedRow } : null
-              );
-            }}
-          >
-            View contract
-          </Button>
+          <Tooltip title="View contract">
+            <Button
+              shape="circle"
+              icon={<FileSearchOutlined />}
+              onClick={() => {
+                const selectedRow = bookings?.data?.[0]?.find((item) => item.id === record.id);
+                setSelectedBookingToPreview(selectedRow ? { ...selectedRow } : null);
+              }}
+              hidden={!(record.contract && (record.status === 'pending' || record.status === 'confirmed'))}
+            />
+          </Tooltip>
 
-          <Button
-            shape="round"
-            color="danger"
-            variant="solid"
-            hidden={record.status != "pending"}
-            onClick={() =>
-              setCancelBookingReq({
-                param: {
-                  bookingId: record.id,
-                },
-              })
-            }
-            loading={
-              cancelBookingReq?.param?.bookingId === record.id &&
-              isCancellingBooking
-            }
-          >
-            Cancel booking
-          </Button>
-        </Space>
+          <Tooltip title="Undo contract">
+            <Button
+              shape="circle"
+              icon={<RollbackOutlined />}
+              onClick={() =>
+                setUndoContractReq({
+                  param: {
+                    bookingId: record.id,
+                  },
+                })
+              }
+              loading={undoContractReq?.param?.bookingId === record.id && isUndoingContract}
+              hidden={!(record.contract && record.status === 'pending')}
+            />
+          </Tooltip>
+
+          <Tooltip title="Reject booking">
+            <Button
+              shape="circle"
+              icon={<CloseCircleOutlined />}
+              onClick={() => setSelectedRowToReject(record)}
+              loading={rejectBookingReq?.param?.bookingId === record.id && isRejectingBooking}
+              hidden={!(record.status === 'pending' && !record.contract)}
+            />
+          </Tooltip>
+        </Flex>
       ),
     },
   ];
+
+  async function handleRejectBookingSubmit() {
+    try {
+      const values = await rejectBookingForm.validateFields();
+      setRejectBookingReq({
+        param: {
+          bookingId: values.bookingId,
+        },
+        body: {
+          reason: values.reasonForRejection,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   useEffect(() => {
     setReGetBookings({
@@ -195,6 +228,10 @@ export default function BookingRequestPage() {
           bookings.data[0].map((booking) => ({
             ...booking,
             key: booking.id,
+            createdAt: moment(booking.createdAt).format('DD-MM-YYYY HH:mm:ss'),
+            startDate: moment(booking.startDate).format('DD-MM-YYYY'),
+            endDate: moment(booking.endDate).format('DD-MM-YYYY'),
+            totalPrice: `$${booking.totalPrice}`,
           })),
           bookings.data[1],
         ]);
@@ -203,12 +240,12 @@ export default function BookingRequestPage() {
   }, [isGettingBookings]);
 
   useEffect(() => {
-    if (cancelBookingReq) {
-      setReCancelBooking({
+    if (rejectBookingReq) {
+      setReRejectBooking({
         value: true,
       });
     }
-  }, [cancelBookingReq]);
+  }, [rejectBookingReq]);
 
   useEffect(() => {
     if (createContractReq) {
@@ -219,30 +256,31 @@ export default function BookingRequestPage() {
   }, [createContractReq]);
 
   useEffect(() => {
-    if (!isCancellingBooking) {
-      if (cancelBookingResData) {
-        if (cancelBookingResData.isSuccess) {
+    if (!isRejectingBooking) {
+      if (rejectBookingResData) {
+        if (rejectBookingResData.isSuccess) {
           openNotification({
-            title: "The booking has been cancelled",
+            title: 'The booking has been rejected successfully',
           });
           setReGetBookings({
             value: true,
           });
+          setOpenReasonOfRejectionModal(false);
         } else {
           openNotification({
-            title: cancelBookingResData.error.message.toString(),
+            title: rejectBookingResData.error.message.toString(),
           });
         }
       }
     }
-  }, [isCancellingBooking]);
+  }, [isRejectingBooking]);
 
   useEffect(() => {
     if (!isCreatingContract) {
       if (createContractResData) {
         if (createContractResData.isSuccess) {
           openNotification({
-            title: "The contract has been created successfully",
+            title: 'The contract has been created successfully',
           });
           setReGetBookings({
             value: true,
@@ -257,6 +295,33 @@ export default function BookingRequestPage() {
   }, [isCreatingContract]);
 
   useEffect(() => {
+    if (undoContractReq) {
+      setReUndoContract({
+        value: true,
+      });
+    }
+  }, [undoContractReq]);
+
+  useEffect(() => {
+    if (!isUndoingContract) {
+      if (undoContractResData) {
+        if (undoContractResData.isSuccess) {
+          openNotification({
+            title: 'The contract has been undone successfully',
+          });
+          setReGetBookings({
+            value: true,
+          });
+        } else {
+          openNotification({
+            title: undoContractResData.error.message.toString(),
+          });
+        }
+      }
+    }
+  }, [isUndoingContract]);
+
+  useEffect(() => {
     if (selectedBookingToPreview) {
       setOpenContractPreviewModal(true);
     }
@@ -267,6 +332,16 @@ export default function BookingRequestPage() {
       setOpenBookingDetailModal(true);
     }
   }, [selectedBookingDetail]);
+
+  useEffect(() => {
+    if (selectedRowToReject) {
+      rejectBookingForm.setFieldsValue({
+        bookingId: selectedRowToReject.id,
+        reasonForRejection: '',
+      });
+      setOpenReasonOfRejectionModal(true);
+    }
+  }, [selectedRowToReject]);
 
   return (
     <div className="p-4">
@@ -294,26 +369,30 @@ export default function BookingRequestPage() {
                   <Tree
                     style={{ minWidth: 242 }}
                     selectable={false}
-                    defaultExpandedKeys={["status"]}
-                    defaultSelectedKeys={["status"]}
-                    defaultCheckedKeys={["status"]}
+                    defaultExpandedKeys={['status']}
+                    defaultSelectedKeys={['status']}
+                    defaultCheckedKeys={['status']}
                     checkable
                     treeData={[
                       {
-                        title: "Status",
-                        key: "status",
+                        title: 'Status',
+                        key: 'status',
                         children: [
                           {
-                            title: "PENDING",
-                            key: "pending",
+                            title: 'PENDING',
+                            key: 'pending',
                           },
                           {
-                            title: "CONFIRMED",
-                            key: "confirmed",
+                            title: 'CONFIRMED',
+                            key: 'confirmed',
                           },
                           {
-                            title: "CANCELLED",
-                            key: "cancelled",
+                            title: 'REJECTED',
+                            key: 'rejected',
+                          },
+                          {
+                            title: 'CANCELLED',
+                            key: 'cancelled',
                           },
                         ],
                       },
@@ -322,20 +401,15 @@ export default function BookingRequestPage() {
                       setGetBookingsReq({
                         ...getBookingsReq,
                         status:
-                          selectedStatus.filter((status) => status != "status")
-                            .length > 0
-                            ? JSON.stringify(
-                                selectedStatus.filter(
-                                  (status) => status != "status"
-                                )
-                              )
+                          selectedStatus.filter((status) => status != 'status').length > 0
+                            ? JSON.stringify(selectedStatus.filter((status) => status != 'status'))
                             : [],
                       })
                     }
                   />
                 </>
               }
-              trigger={["click"]}
+              trigger={['click']}
             >
               <Button>
                 <FilterOutlined />
@@ -373,19 +447,14 @@ export default function BookingRequestPage() {
           onCancel={() => setOpenContractPreviewModal(false)}
           width={820}
           footer={[
-            <Button
-              key="back"
-              onClick={() => setOpenContractPreviewModal(false)}
-            >
+            <Button key="back" onClick={() => setOpenContractPreviewModal(false)}>
               Cancel
             </Button>,
           ]}
         >
           <iframe
             className="w-full h-[520px]"
-            src={`${import.meta.env.VITE_API_BASE_URL}/${
-              selectedBookingToPreview?.contract?.contractUrl
-            }`}
+            src={`${import.meta.env.VITE_API_BASE_URL}/${selectedBookingToPreview?.contract?.contractUrl}`}
             frameborder="0"
           ></iframe>
         </Modal>
@@ -402,61 +471,52 @@ export default function BookingRequestPage() {
             </Button>,
           ]}
         >
-          <Space direction="vertical" size="middle" style={{ display: "flex" }}>
+          <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
             <Card title="General" size="small">
               <Space direction="horizontal" size="large" wrap>
                 <Form.Item label="Booking Id">
-                  <Input
-                    value={selectedBookingDetail?.id}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.id} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Start Date">
                   <Input
-                    value={moment(selectedBookingDetail?.startDate).format(
-                      "DD-MM-YYYY"
-                    )}
+                    value={moment(selectedBookingDetail?.startDate).format('DD-MM-YYYY')}
                     contentEditable="false"
                   />
                 </Form.Item>
 
                 <Form.Item label="End Date">
-                  <Input
-                    value={moment(selectedBookingDetail?.endDate).format(
-                      "DD-MM-YYYY"
-                    )}
-                    contentEditable="false"
-                  />
+                  <Input value={moment(selectedBookingDetail?.endDate).format('DD-MM-YYYY')} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Room Price">
-                  <Input
-                    value={"$" + selectedBookingDetail?.roomPrice}
-                    contentEditable="false"
-                  />
+                  <Input value={'$' + selectedBookingDetail?.roomPrice} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Total Price">
-                  <Input
-                    value={"$" + selectedBookingDetail?.totalPrice}
-                    contentEditable="false"
-                  />
+                  <Input value={'$' + selectedBookingDetail?.totalPrice} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Status">
                   <Tag
-                    style={{ lineHeight: "32px" }}
+                    style={{ lineHeight: '32px' }}
                     color={
-                      selectedBookingDetail?.status === "pending"
-                        ? "gray"
-                        : selectedBookingDetail?.status === "confirmed"
-                        ? "green"
-                        : "volcano"
+                      selectedBookingDetail?.status === 'pending'
+                        ? 'gray'
+                        : selectedBookingDetail?.status === 'confirmed'
+                        ? 'green'
+                        : 'volcano'
                     }
                   >
                     {selectedBookingDetail?.status?.toUpperCase()}
                   </Tag>
+                </Form.Item>
+
+                <Form.Item label="Reason For Rejection" hidden={selectedBookingDetail?.status !== 'rejected'}>
+                  <div 
+                    className='border-[1px] border-solid border-gray-300 rounded-[8px] px-2 py-1'
+                    dangerouslySetInnerHTML={{ __html: selectedBookingDetail?.reasonForRejection }} 
+                  />
                 </Form.Item>
               </Space>
             </Card>
@@ -465,85 +525,55 @@ export default function BookingRequestPage() {
               <div className="mb-4">
                 <Avatar
                   style={{ width: 120, height: 120 }}
-                  src={`${import.meta.env.VITE_API_BASE_URL}/${
-                    selectedBookingDetail?.user?.avatar
-                  }`}
+                  src={`${import.meta.env.VITE_API_BASE_URL}/${selectedBookingDetail?.user?.avatar}`}
                 />
               </div>
 
               <Space direction="horizontal" size="large" wrap>
                 <Form.Item label="User Id">
-                  <Input
-                    value={selectedBookingDetail?.user?.id}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.user?.id} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Full Name">
-                  <Input
-                    value={selectedBookingDetail?.user?.name}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.user?.name} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Phone">
-                  <Input
-                    value={selectedBookingDetail?.user?.phone}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.user?.phone} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Email">
-                  <Input
-                    value={selectedBookingDetail?.user?.email}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.user?.email} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Gender">
-                  <Input
-                    value={selectedBookingDetail?.user?.gender}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.user?.gender} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Date Of Birth">
                   <Input
-                    value={moment(selectedBookingDetail?.user?.dob).format(
-                      "DD-MM-YYYY"
-                    )}
+                    value={moment(selectedBookingDetail?.user?.dob).format('DD-MM-YYYY')}
                     contentEditable="false"
                   />
                 </Form.Item>
 
                 <Form.Item label="CCCD">
-                  <Input
-                    value={selectedBookingDetail?.user?.cccd}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.user?.cccd} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Identity Issued At">
                   <Input
-                    value={moment(
-                      selectedBookingDetail?.user?.identityIssuedAt
-                    ).format("DD-MM-YYYY")}
+                    value={moment(selectedBookingDetail?.user?.identityIssuedAt).format('DD-MM-YYYY')}
                     contentEditable="false"
                   />
                 </Form.Item>
 
                 <Form.Item label="Identity Issued Place">
-                  <Input
-                    value={selectedBookingDetail?.user?.identityIssuedPlace}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.user?.identityIssuedPlace} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Permanent Address">
-                  <Input
-                    value={selectedBookingDetail?.user?.permanentAddress}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.user?.permanentAddress} contentEditable="false" />
                 </Form.Item>
               </Space>
             </Card>
@@ -551,24 +581,15 @@ export default function BookingRequestPage() {
             <Card title="Room" size="small">
               <Space direction="horizontal" size="large" wrap>
                 <Form.Item label="Room Id">
-                  <Input
-                    value={selectedBookingDetail?.room?.id}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.room?.id} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Room Type">
-                  <Input
-                    value={selectedBookingDetail?.room?.type?.name}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.room?.type?.name} contentEditable="false" />
                 </Form.Item>
 
                 <Form.Item label="Room Number">
-                  <Input
-                    value={selectedBookingDetail?.room?.roomNumber}
-                    contentEditable="false"
-                  />
+                  <Input value={selectedBookingDetail?.room?.roomNumber} contentEditable="false" />
                 </Form.Item>
               </Space>
             </Card>
@@ -577,34 +598,32 @@ export default function BookingRequestPage() {
               <Table
                 columns={[
                   {
-                    title: "Id",
-                    dataIndex: "id",
-                    key: "id",
+                    title: 'Id',
+                    dataIndex: 'id',
+                    key: 'id',
                   },
                   {
-                    title: "Service Name",
-                    dataIndex: "name",
-                    key: "name",
+                    title: 'Service Name',
+                    dataIndex: 'name',
+                    key: 'name',
                   },
                   {
-                    title: "Quantity",
-                    dataIndex: "quantity",
-                    key: "quantity",
+                    title: 'Quantity',
+                    dataIndex: 'quantity',
+                    key: 'quantity',
                   },
                   {
-                    title: "Price",
-                    dataIndex: "price",
-                    key: "price",
+                    title: 'Price',
+                    dataIndex: 'price',
+                    key: 'price',
                   },
                 ]}
-                dataSource={selectedBookingDetail?.bookingServices?.map(
-                  (bookingService) => ({
-                    id: bookingService.service.id,
-                    name: bookingService.service.name,
-                    quantity: bookingService.quantity,
-                    price: bookingService.price,
-                  })
-                )}
+                dataSource={selectedBookingDetail?.bookingServices?.map((bookingService) => ({
+                  id: bookingService.service.id,
+                  name: bookingService.service.name,
+                  quantity: bookingService.quantity,
+                  price: bookingService.price,
+                }))}
               />
             </Card>
 
@@ -612,43 +631,63 @@ export default function BookingRequestPage() {
               title="Contract"
               size="small"
               hidden={
-                selectedBookingDetail?.status == "cancelled" ||
+                selectedBookingDetail?.status == 'rejected' ||
+                selectedBookingDetail?.status == 'cancelled' ||
                 !selectedBookingDetail?.contract
               }
             >
               <Space direction="vertical" size="middle">
                 {selectedBookingDetail?.contract?.signedByUser ? (
-                  <Alert
-                    message="The contract has been signed by both parties"
-                    type="success"
-                  />
+                  <Alert message="The contract has been signed by both parties" type="success" />
                 ) : (
-                  <Alert
-                    message="The contract is pending the guest's signature"
-                    type="error"
-                  />
+                  <Alert message="The contract is pending the guest's signature" type="error" />
                 )}
 
                 <Button
-                  icon={<FilePdfOutlined style={{ color: "red" }} />}
+                  icon={<FilePdfOutlined style={{ color: 'red' }} />}
                   onClick={() =>
                     window.open(
-                      `${import.meta.env.VITE_API_BASE_URL}/${
-                        selectedBookingDetail?.contract?.contractUrl
-                      }`,
-                      "_blank"
+                      `${import.meta.env.VITE_API_BASE_URL}/${selectedBookingDetail?.contract?.contractUrl}`,
+                      '_blank'
                     )
                   }
                 >
                   {selectedBookingDetail?.contract?.contractUrl?.substring(
-                    selectedBookingDetail?.contract?.contractUrl?.lastIndexOf(
-                      "/"
-                    ) + 1
+                    selectedBookingDetail?.contract?.contractUrl?.lastIndexOf('/') + 1
                   )}
                 </Button>
               </Space>
             </Card>
           </Space>
+        </Modal>
+
+        {/* Reason Of Rejection Modal */}
+        <Modal
+          title="Reason Of Rejection"
+          open={isOpenReasonOfRejectionModal}
+          onCancel={() => setOpenReasonOfRejectionModal(false)}
+          width={520}
+          footer={[
+            <Button key="back" onClick={() => setOpenContractPreviewModal(false)}>
+              Cancel
+            </Button>,
+            <Button key="submit" type="primary" onClick={handleRejectBookingSubmit} loading={isRejectingBooking}>
+              Submit
+            </Button>,
+          ]}
+        >
+          <Form layout="vertical" form={rejectBookingForm} name="control-hooks" style={{ marginTop: 16 }}>
+            <Form.Item name="bookingId" label="Booking Id">
+              <Input disabled />
+            </Form.Item>
+
+            <Form.Item name="reasonForRejection" label="Reason For Rejection" rules={[{ required: true }]}>
+              <TextEditor
+                disabled={isRejectingBooking}
+                initialValue={rejectBookingForm.getFieldValue('reasonForRejection')}
+              />
+            </Form.Item>
+          </Form>
         </Modal>
       </div>
       {contextHolder}

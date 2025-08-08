@@ -26,7 +26,7 @@ axiosInstance.interceptors.response.use(
       const refreshToken = (
         await axios({
           url: `${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`,
-          method: 'post',
+          method: 'put',
           withCredentials: true,
         })
       ).data;
