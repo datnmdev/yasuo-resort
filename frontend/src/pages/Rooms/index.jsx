@@ -158,7 +158,7 @@ const RoomPage = () => {
       <AnimatePresence mode="wait">
         <div className="container mx-auto px-20 grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-12">
           {/* Filters Section (Always visible, now in a column) */}
-          <aside className="lg:col-span-1 sticky top-12 self-start">
+          <aside className="lg:col-span-1 sticky top-8 self-start">
             <FilterCard
               filterState={filterState}
               setFilterState={setFilterState}

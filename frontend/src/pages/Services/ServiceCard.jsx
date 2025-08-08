@@ -3,10 +3,12 @@ import { useCart } from '@src/hooks/useCart';
 import { formatCurrencyUSD } from '@src/libs/utils';
 import { Label } from '@ui/label';
 import { Input } from '@ui/input';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import dayjs from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+dayjs.extend(isSameOrAfter);
 
 const iconMap = [
   <Gift key={0} className="w-5 h-5 text-teal-600" />,
@@ -18,13 +20,12 @@ export default function ServiceCard({ service }) {
   const { id, name, description, price } = service;
   const { booking, add } = useCart();
   const { startDate, endDate } = booking;
-  console.log(booking);
 
-  // State for in-card configuration
   const [isBooking, setIsBooking] = useState(false);
   const [tempNumPeople, setTempNumPeople] = useState(1);
-  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempStartDate, setTempStartDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [tempEndDate, setTempEndDate] = useState('');
+  const [isAddDisabled, setIsAddDisabled] = useState(true);
 
   const handleAddToCart = () => {
     if (Object.keys(booking).length === 0) {
@@ -33,6 +34,48 @@ export default function ServiceCard({ service }) {
     }
     setIsBooking(true);
   };
+
+  useEffect(() => {
+    // Xử lý tempStartDate
+    if (!startDate || dayjs(startDate).isBefore(dayjs(), 'day')) {
+      setTempStartDate(dayjs().format('YYYY-MM-DD'));
+    } else {
+      setTempStartDate(startDate);
+    }
+
+    // Xử lý tempEndDate
+    if (!endDate) {
+      setTempEndDate('');
+    } else {
+      // Nếu endDate nhỏ hơn tempStartDate + 1 ngày, thì gán endDate thành tempStartDate + 1 ngày
+      const minEndDate = dayjs(startDate).add(1, 'day');
+      const givenEndDate = dayjs(endDate);
+
+      if (!givenEndDate.isValid() || givenEndDate.isBefore(minEndDate, 'day')) {
+        setTempEndDate(minEndDate.format('YYYY-MM-DD'));
+      } else {
+        setTempEndDate(endDate);
+      }
+    }
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    const start = dayjs(tempStartDate, 'YYYY-MM-DD', true);
+    const end = dayjs(tempEndDate, 'YYYY-MM-DD', true);
+    const minStart = dayjs(startDate);
+    const maxEnd = dayjs(endDate);
+
+    const isValidDate =
+      start.isValid() &&
+      end.isValid() &&
+      !start.isBefore(minStart) &&
+      !end.isAfter(maxEnd) &&
+      !start.isAfter(end.subtract(1, 'day'));
+
+    const isValidNumPeople = tempNumPeople && tempNumPeople > 0;
+
+    setIsAddDisabled(!(isValidDate && isValidNumPeople));
+  }, [tempStartDate, tempEndDate, tempNumPeople, startDate, endDate]);
 
   return (
     <div className="bg-white/90 border border-gray-300 rounded-lg p-4 hover:shadow-md transition">
@@ -83,8 +126,28 @@ export default function ServiceCard({ service }) {
                 type="date"
                 value={tempStartDate}
                 onChange={(e) => setTempStartDate(e.target.value)}
-                min={startDate}
-                max={endDate}
+                onBlur={(e) => {
+                  const bookingStart = dayjs(startDate);
+                  const today = dayjs().startOf('day');
+                  const minStart = today.isAfter(bookingStart) ? today : bookingStart; // mốc min thực tế
+
+                  let tempStart = dayjs(e.target.value);
+
+                  // Nếu ngày nhập không hợp lệ hoặc nhỏ hơn mốc min => set bằng mốc min
+                  if (!tempStart.isValid() || tempStart.isBefore(minStart)) {
+                    tempStart = minStart;
+                  }
+
+                  // Nếu start > end => set start = end - 1 ngày (nhưng không nhỏ hơn mốc min)
+                  if (tempEndDate && tempStart.isSameOrAfter(dayjs(tempEndDate))) {
+                    const newStart = dayjs(tempEndDate).subtract(1, 'day');
+                    tempStart = newStart.isBefore(minStart) ? minStart : newStart;
+                  }
+
+                  setTempStartDate(tempStart.format('YYYY-MM-DD'));
+                }}
+                min={dayjs().isAfter(dayjs(startDate)) ? dayjs().format('YYYY-MM-DD') : startDate}
+                max={dayjs(tempEndDate).subtract(1, 'day').format('YYYY-MM-DD')}
                 className="w-full"
               />
             </div>
@@ -97,9 +160,18 @@ export default function ServiceCard({ service }) {
                 type="date"
                 value={tempEndDate}
                 onChange={(e) => setTempEndDate(e.target.value)}
-                min={dayjs(tempStartDate || startDate)
-                  .add(1, 'day')
-                  .format('YYYY-MM-DD')}
+                onBlur={(e) => {
+                  let tempEnd = dayjs(e.target.value);
+                  const minEndDate = dayjs(tempStartDate).add(1, 'day');
+
+                  // Nếu ngày nhập không hợp lệ hoặc nhỏ hơn minEndDate thì gán lại minEndDate
+                  if (!tempEnd.isValid() || tempEnd.isBefore(minEndDate, 'day')) {
+                    tempEnd = minEndDate;
+                  }
+
+                  setTempEndDate(tempEnd.format('YYYY-MM-DD'));
+                }}
+                min={dayjs(tempStartDate).add(1, 'day').format('YYYY-MM-DD')}
                 max={endDate}
                 className="w-full"
               />
@@ -108,6 +180,7 @@ export default function ServiceCard({ service }) {
           <div className="flex gap-2 mt-4">
             <Button
               size="sm"
+              disabled={isAddDisabled}
               className="flex-grow bg-teal-700 hover:bg-teal-800"
               onClick={() => {
                 setIsBooking(false);
@@ -119,7 +192,6 @@ export default function ServiceCard({ service }) {
                   uuid: uuidv4(),
                 });
               }}
-              disabled={!tempNumPeople || tempNumPeople <= 0 || !tempStartDate || !tempEndDate}
             >
               Confirm Add
             </Button>

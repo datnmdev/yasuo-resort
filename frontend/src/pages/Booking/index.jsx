@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@ui/card';
 import { Button } from '@ui/button';
 import { CheckCircle, XCircle, Users, Calendar as CalendarIcon } from 'lucide-react';
@@ -20,8 +20,11 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL;
 export default function BookingConfirmationPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { room, startDate, endDate } = state;
-  const [dateRange, setDateRange] = useState([startDate, endDate]);
+
+  const { room, startDate, endDate } = state || {};
+  const defaultStartDate = startDate || dayjs().add(1, 'day').format('YYYY-MM-DD');
+
+  const [dateRange, setDateRange] = useState([defaultStartDate, endDate]);
 
   const { data: bookingData, isLoading } = useQuery({
     queryKey: ['bookings', room?.id],
@@ -48,7 +51,7 @@ export default function BookingConfirmationPage() {
 
     return [...new Set(bookedDates)];
   };
-  const bookings = bookingData?.data?.data[0] || [];
+  const bookings = useMemo(() => bookingData?.data?.data[0] || [], [bookingData]);
 
   // Ktra ngày đấy của phòng có đã bị đặt chưa (dùng cho Calendar)
   const isDateBooked = (date) => {
@@ -56,12 +59,15 @@ export default function BookingConfirmationPage() {
   };
 
   // Ktra khoảng thời gian check in checkout có dính ngày đã bị đặt ko.
-  const hasConflictWithBookedDates = (start, end) => {
-    if (!start || !end) return false;
+  const hasConflictWithBookedDates = useCallback(
+    (start, end) => {
+      if (!start || !end) return false;
 
-    const days = eachDayOfInterval({ start, end });
-    return days.some((d) => getBookedDates(bookings).includes(format(d, 'yyyy-MM-dd')));
-  };
+      const days = eachDayOfInterval({ start, end });
+      return days.some((d) => getBookedDates(bookings).includes(format(d, 'yyyy-MM-dd')));
+    },
+    [bookings]
+  );
 
   const [error, setError] = useState(
     hasConflictWithBookedDates(startDate, endDate)
@@ -120,8 +126,6 @@ export default function BookingConfirmationPage() {
       endDate: checkout ? format(checkout, 'yyyy-MM-dd') : null,
     };
 
-    console.log('Booking details:', bookingData);
-
     bookingMutation.mutate(bookingData);
   };
 
@@ -132,6 +136,18 @@ export default function BookingConfirmationPage() {
       window.scrollTo(0, 0);
     }
   };
+
+  useEffect(() => {
+    let newStart = dateRange[0] ? dayjs(dateRange[0], 'YYYY-MM-DD', true) : null;
+    let newEnd = dateRange[1] ? dayjs(dateRange[1], 'YYYY-MM-DD', true) : null;
+
+    if (newStart && newEnd && newStart.isValid() && newEnd.isValid())
+      setError(
+        hasConflictWithBookedDates(newStart.toDate(), newEnd.toDate())
+          ? 'The selected date range includes a date that has already been booked.'
+          : ''
+      );
+  }, [dateRange, hasConflictWithBookedDates]);
 
   if (!room) {
     return (
@@ -199,20 +215,40 @@ export default function BookingConfirmationPage() {
                   <Input
                     id="checkin"
                     type="date"
-                    value={dateRange?.[0] ? format(new Date(dateRange[0]), 'yyyy-MM-dd') : ''}
+                    value={dateRange[0] || ''}
                     onChange={(e) => {
-                      const newStart = e.target.value ? new Date(e.target.value) : null;
-                      const newEnd = dateRange?.[1] || null;
+                      const newCheckin = e.target.value;
+                      let newCheckout = dateRange[1];
 
-                      if (newStart && newEnd && hasConflictWithBookedDates(newStart, newEnd)) {
-                        setError('The selected date range includes a date that has already been booked.');
-                      } else {
-                        setError('');
+                      if (
+                        newCheckin &&
+                        newCheckout &&
+                        (dayjs(newCheckout, 'YYYY-MM-DD').isBefore(dayjs(newCheckin, 'YYYY-MM-DD')) ||
+                          dayjs(newCheckout, 'YYYY-MM-DD').isSame(dayjs(newCheckin, 'YYYY-MM-DD')))
+                      ) {
+                        newCheckout = dayjs(newCheckin, 'YYYY-MM-DD').add(1, 'day').format('YYYY-MM-DD');
                       }
 
-                      setDateRange([newStart, newEnd]);
+                      setDateRange([newCheckin, newCheckout]);
+                    }}
+                    onBlur={(e) => {
+                      let newStart = dayjs(e.target.value, 'YYYY-MM-DD', true);
+                      let newEnd = dateRange[1] ? dayjs(dateRange[1], 'YYYY-MM-DD', true) : null;
+
+                      const todayPlus1 = dayjs().add(1, 'day').startOf('day');
+
+                      if (!newStart.isValid() || newStart.isBefore(todayPlus1)) {
+                        newStart = todayPlus1;
+                      }
+
+                      if (newEnd && newEnd.isBefore(newStart.add(1, 'day'))) {
+                        newEnd = newStart.add(1, 'day');
+                      }
+
+                      setDateRange([newStart.format('YYYY-MM-DD'), newEnd ? newEnd.format('YYYY-MM-DD') : '']);
                     }}
                     min={dayjs().add(1, 'day').format('YYYY-MM-DD')}
+                    max={dateRange[1] ? dayjs(dateRange[1], 'YYYY-MM-DD').format('YYYY-MM-DD') : undefined}
                   />
                 </div>
                 <div>
@@ -222,30 +258,49 @@ export default function BookingConfirmationPage() {
                   <Input
                     id="checkout"
                     type="date"
-                    value={dateRange?.[1] ? format(new Date(dateRange[1]), 'yyyy-MM-dd') : ''}
+                    value={dateRange[1] || ''}
                     onChange={(e) => {
-                      const newEnd = e.target.value ? new Date(e.target.value) : null;
-                      const newStart = dateRange?.[0] || null;
+                      const newCheckout = e.target.value;
+                      let newCheckin = dateRange[0];
 
-                      if (newStart && newEnd && hasConflictWithBookedDates(newStart, newEnd)) {
-                        setError('The selected date range includes a date that has already been booked.');
-                      } else {
-                        setError('');
+                      if (
+                        newCheckout &&
+                        newCheckin &&
+                        (dayjs(newCheckout, 'YYYY-MM-DD').isBefore(dayjs(newCheckin, 'YYYY-MM-DD')) ||
+                          dayjs(newCheckout, 'YYYY-MM-DD').isSame(dayjs(newCheckin, 'YYYY-MM-DD')))
+                      ) {
+                        // Nếu checkout <= checkin thì set checkin = checkout - 1 ngày
+                        newCheckin = dayjs(newCheckout, 'YYYY-MM-DD').subtract(1, 'day').format('YYYY-MM-DD');
                       }
 
-                      setDateRange([newStart, newEnd]);
+                      setDateRange([newCheckin, newCheckout]);
+                    }}
+                    onBlur={(e) => {
+                      const startStr = dateRange[0] || dayjs().add(1, 'day').format('YYYY-MM-DD');
+                      const endStr = e.target.value;
+
+                      let newStart = dayjs(startStr, 'YYYY-MM-DD', true);
+                      let newEnd = dayjs(endStr, 'YYYY-MM-DD', true);
+                      const minEnd = newStart.add(1, 'day');
+
+                      // Nếu end không hợp lệ hoặc nhỏ hơn minEnd thì set = minEnd
+                      if (!newEnd.isValid() || newEnd.isBefore(minEnd)) {
+                        newEnd = minEnd;
+                      }
+
+                      setDateRange([newStart.format('YYYY-MM-DD'), newEnd.format('YYYY-MM-DD')]);
                     }}
                     min={
                       dateRange[0]
-                        ? dayjs(dateRange[0]).add(1, 'day').format('YYYY-MM-DD')
-                        : dayjs().format('YYYY-MM-DD')
+                        ? dayjs(dateRange[0], 'YYYY-MM-DD').add(1, 'day').format('YYYY-MM-DD')
+                        : dayjs().add(1, 'day').format('YYYY-MM-DD')
                     }
                   />
                 </div>
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
             </div>
-            <h3 className="text-2xl font-bold text-green-700 mb-1">
+            <h3 className="text-2xl font-bold text-teal-700 mb-1">
               {room.type.name} - Room {room.roomNumber}
             </h3>
             <p className="text-gray-600 text-sm">{room.shortDescription}</p>
@@ -258,15 +313,15 @@ export default function BookingConfirmationPage() {
               </div>
               <div className="flex justify-between items-center text-xl font-bold text-gray-900 pt-4 border-t-2 border-gray-200 mt-4">
                 <span>Total Amount</span>
-                <span className="text-green-600">{formatCurrencyUSD(calculateRoomTotal)}</span>
+                <span className="text-teal-600">{formatCurrencyUSD(calculateRoomTotal)}</span>
               </div>
             </div>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <Button
                 onClick={handleConfirmBooking}
-                disabled={!(dateRange[0] && dateRange[1])}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white text-lg py-3"
+                disabled={!(dateRange[0] && dateRange[1]) || error}
+                className="flex-1 bg-teal-600 hover:bg-teal-700 text-white text-lg py-3"
               >
                 Confirm Booking
               </Button>
@@ -313,7 +368,7 @@ export default function BookingConfirmationPage() {
         <DialogContent className="sm:max-w-[425px] text-center">
           <DialogHeader>
             {isBookingSuccessful ? (
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <CheckCircle className="w-16 h-16 text-teal-500 mx-auto mb-4" />
             ) : (
               <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             )}
@@ -323,7 +378,7 @@ export default function BookingConfirmationPage() {
             <DialogDescription className="text-gray-600">{bookingMessage}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-center">
-            <Button onClick={handleCloseConfirmation} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleCloseConfirmation} className="bg-teal-600 hover:bg-teal-700">
               {isBookingSuccessful ? 'Go to Home' : 'Try Again'}
             </Button>
           </DialogFooter>

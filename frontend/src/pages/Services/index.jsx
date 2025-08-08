@@ -80,7 +80,7 @@ export default function ServicePage() {
         <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-3 text-teal-800 font-semibold">
           <div className="flex items-center gap-2">
             <Star className="w-5 h-5" />
-            <span>Đặt dịch vụ cho đơn phòng:</span>
+            <span>Add services to your room booking</span>
             <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
               <PopoverTrigger asChild className="hover:bg-gray-100/50">
                 <Button
@@ -89,24 +89,24 @@ export default function ServicePage() {
                   aria-expanded={comboboxOpen}
                   className="w-[240px] justify-between bg-white"
                 >
-                  {booking.id ? `${booking.id} - ${booking.room.roomNumber}` : 'Chọn mã đơn phòng...'}
+                  {booking.id ? `${booking.id} - ${booking.room.roomNumber}` : 'Choose your room booking...'}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[200px] p-0">
                 <Command>
                   <CommandInput
-                    placeholder="Tìm kiếm mã đơn phòng..."
+                    placeholder="Search for your room bookings..."
                     value={comboboxSearchQuery}
                     onValueChange={setComboboxSearchQuery}
                   />
-                  <CommandList>
+                  <CommandList className="w-full">
                     {isFetchingComboboxBookings ? (
                       <CommandEmpty className="center-both">
-                        <Loader2 className="mr-2 h-4 w-4 center-both animate-spin" /> <p>Đang tải...</p>
+                        <Loader2 className="mr-2 h-4 w-4 center-both animate-spin" /> <p>Loading...</p>
                       </CommandEmpty>
                     ) : bookings.length === 0 ? (
-                      <CommandEmpty>Không tìm thấy phòng.</CommandEmpty>
+                      <CommandEmpty>No room found.</CommandEmpty>
                     ) : (
                       <CommandGroup>
                         {bookings.map((b) => (
@@ -148,11 +148,11 @@ export default function ServicePage() {
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1">
               <CalendarDays className="w-4 h-4" />
-              <span>Nhận phòng: {formatDateVN(booking.startDate)}</span>
+              <span>Check-in: {formatDateVN(booking.startDate)}</span>
             </div>
             <div className="flex items-center gap-1">
               <CalendarDays className="w-4 h-4" />
-              <span>Trả phòng: {formatDateVN(booking.endDate)}</span>
+              <span>Check-out: {formatDateVN(booking.endDate)}</span>
             </div>
           </div>
         </CardContent>
@@ -164,7 +164,7 @@ export default function ServicePage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 transition-colors duration-200" />
               <Input
-                placeholder="Tìm kiếm dịch vụ..."
+                placeholder="Search for services..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="w-full pl-10 h-12 bg-white rounded-lg outline-none border border-gray-300 focus:border-teal-500 focus:ring-teal-500 transition-colors duration-200"
@@ -201,8 +201,8 @@ export default function ServicePage() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Search className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Không tìm thấy dịch vụ</h3>
-                  <p className="text-gray-500">Thử tìm kiếm với từ khóa khác</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No services found</h3>
+                  <p className="text-gray-500">Try searching with a different keyword</p>
                 </div>
               )}
 

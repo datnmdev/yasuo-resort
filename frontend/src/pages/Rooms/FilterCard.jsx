@@ -6,6 +6,7 @@ import { Button } from '@ui/button';
 import { Search, Users, XCircle, SlidersHorizontal } from 'lucide-react';
 import dayjs from 'dayjs';
 import { Slider } from 'antd';
+import { formatCurrencyUSD } from '@libs/utils';
 
 const MIN = 0;
 const MAX = 50000;
@@ -82,8 +83,8 @@ export function FilterCard({ filterState, setFilterState, handleClearFilters, ro
             <Label className="mb-2 block">Price Range</Label>
 
             <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-              <span>{filterState.priceRange.minPrice || MIN}$</span>
-              <span>{filterState.priceRange.maxPrice || MAX}$</span>
+              <span>{formatCurrencyUSD(filterState.priceRange.minPrice || MIN)}</span>
+              <span>{formatCurrencyUSD(filterState.priceRange.maxPrice || MAX)}</span>
             </div>
 
             <Slider

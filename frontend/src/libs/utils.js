@@ -15,7 +15,7 @@ export function formatCurrencyUSD(amount) {
 }
 
 export function formatDateVN(dateString) {
-    if (!dateString) return 'Chưa chọn';
+    if (!dateString) return 'Not selected';
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN');
 };

@@ -21,7 +21,6 @@ export default function CartItems({ service }) {
         <span className="font-semibold text-gray-800">{formatCurrencyUSD(itemTotal)}</span>
         <Button size="icon" onClick={() => remove(service.uuid)} className="w-8 h-8 text-red-500 hover:bg-red-50">
           <X className="w-4 h-4" />
-          <span className="sr-only">Remove</span>
         </Button>
       </div>
     </div>

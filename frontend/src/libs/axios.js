@@ -3,14 +3,22 @@ import Cookies from 'js-cookie';
 import { HttpStatusCode } from 'axios';
 
 
-const accessToken = Cookies.get('accessToken');
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  headers: {
-    Authorization: `Bearer ${accessToken}`,
-  },
   withCredentials: true,
 });
+
+// Thêm interceptor request để luôn lấy access token mới nhất
+axiosInstance.interceptors.request.use((config) => {
+  const token = Cookies.get('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete config.headers.Authorization;
+  }
+  return config;
+});
+
 
 axiosInstance.interceptors.response.use(
   async (response) => response,
@@ -28,6 +36,10 @@ axiosInstance.interceptors.response.use(
           url: `${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`,
           method: 'put',
           withCredentials: true,
+          data: {
+            accessToken: Cookies.get('accessToken'),
+            refreshToken: Cookies.get('refreshToken'),
+          },
         })
       ).data;
 
