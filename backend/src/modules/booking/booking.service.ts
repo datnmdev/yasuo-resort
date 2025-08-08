@@ -161,7 +161,7 @@ export class BookingService {
           roomId: roomInfo.id,
         })
         .andWhere(
-          `booking.status != 'cancelled' AND booking.start_date < :endDate AND booking.end_date > :startDate`,
+          `booking.status != 'cancelled' AND booking.status != 'rejected' AND booking.start_date < :endDate AND booking.end_date > :startDate`,
           {
             startDate: bookingRoomBody.startDate,
             endDate: bookingRoomBody.endDate,
