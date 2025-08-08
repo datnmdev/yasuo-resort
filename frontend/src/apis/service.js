@@ -16,7 +16,9 @@ export default {
     return axiosInstance.delete(`/service/${param.serviceId}`);
   },
   cancelBookedService: (param) => {
-    console.log("Cancelling service with ID:", param.serviceId);
     return axiosInstance.put(`/booking/service/${param.serviceId}/cancel`);
+  },
+  updateBookedService: (param, body) => {
+    return axiosInstance.put(`/booking/service/${param.serviceId}`, body);
   },
 };

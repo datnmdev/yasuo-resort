@@ -13,41 +13,49 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useReactToPrint } from 'react-to-print';
 
 export default function Contract() {
+  // Lấy thông tin user từ Redux store
   const user = useSelector(userSelector.selectUser);
+
+  // State quản lý danh sách hợp đồng
   const [contracts, setContracts] = useState([]);
   console.log("check contract abc", contracts);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  // State for PDF preview
+  // State quản lý PDF preview
   const [pdfUrlToPreview, setPdfUrlToPreview] = useState(null);
   const [isOpenPdfModal, setOpenPdfModal] = useState(false);
-  // State for booking to sign
+
+  // State quản lý ký hợp đồng và hủy booking
   const [bookingToSign, setBookingToSign] = useState(null);
   const [bookingToCancel, setBookingToCancel] = useState(null);
-  // Refs for signature pad
+
+  // Refs cho signature pad (canvas vẽ chữ ký)
   const canvasRef = useRef(null);
   const signaturePadRef = useRef(null);
-  // State for modal to sign contract
-  const [isOpenSignModal, setOpenSignModal] = useState(false);
-  // State for cancel booking modal
-  const [isOpenCancelBooking, setIsOpenCancelBooking] = useState(false);
-  // State for editing service
-  const [editingServiceId, setEditingServiceId] = useState(null);
-  const [editedService, setEditedService] = useState({});
-  // Modal for viewing contract appendix
-  const [isOpenAppendixModal, setIsOpenAppendixModal] = useState(false);
+
+  // State quản lý các modal
+  const [isOpenSignModal, setOpenSignModal] = useState(false); // Modal ký hợp đồng
+  const [isOpenCancelBooking, setIsOpenCancelBooking] = useState(false); // Modal hủy booking
+  const [isOpenAppendixModal, setIsOpenAppendixModal] = useState(false); // Modal xem phụ lục hợp đồng
+
+  // State quản lý chỉnh sửa dịch vụ
+  const [editingServiceId, setEditingServiceId] = useState(null); // ID service đang được edit
+  const [editedService, setEditedService] = useState({}); // Dữ liệu service đang edit
+
+  // State quản lý in phụ lục hợp đồng
   const [contractToViewAppendix, setContractToViewAppendix] = useState(null);
   const [shouldPrint, setShouldPrint] = useState(false);
   console.log("contractToViewAppendix", contractToViewAppendix);
 
+  // Mapping trạng thái dịch vụ với label và styling
   const serviceStatusMap = {
     pending: { label: '⏳ Pending', className: 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs' },
     confirmed: { label: '✅ Confirmed', className: 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs' },
     cancelled: { label: '❌ Cancelled', className: 'bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs' },
     rejected: { label: '🚫 Rejected', className: 'bg-red-100 text-red-700 px-2 py-1 rounded text-xs' },
   };
-
+  const [hoveredServiceId, setHoveredServiceId] = useState(null);
   const printRef = useRef(null);
 
   const handlePrint = useReactToPrint({
@@ -65,10 +73,12 @@ export default function Contract() {
     }
   }, [contractToViewAppendix]);
 
+  // Function xác định trạng thái hiển thị của hợp đồng
   const getContractStatusDisplay = (contract) => {
     const today = new Date().toISOString().split("T")[0];
     const isEnded = contract.status === 'confirmed' && contract.endDate < today;
 
+    // Nếu hợp đồng đã kết thúc (confirmed nhưng quá ngày kết thúc)
     if (isEnded) {
       return {
         label: '📅 Contract Ended',
@@ -102,12 +112,14 @@ export default function Contract() {
   };
 
 
+  // Function lấy danh sách hợp đồng của user từ API
   const fetchContracts = async () => {
     setLoading(true);
     setError('');
     try {
       const res = await bookingApi.getBookings({ page: 1, limit: 100 });
       const bookings = res.data.data[0] || [];
+      // Lọc chỉ lấy booking của user hiện tại
       const userBookings = bookings.filter((b) => b.userId === user?.id);
       setContracts(userBookings);
     } catch (err) {
@@ -117,24 +129,30 @@ export default function Contract() {
     }
   };
 
+  // Effect: Tải danh sách hợp đồng khi user đã đăng nhập
   useEffect(() => {
     if (user?.id) fetchContracts();
   }, [user?.id]);
 
+  // Effect: Khởi tạo signature pad khi modal ký hợp đồng được mở
   useEffect(() => {
     if (isOpenSignModal && canvasRef.current) {
       setTimeout(() => {
         const canvas = canvasRef.current;
+        // Lấy width của parent element để responsive
         const parentWidth = canvas.parentElement?.getBoundingClientRect().width || 600;
 
+        // Set kích thước canvas
         canvas.width = parentWidth;
         canvas.height = parentWidth / 2;
 
+        // Khởi tạo nền trắng cho canvas
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // Khởi tạo SignaturePad
         signaturePadRef.current = new SignaturePad(canvas, {
           backgroundColor: '#fff',
         });
@@ -142,21 +160,28 @@ export default function Contract() {
     }
   }, [isOpenSignModal]);
 
+  // Function xử lý ký hợp đồng
   const handleSignContract = async () => {
+    // Kiểm tra xem đã ký chưa
     if (!signaturePadRef.current || signaturePadRef.current.isEmpty()) {
-      return alert('Vui lòng ký trước khi gửi!');
+      return toast.warning('Please sign before submitting!');
     }
+
+    // Chuyển đổi signature từ canvas thành file
     const dataUrl = signaturePadRef.current.toDataURL('image/png');
     const blob = await (await fetch(dataUrl)).blob();
     const file = new File([blob], 'signature.png', { type: 'image/png' });
 
+    // Tạo FormData để upload file
     const formData = new FormData();
     formData.append('file', file);
 
     try {
+      // Upload signature file lên server
       const uploadRes = await uploadApi.uploadFile(formData);
-      const signaturePath = uploadRes.data?.path?.replace(/\\/g, '/');
+      const signaturePath = uploadRes.data?.path?.replace(/\//g, '/');
 
+      // Gửi API ký hợp đồng với signature URL
       await bookingApi.userSignTheContract({
         param: {
           bookingId: bookingToSign.id,
@@ -166,58 +191,72 @@ export default function Contract() {
         },
       });
 
+      // Đóng modal và reset state
       setOpenSignModal(false);
       setBookingToSign(null);
+
+      // Refresh lại danh sách hợp đồng
       const refreshed = await bookingApi.getBookings({ page: 1, limit: 100 });
       const refreshedBookings = refreshed.data.data[0] || [];
       setContracts(refreshedBookings.filter((b) => b.userId === user?.id));
     } catch (err) {
-      alert('Ký thất bại');
+      toast.error('Signing failed!');
     }
   };
+  // Function đóng modal ký hợp đồng và cleanup
   const handleCloseSignModal = () => {
     setOpenSignModal(false);
     setTimeout(() => {
       if (signaturePadRef.current) {
-        signaturePadRef.current.clear();
-        signaturePadRef.current.off(); // optional: remove events
+        signaturePadRef.current.clear(); // Xóa chữ ký
+        signaturePadRef.current.off(); // Remove event listeners
       }
-    }, 300); // đợi modal đóng hoàn toàn (đảm bảo DOM ổn định)
+    }, 300); // Đợi modal đóng hoàn toàn trước khi cleanup
   };
 
+  // Function xử lý hủy booking
   const handleCancelBooking = async () => {
     try {
+      // Gọi API hủy booking
       await bookingApi.cancelBooking({
         param: { bookingId: bookingToCancel.id },
       });
+
+      // Đóng modal và reset state
       setIsOpenCancelBooking(false);
       setBookingToCancel(null);
+
+      // Refresh lại danh sách hợp đồng
       await fetchContracts();
     } catch (err) {
-      alert('a');
+      toast.error('Booking cancellation failed!');
     }
   };
-  // xử lý edit, cancel service
-
+  // Function xử lý hủy dịch vụ
   const handleCancelService = async (serviceId) => {
     try {
+      // Tìm service trong tất cả contracts
       const serviceCheck = contracts
         .flatMap(c => c.bookingServices || [])
         .find(s => s.id === serviceId);
 
       if (!serviceCheck) return toast.error("Service not found");
 
+      // Kiểm tra xem service đã bắt đầu chưa
       const today = new Date().toISOString().split("T")[0];
       const isStarted = service.startDate <= today;
 
       if (isStarted) {
         return toast.warning("Service has already started. You cannot cancel it.");
       }
+      // Gọi API hủy service
       console.log("serviceId", serviceId);
       await service.cancelBookedService({ serviceId });
       console.log("Service cancelled successfully");
       toast.success("Service cancelled successfully");
-      await fetchContracts(); // làm mới danh sách
+
+      // Refresh lại danh sách hợp đồng
+      await fetchContracts();
 
     } catch (err) {
       console.error("Failed to cancel service", err);
@@ -225,79 +264,105 @@ export default function Contract() {
     }
   };
 
+  // Helper function: Format date thành string YYYY-MM-DD
   const formatDate = (date) => new Date(date).toISOString().split("T")[0];
-  //const getToday = () => formatDate(new Date());
+
+  // Helper function: Lấy ngày bắt đầu tối thiểu (hôm nay hoặc ngày bắt đầu contract)
   const getMinStartDate = (contractStart) => {
     const today = new Date();
     const start = new Date(contractStart);
     return formatDate(today > start ? today : start);
   };
 
+  // Function xử lý xác nhận chỉnh sửa service
   const handleConfirmEdit = async (serviceId, contract) => {
+    console.log('handleConfirmEdit called with:', { serviceId, editedService });
     const { quantity, startDate, endDate } = editedService;
-    const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+    const today = new Date().toISOString().split("T")[0];
 
+    // Tìm service hiện tại trong contract
+    const currentService = contract.bookingServices.find(s => s.id === serviceId);
+    if (!currentService) {
+      return toast.error('Service not found.');
+    }
+
+    // Validation: Kiểm tra dữ liệu đầu vào
     if (!quantity || !startDate || !endDate) {
+      console.log('Missing data:', { quantity, startDate, endDate });
       return toast.warning('Please enter complete information.');
     }
 
+    // Validation: Ngày bắt đầu phải >= ngày tối thiểu
     if (new Date(startDate) < new Date(getMinStartDate(contract.startDate))) {
       return toast.error('Invalid start date.');
     }
 
+    // Validation: Ngày kết thúc phải sau ngày bắt đầu
     if (new Date(endDate) < new Date(startDate)) {
       return toast.warning('End date must be after start date.');
     }
 
+    // Validation: Ngày kết thúc phải trước ngày kết thúc contract
     if (new Date(endDate) > new Date(contract.endDate)) {
       return toast.warning('End date must be before contract end date.');
     }
 
-    if (new Date(s.startDate) <= new Date() && editedService.quantity !== s.quantity) {
+    // Validation: Không thể thay đổi số lượng nếu service đã bắt đầu
+    if (new Date(currentService.startDate) <= new Date() && editedService.quantity !== currentService.quantity) {
       return toast.warning('Number of people cannot be changed once service has started..');
     }
 
-    // Kiểm tra trùng thời gian với cùng 1 dịch vụ
+    // Validation: Kiểm tra trùng thời gian với cùng loại dịch vụ
     const overlapping = contract.bookingServices.some((other) => {
-      if (other.serviceId !== s.serviceId || other.id === serviceId) return false;
+      // Bỏ qua nếu khác loại service hoặc chính service đang edit
+      if (other.serviceId !== currentService.serviceId || other.id === serviceId) return false;
 
       const newStart = new Date(startDate);
       const newEnd = new Date(endDate);
       const otherStart = new Date(other.startDate);
       const otherEnd = new Date(other.endDate);
 
-      return newStart <= otherEnd && newEnd >= otherStart; // Có giao thời gian
+      // Kiểm tra có giao thời gian không
+      return newStart <= otherEnd && newEnd >= otherStart;
     });
 
     if (overlapping) {
       return toast.warning('This service usage time overlaps with another booking (same service).');
     }
 
-    // try {
-    //   await bookingApi.updateBookingService({
-    //     param: { serviceServiceId: serviceId },
-    //     body: { quantity: Number(quantity), startDate, endDate },
-    //   });
+    try {
+      // Gọi API cập nhật service
+      await service.updateBookedService(
+        { serviceId: serviceId },
+        { quantity: Number(quantity), startDate, endDate }
+      );
 
-    //   setEditingServiceId(null);
-    //   setEditedService({});
-    //   await fetchContracts();
-    // } catch (err) {
-    //   alert('Cập nhật thất bại!');
-    // }
+      // Reset editing state
+      setEditingServiceId(null);
+      setEditedService({});
+
+      // Refresh lại danh sách hợp đồng
+      await fetchContracts();
+    } catch (err) {
+      toast.error('Update failed!');
+    }
   };
 
+  // === RENDER JSX ===
   return (
+    // Animation wrapper với Framer Motion
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="max-w-7xl mx-auto px-6 pb-8">
+        {/* Header section */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold mb-2">Your booking contract</h1>
           <p className="text-gray-600">View details of created contracts/bookings.</p>
         </div>
+        {/* Filter section */}
         <div className="flex items-center gap-4 mb-4">
           <label className="text-sm font-medium">Filter by status:</label>
           <select
@@ -311,6 +376,7 @@ export default function Contract() {
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
+        {/* Main content với conditional rendering */}
         {loading ? (
           <div className="text-center text-gray-500 py-12">Loading data...</div>
         ) : error ? (
@@ -319,6 +385,7 @@ export default function Contract() {
           <div className="text-center text-gray-400 py-12">You don't have any contract yet</div>
         ) : (
           <div className="space-y-8">
+            {/* Danh sách contracts sau khi filter */}
             {contracts
               .filter((contract) => {
                 if (filterStatus === 'all') return true;
@@ -326,13 +393,18 @@ export default function Contract() {
               })
               .map((contract) => (
                 <div key={contract.id} className="bg-white p-6 rounded shadow">
+                  {/* Contract card */}
                   <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
                     <div>
                       <div className="font-semibold text-lg text-teal-700">Booking code: #{contract.id}</div>
-                      {/* hiện lí do từ chối của admin */}
+                      {/* Hiển thị lý do từ chối nếu contract bị reject */}
                       {contract.status === 'rejected' && contract.reasonForRejection && (
-                        <div className="text-red-600 font-medium mb-4">
-                          <span className="font-semibold">Rejected by admin:</span> {contract.reasonForRejection}
+                        <div className="text-red-600 font-medium mb-4 p-3 bg-red-50 border border-red-200 rounded">
+                          <span className="font-semibold">❌ Rejected by admin:</span>
+                          <div
+                            className="mt-1 text-red-700"
+                            dangerouslySetInnerHTML={{ __html: contract.reasonForRejection }}
+                          />
                         </div>
                       )}
                       <div className="text-sm text-gray-500">
@@ -340,7 +412,7 @@ export default function Contract() {
                       </div>
                     </div>
                     {/* status hợp đồng - span */}
-                    <div>
+                    < div >
                       {(() => {
                         const statusInfo = getContractStatusDisplay(contract);
 
@@ -435,10 +507,31 @@ export default function Contract() {
                                     s.endDate
                                   )}
                                 </td>
-                                <td className="px-3 py-2">
-                                  <span className={serviceStatusMap[s.status]?.className || 'text-gray-500'}>
-                                    {serviceStatusMap[s.status]?.label || s.status}
-                                  </span>
+                                <td className="px-3 py-2 relative">
+                                  <div>
+                                    {s.status === 'rejected' && s.reasonForRejection ? (
+                                      <span
+                                        className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold cursor-pointer relative"
+                                        onMouseEnter={() => setHoveredServiceId(s.id)}
+                                        onMouseLeave={() => setHoveredServiceId(null)}
+                                      >
+                                        ❌ Rejected
+                                        {hoveredServiceId === s.id && (
+                                          <div
+                                            className="absolute left-full top-0 z-20 ml-2 w-64 bg-white border border-red-200 rounded shadow-lg p-3 text-xs text-red-700"
+                                            style={{ transform: 'translateY(-30%)' }}
+                                          >
+                                            <span className="font-semibold">Reason:</span>
+                                            <div className="mt-1" dangerouslySetInnerHTML={{ __html: s.reasonForRejection }} />
+                                          </div>
+                                        )}
+                                      </span>
+                                    ) : (
+                                      <span className={serviceStatusMap[s.status]?.className || 'text-gray-500'}>
+                                        {serviceStatusMap[s.status]?.label || s.status}
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-3 py-2">{formatCurrencyUSD(s.price)}/person/day</td>
                                 <td className="px-2 py-2"> {/* Cột chứa nút */}
@@ -520,11 +613,19 @@ export default function Contract() {
                       Status of contract: {contract.contract ? 'Created' : 'Not created'}
                     </div>
 
+                    {/*
+                      Nếu hợp đồng bị huỷ (cancelled) hoặc bị từ chối (rejected),
+                      hiển thị thông báo trạng thái màu đỏ phía dưới bảng dịch vụ.
+                      - Nếu cancelled: user tự huỷ booking
+                      - Nếu rejected: admin từ chối, có thể có lý do
+                    */}
                     {contract.status === 'cancelled' || contract.status === 'rejected' ? (
                       <div className="text-sm font-medium text-red-600">
                         {contract.status === 'cancelled'
-                          ? '❌ The request has been cancel by you'
-                          : '🚫 The request has been rejected by admin.'}
+                          ? '❌ The request has been cancel by you' // Thông báo user đã huỷ
+                          : '🚫 The request has been rejected by admin.' // Thông báo admin từ chối
+                        }
+                        {/* Nếu có lý do từ chối, có thể show thêm ở đây (hiện tại đã có ở trên header contract card) */}
                       </div>
                     ) : (
                       <>
@@ -541,35 +642,6 @@ export default function Contract() {
                           </button>
                         )}
 
-                        <div ref={printRef} style={{ display: 'none' }}>
-                          {contractToViewAppendix && (
-                            <>
-                              <h2 className="font-bold text-lg mb-2">Service Appendix</h2>
-                              <table className="min-w-full text-sm border">
-                                <thead className="bg-gray-100">
-                                  <tr>
-                                    <th className="px-3 py-2 text-left">Service</th>
-                                    <th className="px-3 py-2 text-left">Quantity</th>
-                                    <th className="px-3 py-2 text-left">Start</th>
-                                    <th className="px-3 py-2 text-left">End</th>
-                                    <th className="px-3 py-2 text-left">Price</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {contractToViewAppendix?.bookingServices?.map((s) => (
-                                    <tr key={s.id} className="border-t">
-                                      <td className="px-3 py-2">{s.service?.name}</td>
-                                      <td className="px-3 py-2">{s.quantity}</td>
-                                      <td className="px-3 py-2">{s.startDate}</td>
-                                      <td className="px-3 py-2">{s.endDate}</td>
-                                      <td className="px-3 py-2">{s.price}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </>)}
-                        </div>
-
                         {/* show phụ lục hợp đồng */}
                         {contract.status === 'confirmed' && new Date(contract.endDate) > new Date() && (
                           <button
@@ -581,8 +653,8 @@ export default function Contract() {
                                 day: 'numeric'
                               });
 
-                              // Tính tổng tiền dịch vụ
-                              const totalServicePrice = contract.bookingServices?.reduce((total, s) => {
+                              // Tính tổng tiền dịch vụ (chỉ services confirmed)
+                              const totalServicePrice = contract.bookingServices?.filter(s => s.status === 'confirmed').reduce((total, s) => {
                                 const quantity = s.quantity || 0;
                                 const price = parseFloat(s.price || 0);
                                 const start = new Date(s.startDate);
@@ -663,7 +735,7 @@ export default function Contract() {
                                         </tr>
                                       </thead>
                                       <tbody>
-                                        ${contract.bookingServices?.map(s => {
+                                        ${contract.bookingServices?.filter(s => s.status === 'confirmed').map(s => {
                                   const start = new Date(s.startDate);
                                   const end = new Date(s.endDate);
                                   const timeDiff = end.getTime() - start.getTime();
@@ -807,8 +879,9 @@ export default function Contract() {
                     )}
                   </div>
                 </div>
-              ))}
-          </div>
+              ))
+            }
+          </div >
         )}
         <Modal
           title="View contract"
@@ -856,10 +929,66 @@ export default function Contract() {
           footer={null}
           width={800}
         >
-          {contractToViewAppendix?.bookingServices?.length > 0 ? (
+          {console.log('Modal opened, isOpenAppendixModal:', isOpenAppendixModal, 'contractToViewAppendix:', contractToViewAppendix)}
+          {(() => {
+            console.log('All services:', contractToViewAppendix?.bookingServices);
+            const confirmedServices = contractToViewAppendix?.bookingServices?.filter(s => {
+              console.log('Checking service:', s.service?.name, 'Status:', s.status);
+              return s.status === 'confirmed';
+            });
+            console.log('Confirmed services:', confirmedServices);
+            return confirmedServices?.length > 0;
+          })() ? (
             <div className="overflow-x-auto" ref={printRef}>
+              {/* Chỉ hiển thị services có status confirmed trong bản in */}
+              <table className="min-w-full text-sm border rounded">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="px-3 py-2 text-left">Service Name</th>
+                    <th className="px-3 py-2 text-left">Number of People</th>
+                    <th className="px-3 py-2 text-left">Start Date</th>
+                    <th className="px-3 py-2 text-left">End Date</th>
+                    <th className="px-3 py-2 text-left">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contractToViewAppendix.bookingServices
+                    .filter(s => {
+                      console.log('Service status:', s.status, 'Service name:', s.service?.name);
+                      return s.status === 'confirmed';
+                    }) // Chỉ lấy services confirmed
+                    .map((s) => (
+                      <tr key={s.id} className="border-b last:border-0">
+                        <td className="px-3 py-2">{s.service?.name}</td>
+                        <td className="px-3 py-2">{s.quantity}</td>
+                        <td className="px-3 py-2">{s.startDate}</td>
+                        <td className="px-3 py-2">{s.endDate}</td>
+                        <td className="px-3 py-2">{formatCurrencyUSD(s.price)}/person/day</td>
+                      </tr>
+                    ))}
 
-              <ServiceAppendix contract={contractToViewAppendix} />
+                  <tr className="bg-gray-50 font-semibold">
+                    <td className="px-3 py-2" colSpan={4}>Total Service Price</td>
+                    <td className="px-3 py-2">
+                      {formatCurrencyUSD(
+                        contractToViewAppendix.bookingServices
+                          .filter(s => s.status === 'confirmed') // Chỉ tính tổng services confirmed
+                          .reduce((total, s) => {
+                            const quantity = s.quantity || 0;
+                            const price = parseFloat(s.price || 0);
+
+                            const start = new Date(s.startDate);
+                            const end = new Date(s.endDate);
+                            const timeDiff = end.getTime() - start.getTime();
+                            const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)); // Số ngày giữa 2 ngày
+                            const serviceTotal = quantity * price * numberOfDays;
+                            return total + serviceTotal;
+                          }, 0)
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
               {/* <table className="min-w-full text-sm border rounded">
                 <thead>
                   <tr className="bg-gray-100">
@@ -907,8 +1036,8 @@ export default function Contract() {
             <div className="text-gray-500 text-sm">No services found in appendix.</div>
           )}
         </Modal>
-      </div>
+      </div >
       <ToastContainer position="top-right" autoClose={3000} />
-    </motion.div>
+    </motion.div >
   );
 }
