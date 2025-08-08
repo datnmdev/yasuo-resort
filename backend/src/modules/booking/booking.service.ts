@@ -502,6 +502,9 @@ export class BookingService {
           'room.type',
           'bookingServices',
           'bookingServices.service',
+          'roomChangeHistories',
+          'roomChangeHistories.fromRoom',
+          'roomChangeHistories.toRoom',
         ],
       });
       if (!booking) {
@@ -548,6 +551,19 @@ export class BookingService {
           ) / 100,
         ),
       }));
+      const roomChangeHistories = booking.roomChangeHistories
+          .sort((item1, item2) =>
+            moment(item1.changeDate).diff(moment(item2.changeDate), 'days'),
+          )
+          .map((item, index, arr) => ({
+            ...item,
+            index: index + 1,
+            changeDate: moment(item.changeDate).format('DD-MM-YYYY'),
+            periodOfTime:
+              index < arr.length - 1
+                ? `Từ ${moment(item.changeDate).format('DD-MM-YYYY')} đến hết ${moment(arr[index + 1].changeDate).format('DD-MM-YYYY')}`
+                : `Từ ${moment(item.changeDate).format('DD-MM-YYYY')} đến ${moment(booking.endDate).format('DD-MM-YYYY')}`,
+          }));
       const contractHTML = await ejs.renderFile(
         path.join(process.cwd(), 'src/assets/templates/contract.ejs'),
         {
@@ -583,6 +599,7 @@ export class BookingService {
             },
           },
           bookedServices,
+          roomChangeHistories,
           totalBookedServicePrice: String(
             Math.ceil(
               bookedServices.reduce(
