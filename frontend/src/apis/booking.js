@@ -39,4 +39,15 @@ export default {
       req.body
     );
   },
+  confirmBookingService: (req) => {
+    return axiosInstance.put(
+      `/booking/service/${req.param.id}/confirm`
+    );
+  },
+  rejectServiceBooking: (req) => {
+    return axiosInstance.put(
+      `/booking/service/${req.param.id}/reject`,
+      req.body
+    );
+  }
 };

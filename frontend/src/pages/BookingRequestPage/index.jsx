@@ -23,6 +23,9 @@ import {
   EyeOutlined,
   CloseCircleOutlined,
   RollbackOutlined,
+  CustomerServiceOutlined,
+  CheckOutlined,
+  StopOutlined,
 } from '@ant-design/icons';
 import useFetch from '../../hooks/fetch.hook';
 import apis from '../../apis/index';
@@ -68,6 +71,27 @@ export default function BookingRequestPage() {
   const [isOpenReasonOfRejectionModal, setOpenReasonOfRejectionModal] = useState(false);
   const [rejectBookingForm] = Form.useForm();
   const [selectedRowToReject, setSelectedRowToReject] = useState(null);
+  const [isOpenServiceBookingRequestModal, setOpenServiceBookingRequestModal] = useState(false);
+  const [selectedBookingToOpenServiceBookingRequestModal, setSelectedBookingToOpenServiceBookingRequestModal] =
+    useState(null);
+  const [serviceBookingTableData, setServiceBookingTableData] = useState([]);
+  const [selectedBookingServiceToConfirm, setSelectedBookingServiceToConfirm] = useState(null);
+  const [confirmBookingServiceReq, setConfirmBookingServiceReq] = useState(null);
+  const {
+    data: confirmBookingServiceResData,
+    isLoading: isConfirmingBookingService,
+    setRefetch: setReConfirmBookingService,
+  } = useFetch(apis.booking.confirmBookingService, confirmBookingServiceReq, false);
+  const [isOpenReasonForTheServiceBookingRejectionModal, setOpenReasonForTheServiceBookingRejectionModal] =
+    useState(false);
+  const [rejectServiceBookingForm] = Form.useForm();
+  const [selectedServiceBookingToReject, setSelectedServiceBookingToReject] = useState(null);
+  const [rejectServiceBookingReq, setRejectServiceBookingReq] = useState(null);
+  const {
+    data: rejectServiceBookingResData,
+    isLoading: isRejectingServiceBooking,
+    setRefetch: setReRejectServiceBooking,
+  } = useFetch(apis.booking.rejectServiceBooking, rejectServiceBookingReq, false);
 
   const columns = [
     {
@@ -194,6 +218,108 @@ export default function BookingRequestPage() {
               hidden={!(record.status === 'pending' && !record.contract)}
             />
           </Tooltip>
+
+          <Tooltip title="Service Booking Request">
+            <Button
+              shape="circle"
+              icon={<CustomerServiceOutlined />}
+              onClick={() => setSelectedBookingToOpenServiceBookingRequestModal(record)}
+              hidden={record.status !== 'confirmed'}
+            />
+          </Tooltip>
+        </Flex>
+      ),
+    },
+  ];
+
+  const serviceBookingRequestTableColumns = [
+    {
+      title: 'Id',
+      dataIndex: 'id',
+      key: 'id',
+    },
+    {
+      title: 'Booking Id',
+      dataIndex: 'bookingId',
+      key: 'bookingId',
+    },
+    {
+      title: 'Service Id',
+      dataIndex: 'serviceId',
+      key: 'serviceId',
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      dataIndex: 'status',
+      render: (_, record) => {
+        let color;
+        switch (record.status) {
+          case 'pending':
+            color = 'gray';
+            break;
+          case 'confirmed':
+            color = 'green';
+            break;
+          default:
+            color = 'volcano';
+        }
+
+        return <Tag color={color}>{record.status.toUpperCase()}</Tag>;
+      },
+    },
+    {
+      title: 'Start Date',
+      dataIndex: 'startDate',
+      key: 'startDate',
+    },
+    {
+      title: 'End Date',
+      dataIndex: 'endDate',
+      key: 'endDate',
+    },
+    {
+      title: 'Price',
+      dataIndex: 'price',
+      key: 'price',
+    },
+    {
+      title: 'Quantity',
+      dataIndex: 'quantity',
+      key: 'quantity',
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      render: (_, record) => (
+        <Flex gap="small" wrap align="center" style={{ maxWidth: 120 }}>
+          <Tooltip title="Confirm">
+            <Button
+              shape="circle"
+              icon={<CheckOutlined />}
+              onClick={() => {
+                setSelectedBookingServiceToConfirm({
+                  ...record,
+                });
+              }}
+              loading={confirmBookingServiceReq?.param?.id === record.id && isConfirmingBookingService}
+              hidden={!(record.status === 'pending')}
+            />
+          </Tooltip>
+
+          <Tooltip title="Reject">
+            <Button
+              shape="circle"
+              icon={<StopOutlined />}
+              onClick={() =>
+                setSelectedServiceBookingToReject({
+                  ...record,
+                })
+              }
+              loading={rejectServiceBookingReq?.param?.id === record.id && isRejectingServiceBooking}
+              hidden={record.status !== 'pending'}
+            />
+          </Tooltip>
         </Flex>
       ),
     },
@@ -208,6 +334,22 @@ export default function BookingRequestPage() {
         },
         body: {
           reason: values.reasonForRejection,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function handleRejectServiceBookingSubmit() {
+    try {
+      const values = await rejectServiceBookingForm.validateFields();
+      setRejectServiceBookingReq({
+        param: {
+          id: values.id,
+        },
+        body: {
+          reasonForRejection: values.reasonForRejection,
         },
       });
     } catch (error) {
@@ -235,6 +377,18 @@ export default function BookingRequestPage() {
           })),
           bookings.data[1],
         ]);
+        if (selectedBookingToOpenServiceBookingRequestModal && isOpenServiceBookingRequestModal) {
+          const serviceBookings =
+            bookings.data[0].find((booking) => booking.id === selectedBookingToOpenServiceBookingRequestModal.id)
+              ?.bookingServices ?? [];
+          setServiceBookingTableData(
+            serviceBookings.map((serviceBooking) => ({
+              ...serviceBooking,
+              startDate: moment(serviceBooking.startDate).format('DD-MM-YYYY'),
+              endDate: moment(serviceBooking.endDate).format('DD-MM-YYYY'),
+            }))
+          );
+        }
       }
     }
   }, [isGettingBookings]);
@@ -342,6 +496,94 @@ export default function BookingRequestPage() {
       setOpenReasonOfRejectionModal(true);
     }
   }, [selectedRowToReject]);
+
+  useEffect(() => {
+    if (selectedBookingToOpenServiceBookingRequestModal) {
+      setServiceBookingTableData(() =>
+        selectedBookingToOpenServiceBookingRequestModal.bookingServices.map((serviceBooking) => ({
+          ...serviceBooking,
+          startDate: moment(serviceBooking.startDate).format('DD-MM-YYYY'),
+          endDate: moment(serviceBooking.endDate).format('DD-MM-YYYY'),
+        }))
+      );
+      setOpenServiceBookingRequestModal(true);
+    }
+  }, [selectedBookingToOpenServiceBookingRequestModal]);
+
+  useEffect(() => {
+    if (selectedBookingServiceToConfirm) {
+      setConfirmBookingServiceReq({
+        param: {
+          id: selectedBookingServiceToConfirm.id,
+        },
+      });
+    }
+  }, [selectedBookingServiceToConfirm]);
+
+  useEffect(() => {
+    if (confirmBookingServiceReq) {
+      setReConfirmBookingService({
+        value: true,
+      });
+    }
+  }, [confirmBookingServiceReq]);
+
+  useEffect(() => {
+    if (!isConfirmingBookingService) {
+      if (confirmBookingServiceResData) {
+        if (confirmBookingServiceResData.isSuccess) {
+          openNotification({
+            title: 'The service booking has been confirmed successfully',
+          });
+          setReGetBookings({
+            value: true,
+          });
+        } else {
+          openNotification({
+            title: confirmBookingServiceResData.error.message.toString(),
+          });
+        }
+      }
+    }
+  }, [isConfirmingBookingService]);
+
+  useEffect(() => {
+    if (selectedServiceBookingToReject) {
+      rejectServiceBookingForm.setFieldsValue({
+        id: selectedServiceBookingToReject.id,
+        reasonForRejection: '',
+      });
+      setOpenReasonForTheServiceBookingRejectionModal(true);
+    }
+  }, [selectedServiceBookingToReject]);
+
+  useEffect(() => {
+    if (rejectServiceBookingReq) {
+      setReRejectServiceBooking({
+        value: true,
+      });
+    }
+  }, [rejectServiceBookingReq]);
+
+  useEffect(() => {
+    if (!isRejectingServiceBooking) {
+      if (rejectServiceBookingResData) {
+        if (rejectServiceBookingResData.isSuccess) {
+          openNotification({
+            title: 'The service booking has been rejected successfully',
+          });
+          setReGetBookings({
+            value: true,
+          });
+          setOpenReasonForTheServiceBookingRejectionModal(false);
+        } else {
+          openNotification({
+            title: rejectServiceBookingResData.error.message.toString(),
+          });
+        }
+      }
+    }
+  }, [isRejectingServiceBooking]);
 
   return (
     <div className="p-4">
@@ -513,9 +755,9 @@ export default function BookingRequestPage() {
                 </Form.Item>
 
                 <Form.Item label="Reason For Rejection" hidden={selectedBookingDetail?.status !== 'rejected'}>
-                  <div 
-                    className='border-[1px] border-solid border-gray-300 rounded-[8px] px-2 py-1'
-                    dangerouslySetInnerHTML={{ __html: selectedBookingDetail?.reasonForRejection }} 
+                  <div
+                    className="border-[1px] border-solid border-gray-300 rounded-[8px] px-2 py-1"
+                    dangerouslySetInnerHTML={{ __html: selectedBookingDetail?.reasonForRejection }}
                   />
                 </Form.Item>
               </Space>
@@ -661,9 +903,9 @@ export default function BookingRequestPage() {
           </Space>
         </Modal>
 
-        {/* Reason Of Rejection Modal */}
+        {/* Reason For Rejection Modal */}
         <Modal
-          title="Reason Of Rejection"
+          title="Reason For Rejection"
           open={isOpenReasonOfRejectionModal}
           onCancel={() => setOpenReasonOfRejectionModal(false)}
           width={520}
@@ -685,6 +927,51 @@ export default function BookingRequestPage() {
               <TextEditor
                 disabled={isRejectingBooking}
                 initialValue={rejectBookingForm.getFieldValue('reasonForRejection')}
+              />
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        {/* Service Booking Request */}
+        <Modal
+          title="Service Booking Request"
+          open={isOpenServiceBookingRequestModal}
+          onCancel={() => setOpenServiceBookingRequestModal(false)}
+          width={1024}
+          footer={[]}
+        >
+          <Table columns={serviceBookingRequestTableColumns} dataSource={serviceBookingTableData} pagination={true} />
+        </Modal>
+
+        {/* Reject Booking Service Modal */}
+        <Modal
+          title="Reason For The Service Booking Rejection"
+          open={isOpenReasonForTheServiceBookingRejectionModal}
+          onCancel={() => setOpenReasonForTheServiceBookingRejectionModal(false)}
+          width={520}
+          footer={[
+            <Button key="back" onClick={() => setOpenReasonForTheServiceBookingRejectionModal(false)}>
+              Cancel
+            </Button>,
+            <Button
+              key="submit"
+              type="primary"
+              onClick={handleRejectServiceBookingSubmit}
+              loading={isRejectingServiceBooking}
+            >
+              Submit
+            </Button>,
+          ]}
+        >
+          <Form layout="vertical" form={rejectServiceBookingForm} name="control-hooks" style={{ marginTop: 16 }}>
+            <Form.Item name="id" label="Service Booking Id">
+              <Input disabled />
+            </Form.Item>
+
+            <Form.Item name="reasonForRejection" label="Reason For Rejection" rules={[{ required: true }]}>
+              <TextEditor
+                disabled={isRejectingServiceBooking}
+                initialValue={rejectServiceBookingForm.getFieldValue('reasonForRejection')}
               />
             </Form.Item>
           </Form>
