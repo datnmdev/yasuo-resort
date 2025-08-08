@@ -14,6 +14,8 @@ import {
   Alert,
   Tooltip,
   Flex,
+  DatePicker,
+  Select
 } from 'antd';
 import {
   FilterOutlined,
@@ -26,6 +28,7 @@ import {
   CustomerServiceOutlined,
   CheckOutlined,
   StopOutlined,
+  SwapOutlined,
 } from '@ant-design/icons';
 import useFetch from '../../hooks/fetch.hook';
 import apis from '../../apis/index';
@@ -33,6 +36,7 @@ import { useEffect, useState } from 'react';
 import useToast from '../../hooks/toast.hook';
 import moment from 'moment';
 import TextEditor from '@src/components/TextEditor';
+import dayjs from 'dayjs';
 
 export default function BookingRequestPage() {
   const [getBookingsReq, setGetBookingsReq] = useState({
@@ -92,6 +96,20 @@ export default function BookingRequestPage() {
     isLoading: isRejectingServiceBooking,
     setRefetch: setReRejectServiceBooking,
   } = useFetch(apis.booking.rejectServiceBooking, rejectServiceBookingReq, false);
+  const [selectedBookingToChangeRoom, setSelectedBookingToChangeRoom] = useState(null);
+  const [changeRoomReq, setChangeRoomReq] = useState(null);
+  const {
+    data: changeRoomResData,
+    isLoading: isChangingRoom,
+    setRefetch: setReChangeRoom,
+  } = useFetch(apis.booking.changeRoom, changeRoomReq, false);
+  const [getRoomsReq, setGetRoomsReq] = useState(null);
+  const {
+    data: getRoomsResData,
+    setRefetch: setReGetRooms,
+  } = useFetch(apis.room.getRooms, getRoomsReq, false);
+  const [isOpenChangeRoomModal, setOpenChangeRoomModal] = useState(false);
+  const [changeRoomForm] = Form.useForm();
 
   const columns = [
     {
@@ -227,6 +245,19 @@ export default function BookingRequestPage() {
               hidden={record.status !== 'confirmed'}
             />
           </Tooltip>
+
+          <Tooltip title="Change Room">
+            <Button
+              shape="circle"
+              icon={<SwapOutlined />}
+              onClick={() =>
+                setSelectedBookingToChangeRoom({
+                  ...record,
+                })
+              }
+              loading={changeRoomReq?.param?.id === record.id && isChangingRoom}
+            />
+          </Tooltip>
         </Flex>
       ),
     },
@@ -356,6 +387,19 @@ export default function BookingRequestPage() {
       console.log(error);
     }
   }
+  async function handleChangeRoomSubmit() {
+    try {
+      const values = await changeRoomForm.validateFields();
+      setChangeRoomReq({
+        body: {
+          ...values,
+          changeDate: dayjs(values.changeDate).format('YYYY-MM-DD')
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   useEffect(() => {
     setReGetBookings({
@@ -370,9 +414,9 @@ export default function BookingRequestPage() {
           bookings.data[0].map((booking) => ({
             ...booking,
             key: booking.id,
-            createdAt: moment(booking.createdAt).format('DD-MM-YYYY HH:mm:ss'),
-            startDate: moment(booking.startDate).format('DD-MM-YYYY'),
-            endDate: moment(booking.endDate).format('DD-MM-YYYY'),
+            createdAt: moment(booking.createdAt).format('DD/MM/YYYY HH:mm:ss'),
+            startDate: moment(booking.startDate).format('DD/MM/YYYY'),
+            endDate: moment(booking.endDate).format('DD/MM/YYYY'),
             totalPrice: `$${booking.totalPrice}`,
           })),
           bookings.data[1],
@@ -384,8 +428,8 @@ export default function BookingRequestPage() {
           setServiceBookingTableData(
             serviceBookings.map((serviceBooking) => ({
               ...serviceBooking,
-              startDate: moment(serviceBooking.startDate).format('DD-MM-YYYY'),
-              endDate: moment(serviceBooking.endDate).format('DD-MM-YYYY'),
+              startDate: moment(serviceBooking.startDate).format('DD/MM/YYYY'),
+              endDate: moment(serviceBooking.endDate).format('DD/MM/YYYY'),
             }))
           );
         }
@@ -502,8 +546,8 @@ export default function BookingRequestPage() {
       setServiceBookingTableData(() =>
         selectedBookingToOpenServiceBookingRequestModal.bookingServices.map((serviceBooking) => ({
           ...serviceBooking,
-          startDate: moment(serviceBooking.startDate).format('DD-MM-YYYY'),
-          endDate: moment(serviceBooking.endDate).format('DD-MM-YYYY'),
+          startDate: moment(serviceBooking.startDate).format('DD/MM/YYYY'),
+          endDate: moment(serviceBooking.endDate).format('DD/MM/YYYY'),
         }))
       );
       setOpenServiceBookingRequestModal(true);
@@ -584,6 +628,67 @@ export default function BookingRequestPage() {
       }
     }
   }, [isRejectingServiceBooking]);
+
+  useEffect(() => {
+    if (selectedBookingToChangeRoom) {
+      setGetRoomsReq({
+        'dateRange[startDate]': moment(selectedBookingToChangeRoom.startDate, "DD-MM-YYYY").format('YYYY-MM-DD'),
+        'dateRange[endDate]': moment(selectedBookingToChangeRoom.endDate, "DD-MM-YYYY").format('YYYY-MM-DD'),
+        page: 1,
+        limit: Number.MAX_SAFE_INTEGER,
+        typeId: selectedBookingToChangeRoom.room.typeId
+      });
+    }
+  }, [selectedBookingToChangeRoom]);
+
+  useEffect(() => {
+    if (getRoomsReq) {
+      setReGetRooms({
+        value: true,
+      });
+    }
+  }, [getRoomsReq]);
+
+  useEffect(() => {
+    if (selectedBookingToChangeRoom) {
+      changeRoomForm.resetFields();
+      const currRoom = selectedBookingToChangeRoom.roomChangeHistories.sort((a, b) => b.id - a.id)?.[0]
+      changeRoomForm.setFieldsValue({
+        bookingId: selectedBookingToChangeRoom.id,
+        fromRoomId: currRoom ? currRoom.toRoomId : selectedBookingToChangeRoom.roomId
+      })
+      setOpenChangeRoomModal(true)
+    }
+  }, [selectedBookingToChangeRoom])
+
+  useEffect(() => {
+    if (changeRoomReq) {
+      setReChangeRoom({
+        value: true,
+      });
+    }
+  }, [changeRoomReq]);
+
+  useEffect(() => {
+    if (!isChangingRoom) {
+      if (changeRoomResData) {
+        if (changeRoomResData.isSuccess) {
+          openNotification({
+            title: 'Room changed successfully ',
+          });
+          setReGetBookings({
+            value: true,
+          });
+          setOpenChangeRoomModal(false);
+        } else {
+          openNotification({
+            title: changeRoomResData.error.message.toString(),
+          });
+        }
+      }
+    }
+  }, [isChangingRoom]);
+
 
   return (
     <div className="p-4">
@@ -973,6 +1078,64 @@ export default function BookingRequestPage() {
                 disabled={isRejectingServiceBooking}
                 initialValue={rejectServiceBookingForm.getFieldValue('reasonForRejection')}
               />
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        {/* Change Room Modal */}
+        <Modal
+          title="Change Room"
+          open={isOpenChangeRoomModal}
+          onCancel={() => setOpenChangeRoomModal(false)}
+          width={520}
+          footer={[
+            <Button key="back" onClick={() => setOpenChangeRoomModal(false)}>
+              Cancel
+            </Button>,
+            <Button key="submit" type="primary" onClick={handleChangeRoomSubmit} loading={isChangingRoom}>
+              Submit
+            </Button>,
+          ]}
+        >
+          <Form layout="vertical" form={changeRoomForm} name="control-hooks" style={{ marginTop: 16 }}>
+            <Form.Item name="bookingId" label="Booking Id">
+              <Input disabled />
+            </Form.Item>
+
+            <Form.Item name="fromRoomId" label="From Room Id">
+              <Input disabled />
+            </Form.Item>
+
+            <Form.Item name="toRoomId" label="To Room Id" rules={[{ required: true }]}>
+              <Select
+                showSearch
+                placeholder="Select a room..."
+                optionFilterProp="label"
+                onChange={(value) => changeRoomForm.setFieldValue('toRoomId', value)}
+                options={
+                  getRoomsResData?.isSuccess
+                    ? getRoomsResData.data[0].filter(item => selectedBookingToChangeRoom.roomChangeHistories.sort((a, b) => b.id - a.id)?.[0]?.toRoomId != item.id).map((room) => ({
+                        label: room.roomNumber,
+                        value: room.id,
+                      }))
+                    : []
+                }
+              />
+            </Form.Item>
+
+            <Form.Item name="changeDate" label="Change Date" rules={[{ required: true }]}>
+              <DatePicker
+                format="DD-MM-YYYY"
+                disabledDate={(current) => {
+                  return current && current < moment().startOf('days');
+                }}
+                style={{ width: '100%' }}
+                disabled={isChangingRoom}
+              />
+            </Form.Item>
+
+            <Form.Item name="reason" label="Reason" rules={[{ required: true }]}>
+              <TextEditor disabled={isChangingRoom} initialValue={changeRoomForm.getFieldValue('reason')} />
             </Form.Item>
           </Form>
         </Modal>

@@ -49,5 +49,11 @@ export default {
       `/booking/service/${req.param.id}/reject`,
       req.body
     );
+  },
+  changeRoom: (req) => {
+    return axiosInstance.put(
+      `/booking/change-room`,
+      req.body
+    );
   }
 };

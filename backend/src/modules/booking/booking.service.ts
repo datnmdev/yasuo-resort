@@ -197,10 +197,7 @@ export class BookingService {
     }
   }
 
-  async rejectRoomBooking(
-    bookingId: number,
-    reason: string,
-  ) {
+  async rejectRoomBooking(bookingId: number, reason: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -209,9 +206,7 @@ export class BookingService {
         where: {
           id: bookingId,
         },
-        relations: [
-          'bookingServices',
-        ]
+        relations: ['bookingServices'],
       });
       if (booking) {
         if (booking.status === 'pending' && !booking.contract) {
@@ -229,13 +224,15 @@ export class BookingService {
 
           // Huỷ bỏ các dịch vụ đã đặt
           if (booking.bookingServices.length > 0) {
-            const bookingServiceEntities = booking.bookingServices.map(item => queryRunner.manager.create(BookingServiceEntity, ({
-              ...item,
-              status: 'rejected'
-            })))
+            const bookingServiceEntities = booking.bookingServices.map((item) =>
+              queryRunner.manager.create(BookingServiceEntity, {
+                ...item,
+                status: 'rejected',
+              }),
+            );
             await queryRunner.manager.save(bookingServiceEntities);
           }
-          
+
           await queryRunner.commitTransaction();
           return result;
         } else if (booking.status === 'confirmed') {
@@ -256,10 +253,7 @@ export class BookingService {
     }
   }
 
-  async cancelRoomBooking(
-    userId: number,
-    bookingId: number,
-  ) {
+  async cancelRoomBooking(userId: number, bookingId: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -269,9 +263,7 @@ export class BookingService {
           userId,
           id: bookingId,
         },
-        relations: [
-          'bookingServices',
-        ]
+        relations: ['bookingServices'],
       });
       if (booking) {
         if (booking.status === 'pending') {
@@ -287,10 +279,12 @@ export class BookingService {
 
           // Huỷ bỏ các dịch vụ đã đặt
           if (booking.bookingServices.length > 0) {
-            const bookingServiceEntities = booking.bookingServices.map(item => queryRunner.manager.create(BookingServiceEntity, ({
-              ...item,
-              status: 'cancelled'
-            })))
+            const bookingServiceEntities = booking.bookingServices.map((item) =>
+              queryRunner.manager.create(BookingServiceEntity, {
+                ...item,
+                status: 'cancelled',
+              }),
+            );
             await queryRunner.manager.save(bookingServiceEntities);
           }
 
@@ -301,7 +295,9 @@ export class BookingService {
         } else if (booking.status === 'rejected') {
           throw new ForbiddenException('Cannot cancel a rejected booking');
         }
-        throw new BadRequestException('This booking has already been cancelled');
+        throw new BadRequestException(
+          'This booking has already been cancelled',
+        );
       }
       throw new ForbiddenException(
         'You are not allowed to modify this resource',
@@ -552,18 +548,18 @@ export class BookingService {
         ),
       }));
       const roomChangeHistories = booking.roomChangeHistories
-          .sort((item1, item2) =>
-            moment(item1.changeDate).diff(moment(item2.changeDate), 'days'),
-          )
-          .map((item, index, arr) => ({
-            ...item,
-            index: index + 1,
-            changeDate: moment(item.changeDate).format('DD-MM-YYYY'),
-            periodOfTime:
-              index < arr.length - 1
-                ? `Từ ${moment(item.changeDate).format('DD-MM-YYYY')} đến hết ${moment(arr[index + 1].changeDate).format('DD-MM-YYYY')}`
-                : `Từ ${moment(item.changeDate).format('DD-MM-YYYY')} đến ${moment(booking.endDate).format('DD-MM-YYYY')}`,
-          }));
+        .sort((item1, item2) =>
+          moment(item1.changeDate).diff(moment(item2.changeDate), 'days'),
+        )
+        .map((item, index, arr) => ({
+          ...item,
+          index: index + 1,
+          changeDate: moment(item.changeDate).format('DD-MM-YYYY'),
+          periodOfTime:
+            index < arr.length - 1
+              ? `Từ ${moment(item.changeDate).format('DD-MM-YYYY')} đến hết ${moment(arr[index + 1].changeDate).format('DD-MM-YYYY')}`
+              : `Từ ${moment(item.changeDate).format('DD-MM-YYYY')} đến ${moment(booking.endDate).format('DD-MM-YYYY')}`,
+        }));
       const contractHTML = await ejs.renderFile(
         path.join(process.cwd(), 'src/assets/templates/contract.ejs'),
         {
@@ -686,21 +682,41 @@ export class BookingService {
       if (booking) {
         // Kiểm tra thông tin dịch vụ đặt
         for (const service of body.services) {
-          if (service.startDate && !moment(service.startDate).isBetween(moment(booking.startDate), moment(booking.endDate), 'days', '[]')) {
+          if (
+            service.startDate &&
+            !moment(service.startDate).isBetween(
+              moment(booking.startDate),
+              moment(booking.endDate),
+              'days',
+              '[]',
+            )
+          ) {
             throw new BadRequestException({
               message: 'Start date must be within the booking period',
               error: 'BadRequest',
             });
           }
 
-          if (service.endDate && !moment(service.endDate).isBetween(moment(booking.startDate), moment(booking.endDate), 'days', '[]')) {
+          if (
+            service.endDate &&
+            !moment(service.endDate).isBetween(
+              moment(booking.startDate),
+              moment(booking.endDate),
+              'days',
+              '[]',
+            )
+          ) {
             throw new BadRequestException({
               message: 'Start date must be within the booking period',
               error: 'BadRequest',
             });
           }
 
-          if (service.startDate && service.endDate && moment(service.startDate).isAfter(moment(service.endDate))) {
+          if (
+            service.startDate &&
+            service.endDate &&
+            moment(service.startDate).isAfter(moment(service.endDate))
+          ) {
             throw new BadRequestException({
               message: 'Start date must be before or same end date',
               error: 'BadRequest',
@@ -779,6 +795,20 @@ export class BookingService {
       if (booking.room.typeId !== toRoom.typeId) {
         throw new ConflictException(
           'The new room must be of the same type as the old room',
+        );
+      }
+
+      // Kiểm tra thời gian ngày chuyển phòng có nằm trong khoảng thời gian hợp đồng có hiệu lực hay không
+      if (
+        !moment(changeRoomBody.changeDate).isBetween(
+          moment(booking.startDate),
+          moment(booking.endDate),
+          'days',
+          '[]',
+        )
+      ) {
+        throw new ConflictException(
+          'The room change period must fall within the valid contract period',
         );
       }
 
@@ -945,7 +975,14 @@ export class BookingService {
         },
         {
           status: 'confirmed',
-          startDate: now.isBetween(moment(bookingService.startDate), moment(bookingService.endDate), 'days', '[]') ? now.format('YYYY-MM-DD') : bookingService.startDate,
+          startDate: now.isBetween(
+            moment(bookingService.startDate),
+            moment(bookingService.endDate),
+            'days',
+            '[]',
+          )
+            ? now.format('YYYY-MM-DD')
+            : bookingService.startDate,
         },
       );
 
@@ -1105,14 +1142,12 @@ export class BookingService {
 
   async rejectServiceBooking(bookingServiceId: number, reason: string) {
     // Kiểm tra booking service hợp lệ hay không
-    const bookingService = await this.bookingServiceRepository.findOne(
-      {
-        where: {
-          id: bookingServiceId,
-        },
-        relations: ['booking'],
+    const bookingService = await this.bookingServiceRepository.findOne({
+      where: {
+        id: bookingServiceId,
       },
-    );
+      relations: ['booking'],
+    });
     if (!bookingService) {
       throw new BadRequestException({
         message: 'Invalid booking service ID',
@@ -1122,8 +1157,8 @@ export class BookingService {
 
     // Cập nhật trạng thái booking service
     return this.bookingServiceRepository.update(
-      { 
-        id: bookingServiceId 
+      {
+        id: bookingServiceId,
       },
       {
         status: 'rejected',
@@ -1132,7 +1167,11 @@ export class BookingService {
     );
   }
 
-  async updateServiceBooking(userId: number, bookingServiceId: number, body: UpdateServiceBookingReqDto) {
+  async updateServiceBooking(
+    userId: number,
+    bookingServiceId: number,
+    body: UpdateServiceBookingReqDto,
+  ) {
     // Kiểm tra booking service hợp lệ hay không
     const bookingService = await this.bookingServiceRepository.findOne({
       where: {
@@ -1155,21 +1194,41 @@ export class BookingService {
     }
 
     // Kiển tra startDate và endDate có hợp lệ không
-    if (body.startDate && !moment(body.startDate).isBetween(moment(bookingService.booking.startDate), moment(bookingService.booking.endDate), 'days', '[]')) {
+    if (
+      body.startDate &&
+      !moment(body.startDate).isBetween(
+        moment(bookingService.booking.startDate),
+        moment(bookingService.booking.endDate),
+        'days',
+        '[]',
+      )
+    ) {
       throw new BadRequestException({
         message: 'Start date must be within the booking period',
         error: 'BadRequest',
       });
     }
 
-    if (body.endDate && !moment(body.endDate).isBetween(moment(bookingService.booking.startDate), moment(bookingService.booking.endDate), 'days', '[]')) {
+    if (
+      body.endDate &&
+      !moment(body.endDate).isBetween(
+        moment(bookingService.booking.startDate),
+        moment(bookingService.booking.endDate),
+        'days',
+        '[]',
+      )
+    ) {
       throw new BadRequestException({
         message: 'Start date must be within the booking period',
         error: 'BadRequest',
       });
     }
 
-    if (body.startDate && body.endDate && moment(body.startDate).isAfter(moment(body.endDate))) {
+    if (
+      body.startDate &&
+      body.endDate &&
+      moment(body.startDate).isAfter(moment(body.endDate))
+    ) {
       throw new BadRequestException({
         message: 'Start date must be before or same end date',
         error: 'BadRequest',
@@ -1186,12 +1245,16 @@ export class BookingService {
 
     // Cập nhật thông tin dịch vụ booking
     return this.bookingServiceRepository.update(
-      { 
-        id: bookingServiceId 
+      {
+        id: bookingServiceId,
       },
       {
-        startDate: body.startDate ? moment(body.startDate).format('YYYY-MM-DD') : bookingService.startDate,
-        endDate: body.endDate ? moment(body.endDate).format('YYYY-MM-DD') : bookingService.endDate,
+        startDate: body.startDate
+          ? moment(body.startDate).format('YYYY-MM-DD')
+          : bookingService.startDate,
+        endDate: body.endDate
+          ? moment(body.endDate).format('YYYY-MM-DD')
+          : bookingService.endDate,
         quantity: body.quantity ? body.quantity : bookingService.quantity,
       },
     );
@@ -1221,12 +1284,12 @@ export class BookingService {
 
     // Cập nhật trạng thái booking service
     return this.bookingServiceRepository.update(
-      { 
-        id: bookingServiceId 
+      {
+        id: bookingServiceId,
       },
       {
         status: 'cancelled',
       },
     );
-  }  
+  }
 }
