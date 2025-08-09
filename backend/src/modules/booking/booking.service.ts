@@ -139,6 +139,14 @@ export class BookingService {
         relations: ['type'],
       });
 
+      // Kiểm tra số người có hợp lệ không
+      if (bookingRoomBody.capacity > roomInfo.maxPeople) {
+        throw new BadRequestException({
+          message: `No more than ${roomInfo.maxPeople} people are allowed`,
+          error: 'BadRequest',
+        });
+      }
+
       // Kiểm tra tính hợp lệ của roomId
       if (!roomInfo) {
         throw new BadRequestException({

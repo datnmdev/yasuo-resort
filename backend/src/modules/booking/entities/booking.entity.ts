@@ -30,6 +30,9 @@ export class Booking {
   @Column("varchar", { name: "room_number", length: 255 })
   roomNumber: string;
 
+  @Column("int", { name: "capacity" })
+  capacity: number;
+
   @Column("decimal", { name: "room_price", precision: 18, scale: 2 })
   roomPrice: string;
 

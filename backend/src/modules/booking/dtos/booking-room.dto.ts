@@ -12,4 +12,8 @@ export class BookingRoomReqDto {
   @IsNotEmpty()
   @IsDateString()
   endDate: string;
+
+  @IsNotEmpty()
+  @IsInt()
+  capacity: number;
 }

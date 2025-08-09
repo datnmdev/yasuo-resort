@@ -128,6 +128,11 @@ export default function BookingRequestPage() {
       key: 'roomId',
     },
     {
+      title: 'Capacity',
+      dataIndex: 'capacity',
+      key: 'capacity',
+    },
+    {
       title: 'Status',
       key: 'status',
       dataIndex: 'status',
@@ -241,7 +246,9 @@ export default function BookingRequestPage() {
             <Button
               shape="circle"
               icon={<CustomerServiceOutlined />}
-              onClick={() => setSelectedBookingToOpenServiceBookingRequestModal(record)}
+              onClick={() => setSelectedBookingToOpenServiceBookingRequestModal({
+                ...record
+              })}
               hidden={record.status !== 'confirmed'}
             />
           </Tooltip>
@@ -278,6 +285,11 @@ export default function BookingRequestPage() {
       title: 'Service Id',
       dataIndex: 'serviceId',
       key: 'serviceId',
+    },
+    {
+      title: 'Service Name',
+      dataIndex: 'serviceName',
+      key: 'serviceName',
     },
     {
       title: 'Status',
@@ -430,6 +442,7 @@ export default function BookingRequestPage() {
               ...serviceBooking,
               startDate: moment(serviceBooking.startDate).format('DD/MM/YYYY'),
               endDate: moment(serviceBooking.endDate).format('DD/MM/YYYY'),
+              serviceName: serviceBooking.service.name
             }))
           );
         }
@@ -548,6 +561,7 @@ export default function BookingRequestPage() {
           ...serviceBooking,
           startDate: moment(serviceBooking.startDate).format('DD/MM/YYYY'),
           endDate: moment(serviceBooking.endDate).format('DD/MM/YYYY'),
+          serviceName: serviceBooking.service.name
         }))
       );
       setOpenServiceBookingRequestModal(true);
