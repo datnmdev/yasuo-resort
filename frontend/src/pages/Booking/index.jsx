@@ -14,6 +14,7 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import dayjs from 'dayjs';
 import { Spin } from 'antd';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui/select';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -25,6 +26,7 @@ export default function BookingConfirmationPage() {
   const defaultStartDate = startDate || dayjs().add(1, 'day').format('YYYY-MM-DD');
 
   const [dateRange, setDateRange] = useState([defaultStartDate, endDate]);
+  const [guests, setGuests] = useState(1);
 
   const { data: bookingData, isLoading } = useQuery({
     queryKey: ['bookings', room?.id],
@@ -124,6 +126,7 @@ export default function BookingConfirmationPage() {
       roomId: room.id,
       startDate: checkin ? format(checkin, 'yyyy-MM-dd') : null,
       endDate: checkout ? format(checkout, 'yyyy-MM-dd') : null,
+      capacity: guests,
     };
 
     bookingMutation.mutate(bookingData);
@@ -207,7 +210,26 @@ export default function BookingConfirmationPage() {
             </div>
             {/* Date Selection */}
             <div className="space-y-4 mb-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="guests" className="text-sm font-medium">
+                    Number of people
+                  </Label>
+                  <Select value={guests} onValueChange={setGuests}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select number of guests" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[...Array(room.maxPeople).keys()]
+                        .map((i) => i + 1)
+                        .map((num) => (
+                          <SelectItem key={num} value={num}>
+                            {num} {num === 1 ? 'guest' : 'guests'}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <Label htmlFor="checkin" className="text-sm font-medium">
                     Check-in Date
@@ -219,7 +241,6 @@ export default function BookingConfirmationPage() {
                     onChange={(e) => {
                       const newCheckin = e.target.value;
                       let newCheckout = dateRange[1];
-
                       if (
                         newCheckin &&
                         newCheckout &&
@@ -244,7 +265,6 @@ export default function BookingConfirmationPage() {
                       if (newEnd && newEnd.isBefore(newStart.add(1, 'day'))) {
                         newEnd = newStart.add(1, 'day');
                       }
-
                       setDateRange([newStart.format('YYYY-MM-DD'), newEnd ? newEnd.format('YYYY-MM-DD') : '']);
                     }}
                     min={dayjs().add(1, 'day').format('YYYY-MM-DD')}
