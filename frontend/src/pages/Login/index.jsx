@@ -8,6 +8,7 @@ import { userAction } from '../../stores/reducers/userReducer';
 import apis from '../../apis';
 
 const Login = () => {
+  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -18,6 +19,14 @@ const Login = () => {
 
   useEffect(() => {
     loginRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Tự động điền mật khẩu nếu Remember me
+    const savedEmail = localStorage.getItem('remembered_email');
+    const savedPassword = localStorage.getItem('remembered_password');
+    if (savedEmail && savedPassword) {
+      setEmail(savedEmail);
+      setPassword(savedPassword);
+      setRememberMe(true);
+    }
   }, []);
 
   const handleLogin = async (e) => {
@@ -31,6 +40,14 @@ const Login = () => {
       const res = await apis.user.signIn({ email, password });
       const { accessToken, refreshToken } = res.data.data;
       setLoginError('');
+      // Lưu email và password nếu Remember me
+      if (rememberMe) {
+        localStorage.setItem('remembered_email', email);
+        localStorage.setItem('remembered_password', password);
+      } else {
+        localStorage.removeItem('remembered_email');
+        localStorage.removeItem('remembered_password');
+      }
       //role và id
       const decoded = jwtDecode(accessToken);
       const user = {
@@ -99,13 +116,31 @@ const Login = () => {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full mb-4 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
+            <div className="relative mb-4">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 pr-10"
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-600"
+                onClick={() => setShowPassword((prev) => !prev)}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 2.25 12c2.036 3.952 6.1 7.5 9.75 7.5 1.622 0 3.19-.457 4.52-1.277M21.75 12c-.511-.99-1.24-2.053-2.12-3.077m-2.527-2.568C15.136 5.679 13.62 4.5 12 4.5c-1.62 0-3.136 1.179-5.103 2.855m10.206 0A10.478 10.478 0 0 1 21.75 12c-2.036 3.952-6.1 7.5-9.75 7.5-1.622 0-3.19-.457-4.52-1.277m10.206-10.223L3.98 8.223m0 0L12 19.5m0 0l8.02-11.277" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm6.25 0c-2.036 3.952-6.1 7.5-9.75 7.5s-7.714-3.548-9.75-7.5C4.286 8.048 8.35 4.5 12 4.5s7.714 3.548 9.75 7.5z" />
+                  </svg>
+                )}
+              </button>
+            </div>
             <div className="flex items-center mb-6">
               <input
                 id="rememberMe"

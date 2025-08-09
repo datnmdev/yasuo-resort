@@ -18,7 +18,7 @@ export default function Contract() {
 
   // State quản lý danh sách hợp đồng
   const [contracts, setContracts] = useState([]);
-  console.log("check contract abc", contracts);
+  console.log("check contracts", contracts);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -46,7 +46,6 @@ export default function Contract() {
   // State quản lý in phụ lục hợp đồng
   const [contractToViewAppendix, setContractToViewAppendix] = useState(null);
   const [shouldPrint, setShouldPrint] = useState(false);
-  console.log("contractToViewAppendix", contractToViewAppendix);
 
   // Mapping trạng thái dịch vụ với label và styling
   const serviceStatusMap = {
@@ -67,7 +66,6 @@ export default function Contract() {
   useEffect(() => {
     if (contractToViewAppendix && printRef.current) {
       setTimeout(() => {
-        console.log("In ref:", printRef.current);
         handlePrint();
       }, 200);
     }
@@ -250,16 +248,13 @@ export default function Contract() {
         return toast.warning("Service has already started. You cannot cancel it.");
       }
       // Gọi API hủy service
-      console.log("serviceId", serviceId);
       await service.cancelBookedService({ serviceId });
-      console.log("Service cancelled successfully");
       toast.success("Service cancelled successfully");
 
       // Refresh lại danh sách hợp đồng
       await fetchContracts();
 
     } catch (err) {
-      console.error("Failed to cancel service", err);
       toast.error("Failed to cancel service");
     }
   };
@@ -276,7 +271,6 @@ export default function Contract() {
 
   // Function xử lý xác nhận chỉnh sửa service
   const handleConfirmEdit = async (serviceId, contract) => {
-    console.log('handleConfirmEdit called with:', { serviceId, editedService });
     const { quantity, startDate, endDate } = editedService;
     const today = new Date().toISOString().split("T")[0];
 
@@ -288,7 +282,6 @@ export default function Contract() {
 
     // Validation: Kiểm tra dữ liệu đầu vào
     if (!quantity || !startDate || !endDate) {
-      console.log('Missing data:', { quantity, startDate, endDate });
       return toast.warning('Please enter complete information.');
     }
 
@@ -315,7 +308,7 @@ export default function Contract() {
     // Validation: Kiểm tra trùng thời gian với cùng loại dịch vụ
     const overlapping = contract.bookingServices.some((other) => {
       // Bỏ qua nếu khác loại service hoặc chính service đang edit
-      if (other.serviceId !== currentService.serviceId || other.id === serviceId) return false;
+      if (other.serviceId !== currentService.serviceId || other.id === serviceId || other.status === 'cancelled') return false;
 
       const newStart = new Date(startDate);
       const newEnd = new Date(endDate);
@@ -608,17 +601,40 @@ export default function Contract() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Room Change History Table */}
+                  {contract.roomChangeHistories && contract.roomChangeHistories.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="text-base font-semibold mb-2">Room Change History</h3>
+                      <table className="min-w-full text-sm border rounded">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="px-3 py-2 text-left">Change Date</th>
+                            <th className="px-3 py-2 text-left">From Room</th>
+                            <th className="px-3 py-2 text-left">To Room</th>
+                            <th className="px-3 py-2 text-left">Reason</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {contract.roomChangeHistories.map((item) => (
+                            <tr key={item.id} className="border-b last:border-0">
+                              <td className="px-3 py-2">{item.changeDate}</td>
+                              <td className="px-3 py-2">{item.fromRoom?.roomNumber || ''}</td>
+                              <td className="px-3 py-2">{item.toRoom?.roomNumber || ''}</td>
+                              <td className="px-3 py-2">
+                                <div dangerouslySetInnerHTML={{ __html: item.reason || '' }} />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
                   <div className="mt-4 space-y-2">
                     <div className="text-sm text-gray-500">
                       Status of contract: {contract.contract ? 'Created' : 'Not created'}
                     </div>
-
-                    {/*
-                      Nếu hợp đồng bị huỷ (cancelled) hoặc bị từ chối (rejected),
-                      hiển thị thông báo trạng thái màu đỏ phía dưới bảng dịch vụ.
-                      - Nếu cancelled: user tự huỷ booking
-                      - Nếu rejected: admin từ chối, có thể có lý do
-                    */}
                     {contract.status === 'cancelled' || contract.status === 'rejected' ? (
                       <div className="text-sm font-medium text-red-600">
                         {contract.status === 'cancelled'
@@ -762,6 +778,33 @@ export default function Contract() {
                                       </tfoot>
                                     </table>
                                   </div>
+
+                                  <!-- Room Change History Table -->
+                                  ${contract.roomChangeHistories && contract.roomChangeHistories.length > 0 ? `
+                                    <div style="margin-bottom: 30px;">
+                                      <h3 style="color:rgb(55, 35, 31); margin-bottom: 15px; font-size: 18px;">ROOM CHANGE HISTORY</h3>
+                                      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                        <thead>
+                                          <tr style="background-color: #f8fafc;">
+                                            <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0; font-weight: bold;">Change Date</th>
+                                            <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0; font-weight: bold;">From Room</th>
+                                            <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0; font-weight: bold;">To Room</th>
+                                            <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0; font-weight: bold;">Reason</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          ${contract.roomChangeHistories.map(item => `
+                                            <tr>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0;">${item.changeDate}</td>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0;">${item.fromRoom?.roomNumber || ''}</td>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0;">${item.toRoom?.roomNumber || ''}</td>
+                                              <td style="padding: 10px; border: 1px solid #e2e8f0;">${item.reason || ''}</td>
+                                            </tr>
+                                          `).join('')}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  ` : ''}
 
                                   <!-- Summary Section -->
                                   <div style="background-color: #f8fafc; padding: 20px; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px;">
@@ -929,14 +972,10 @@ export default function Contract() {
           footer={null}
           width={800}
         >
-          {console.log('Modal opened, isOpenAppendixModal:', isOpenAppendixModal, 'contractToViewAppendix:', contractToViewAppendix)}
           {(() => {
-            console.log('All services:', contractToViewAppendix?.bookingServices);
             const confirmedServices = contractToViewAppendix?.bookingServices?.filter(s => {
-              console.log('Checking service:', s.service?.name, 'Status:', s.status);
               return s.status === 'confirmed';
             });
-            console.log('Confirmed services:', confirmedServices);
             return confirmedServices?.length > 0;
           })() ? (
             <div className="overflow-x-auto" ref={printRef}>
@@ -954,7 +993,6 @@ export default function Contract() {
                 <tbody>
                   {contractToViewAppendix.bookingServices
                     .filter(s => {
-                      console.log('Service status:', s.status, 'Service name:', s.service?.name);
                       return s.status === 'confirmed';
                     }) // Chỉ lấy services confirmed
                     .map((s) => (
@@ -989,48 +1027,6 @@ export default function Contract() {
                   </tr>
                 </tbody>
               </table>
-              {/* <table className="min-w-full text-sm border rounded">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="px-3 py-2 text-left">Service Name</th>
-                    <th className="px-3 py-2 text-left">Number of People</th>
-                    <th className="px-3 py-2 text-left">Start Date</th>
-                    <th className="px-3 py-2 text-left">End Date</th>
-                    <th className="px-3 py-2 text-left">Price</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contractToViewAppendix.bookingServices.map((s) => (
-                    <tr key={s.id} className="border-b last:border-0">
-                      <td className="px-3 py-2">{s.service?.name}</td>
-                      <td className="px-3 py-2">{s.quantity}</td>
-                      <td className="px-3 py-2">{s.startDate}</td>
-                      <td className="px-3 py-2">{s.endDate}</td>
-                      <td className="px-3 py-2">{formatCurrencyUSD(s.price)}</td>
-                    </tr>
-                  ))}
-
-
-                  <tr className="bg-gray-50 font-semibold">
-                    <td className="px-3 py-2" colSpan={4}>Total Service Price</td>
-                    <td className="px-3 py-2">
-                      {formatCurrencyUSD(
-                        contractToViewAppendix.bookingServices.reduce((total, s) => {
-                          const quantity = s.quantity || 0;
-                          const price = parseFloat(s.price || 0);
-
-                          const start = new Date(s.startDate);
-                          const end = new Date(s.endDate);
-                          const timeDiff = end.getTime() - start.getTime();
-                          const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)); // Số ngày giữa 2 ngày
-                          const serviceTotal = quantity * price * numberOfDays;
-                          return total + serviceTotal;
-                        }, 0)
-                      )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table> */}
             </div>
           ) : (
             <div className="text-gray-500 text-sm">No services found in appendix.</div>
