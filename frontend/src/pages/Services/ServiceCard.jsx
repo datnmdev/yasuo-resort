@@ -7,8 +7,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import dayjs from 'dayjs';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-dayjs.extend(isSameOrAfter);
+import { toast } from 'react-toastify';
 
 const iconMap = [
   <Gift key={0} className="w-5 h-5 text-teal-600" />,
@@ -23,41 +22,17 @@ export default function ServiceCard({ service }) {
 
   const [isBooking, setIsBooking] = useState(false);
   const [tempNumPeople, setTempNumPeople] = useState(1);
-  const [tempStartDate, setTempStartDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [tempStartDate, setTempStartDate] = useState('');
   const [tempEndDate, setTempEndDate] = useState('');
   const [isAddDisabled, setIsAddDisabled] = useState(true);
 
   const handleAddToCart = () => {
     if (Object.keys(booking).length === 0) {
-      alert('Please select a room before adding services');
+      toast.info('Please select a room before adding services');
       return;
     }
     setIsBooking(true);
   };
-
-  useEffect(() => {
-    // Xử lý tempStartDate
-    if (!startDate || dayjs(startDate).isBefore(dayjs(), 'day')) {
-      setTempStartDate(dayjs().format('YYYY-MM-DD'));
-    } else {
-      setTempStartDate(startDate);
-    }
-
-    // Xử lý tempEndDate
-    if (!endDate) {
-      setTempEndDate('');
-    } else {
-      // Nếu endDate nhỏ hơn tempStartDate + 1 ngày, thì gán endDate thành tempStartDate + 1 ngày
-      const minEndDate = dayjs(startDate).add(1, 'day');
-      const givenEndDate = dayjs(endDate);
-
-      if (!givenEndDate.isValid() || givenEndDate.isBefore(minEndDate, 'day')) {
-        setTempEndDate(minEndDate.format('YYYY-MM-DD'));
-      } else {
-        setTempEndDate(endDate);
-      }
-    }
-  }, [startDate, endDate]);
 
   useEffect(() => {
     const start = dayjs(tempStartDate, 'YYYY-MM-DD', true);
@@ -66,11 +41,7 @@ export default function ServiceCard({ service }) {
     const maxEnd = dayjs(endDate);
 
     const isValidDate =
-      start.isValid() &&
-      end.isValid() &&
-      !start.isBefore(minStart) &&
-      !end.isAfter(maxEnd) &&
-      !start.isAfter(end.subtract(1, 'day'));
+      start.isValid() && end.isValid() && !start.isBefore(minStart) && !end.isAfter(maxEnd) && !start.isAfter(end);
 
     const isValidNumPeople = tempNumPeople && tempNumPeople > 0;
 
@@ -111,9 +82,17 @@ export default function ServiceCard({ service }) {
                 id={`num-people-${service.id}`}
                 type="number"
                 min="1"
-                max={booking.room.maxPeople}
+                max={booking.capacity}
                 value={tempNumPeople}
-                onChange={(e) => setTempNumPeople(Number(e.target.value))}
+                onChange={(e) => {
+                  let value = Number(e.target.value);
+
+                  // Ép giá trị nằm trong khoảng [1, booking.capacity]
+                  if (value < 1) value = 1;
+                  if (value > booking.capacity) value = booking.capacity;
+
+                  setTempNumPeople(value);
+                }}
                 className="w-full"
               />
             </div>
@@ -138,16 +117,19 @@ export default function ServiceCard({ service }) {
                     tempStart = minStart;
                   }
 
-                  // Nếu start > end => set start = end - 1 ngày (nhưng không nhỏ hơn mốc min)
-                  if (tempEndDate && tempStart.isSameOrAfter(dayjs(tempEndDate))) {
-                    const newStart = dayjs(tempEndDate).subtract(1, 'day');
-                    tempStart = newStart.isBefore(minStart) ? minStart : newStart;
+                  // Nếu start > end => set end = start
+                  if (tempEndDate && tempStart.isAfter(dayjs(tempEndDate))) {
+                    // Nếu start > max end => set start = max end
+                    if (tempStart.isAfter(dayjs(endDate))) {
+                      tempStart = dayjs(endDate);
+                    }
+                    setTempEndDate(tempStart.format('YYYY-MM-DD'));
                   }
 
                   setTempStartDate(tempStart.format('YYYY-MM-DD'));
                 }}
                 min={dayjs().isAfter(dayjs(startDate)) ? dayjs().format('YYYY-MM-DD') : startDate}
-                max={dayjs(tempEndDate).subtract(1, 'day').format('YYYY-MM-DD')}
+                max={dayjs(endDate).format('YYYY-MM-DD')}
                 className="w-full"
               />
             </div>
@@ -162,16 +144,16 @@ export default function ServiceCard({ service }) {
                 onChange={(e) => setTempEndDate(e.target.value)}
                 onBlur={(e) => {
                   let tempEnd = dayjs(e.target.value);
-                  const minEndDate = dayjs(tempStartDate).add(1, 'day');
+                  const minEndDate = dayjs(tempStartDate);
 
-                  // Nếu ngày nhập không hợp lệ hoặc nhỏ hơn minEndDate thì gán lại minEndDate
+                  // Nếu ngày nhập không hợp lệ hoặc nhỏ hơn minEndDate thì gán lại bằng minEndDate
                   if (!tempEnd.isValid() || tempEnd.isBefore(minEndDate, 'day')) {
                     tempEnd = minEndDate;
                   }
 
                   setTempEndDate(tempEnd.format('YYYY-MM-DD'));
                 }}
-                min={dayjs(tempStartDate).add(1, 'day').format('YYYY-MM-DD')}
+                min={dayjs(tempStartDate).format('YYYY-MM-DD')}
                 max={endDate}
                 className="w-full"
               />

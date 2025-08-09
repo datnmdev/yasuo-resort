@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@ui/card';
 import { Button } from '@ui/button';
-import { CheckCircle, XCircle, Users, Calendar as CalendarIcon } from 'lucide-react';
+import { CheckCircle, XCircle, Users, Calendar as CalendarIcon, CircleDollarSign } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@ui/dialog';
 import { useLocation, useNavigate } from 'react-router';
-import { formatCurrencyUSD, formatDateVN } from '@libs/utils';
+import { cn, formatCurrencyUSD, formatDateVN } from '@libs/utils';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import bookingApi from '@apis/booking';
 import { eachDayOfInterval, format } from 'date-fns';
@@ -15,6 +15,7 @@ import 'react-calendar/dist/Calendar.css';
 import dayjs from 'dayjs';
 import { Spin } from 'antd';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui/select';
+import { Carousel, CarouselContent, CarouselItem } from '@ui/carousel';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -80,24 +81,24 @@ export default function BookingConfirmationPage() {
   const [isBookingSuccessful, setIsBookingSuccessful] = useState(false);
   const [bookingMessage, setBookingMessage] = useState('');
 
-  const numberOfNights = useMemo(() => {
+  const numberOfDays = useMemo(() => {
     if (dateRange[0] && dateRange[1]) {
       const start = new Date(dateRange[0]);
       const end = new Date(dateRange[1]);
 
       const diff = end.getTime() - start.getTime();
-      const nights = Math.ceil(diff / (1000 * 60 * 60 * 24));
-      return nights > 0 ? nights : 0;
+      const days = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1; // +1 để tính cả ngày cuối
+      return days > 0 ? days : 0;
     }
     return 0;
   }, [dateRange]);
 
   const calculateRoomTotal = useMemo(() => {
-    if (room && numberOfNights > 0) {
-      return room.price * numberOfNights;
+    if (room && numberOfDays > 0) {
+      return room.price * numberOfDays;
     }
     return 0;
-  }, [room, numberOfNights]);
+  }, [room, numberOfDays]);
 
   const bookingMutation = useMutation({
     mutationFn: bookingApi.bookingRoom,
@@ -132,14 +133,6 @@ export default function BookingConfirmationPage() {
     bookingMutation.mutate(bookingData);
   };
 
-  const handleCloseConfirmation = () => {
-    setShowConfirmation(false);
-    if (isBookingSuccessful) {
-      navigate('/');
-      window.scrollTo(0, 0);
-    }
-  };
-
   useEffect(() => {
     let newStart = dateRange[0] ? dayjs(dateRange[0], 'YYYY-MM-DD', true) : null;
     let newEnd = dateRange[1] ? dayjs(dateRange[1], 'YYYY-MM-DD', true) : null;
@@ -151,6 +144,38 @@ export default function BookingConfirmationPage() {
           : ''
       );
   }, [dateRange, hasConflictWithBookedDates]);
+
+  //Carousel
+  const [carouselApi, setCarouselApi] = useState();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+
+    const onSelect = () => {
+      const index = carouselApi.selectedScrollSnap();
+      setCurrentImageIndex(index);
+    };
+
+    onSelect();
+    carouselApi.on('select', onSelect);
+    carouselApi.on('reInit', onSelect);
+
+    // Auto slide every 3 seconds
+    const interval = setInterval(() => {
+      if (!carouselApi.canScrollNext()) {
+        carouselApi.scrollTo(0); // Quay lại ảnh đầu nếu hết
+      } else {
+        carouselApi.scrollNext();
+      }
+    }, 5000);
+
+    return () => {
+      carouselApi.off('select', onSelect);
+      carouselApi.off('reInit', onSelect);
+      clearInterval(interval);
+    };
+  }, [carouselApi]);
 
   if (!room) {
     return (
@@ -179,16 +204,38 @@ export default function BookingConfirmationPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8 mb-8">
               {/* Room Image and Basic Info */}
               <div>
-                <img
-                  src={`${baseUrl}/${room.media[0]?.path || 'placeholder.svg'}`}
-                  alt={room.type.name}
-                  className="w-full h-44 object-cover rounded-lg shadow-md"
-                  onError={(e) => {
-                    e.target.onerror = null; // tránh loop vô hạn
-                    e.target.src = '/placeholder.svg';
-                  }}
-                />
+                <Carousel setApi={setCarouselApi} opts={{ loop: true }} className="w-full h-44">
+                  <CarouselContent>
+                    {(room.media && room.media.length > 0 ? room.media : [{ path: 'placeholder.svg' }]).map(
+                      (media, index) => (
+                        <CarouselItem key={index} className="w-full h-44">
+                          <img
+                            src={`${baseUrl}/${media.path}`}
+                            alt={room.type.name}
+                            className="w-full h-44 object-cover rounded-lg shadow-md"
+                            onError={(e) => {
+                              e.target.onerror = null; // tránh loop vô hạn
+                              e.target.src = '/placeholder.svg';
+                            }}
+                          />
+                        </CarouselItem>
+                      )
+                    )}
+                  </CarouselContent>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                    {(room.media && room.media.length > 0 ? room.media : [{ path: 'placeholder.svg' }]).map((_, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          'h-2 w-2 rounded-full bg-white/75 transition-all',
+                          i === currentImageIndex ? 'w-4' : 'bg-gray-300/75'
+                        )}
+                      />
+                    ))}
+                  </div>
+                </Carousel>
               </div>
+
               {/* Dates and Capacity */}
               <div className="space-y-3 text-gray-700 text-base">
                 <p className="flex items-center gap-2">
@@ -200,11 +247,15 @@ export default function BookingConfirmationPage() {
                   <span className="font-semibold">Check-out:</span> {formatDateVN(dateRange[1])}
                 </p>
                 <p className="flex items-center gap-2">
-                  <span className="font-semibold ml-7">{numberOfNights} nights</span>
+                  <span className="font-semibold ml-7">{numberOfDays} days</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-gray-500" />
                   <span className="font-semibold">Capacity:</span> {room.maxPeople} Guests
+                </p>
+                <p className="flex items-center gap-2">
+                  <CircleDollarSign className="w-5 h-5 text-gray-500" />
+                  <span className="font-semibold">Room price:</span> {formatCurrencyUSD(room.price)}
                 </p>
               </div>
             </div>
@@ -241,34 +292,29 @@ export default function BookingConfirmationPage() {
                     onChange={(e) => {
                       const newCheckin = e.target.value;
                       let newCheckout = dateRange[1];
+
                       if (
                         newCheckin &&
                         newCheckout &&
-                        (dayjs(newCheckout, 'YYYY-MM-DD').isBefore(dayjs(newCheckin, 'YYYY-MM-DD')) ||
-                          dayjs(newCheckout, 'YYYY-MM-DD').isSame(dayjs(newCheckin, 'YYYY-MM-DD')))
+                        dayjs(newCheckin, 'YYYY-MM-DD').isAfter(dayjs(newCheckout, 'YYYY-MM-DD'))
                       ) {
-                        newCheckout = dayjs(newCheckin, 'YYYY-MM-DD').add(1, 'day').format('YYYY-MM-DD');
+                        // Nếu checkin > checkout thì set checkout = checkin
+                        newCheckout = newCheckin;
                       }
 
                       setDateRange([newCheckin, newCheckout]);
                     }}
                     onBlur={(e) => {
                       let newStart = dayjs(e.target.value, 'YYYY-MM-DD', true);
-                      let newEnd = dateRange[1] ? dayjs(dateRange[1], 'YYYY-MM-DD', true) : null;
-
                       const todayPlus1 = dayjs().add(1, 'day').startOf('day');
 
                       if (!newStart.isValid() || newStart.isBefore(todayPlus1)) {
                         newStart = todayPlus1;
                       }
 
-                      if (newEnd && newEnd.isBefore(newStart.add(1, 'day'))) {
-                        newEnd = newStart.add(1, 'day');
-                      }
-                      setDateRange([newStart.format('YYYY-MM-DD'), newEnd ? newEnd.format('YYYY-MM-DD') : '']);
+                      setDateRange([newStart.format('YYYY-MM-DD'), dateRange[1]]);
                     }}
                     min={dayjs().add(1, 'day').format('YYYY-MM-DD')}
-                    max={dateRange[1] ? dayjs(dateRange[1], 'YYYY-MM-DD').format('YYYY-MM-DD') : undefined}
                   />
                 </div>
                 <div>
@@ -279,40 +325,24 @@ export default function BookingConfirmationPage() {
                     id="checkout"
                     type="date"
                     value={dateRange[1] || ''}
-                    onChange={(e) => {
-                      const newCheckout = e.target.value;
-                      let newCheckin = dateRange[0];
-
-                      if (
-                        newCheckout &&
-                        newCheckin &&
-                        (dayjs(newCheckout, 'YYYY-MM-DD').isBefore(dayjs(newCheckin, 'YYYY-MM-DD')) ||
-                          dayjs(newCheckout, 'YYYY-MM-DD').isSame(dayjs(newCheckin, 'YYYY-MM-DD')))
-                      ) {
-                        // Nếu checkout <= checkin thì set checkin = checkout - 1 ngày
-                        newCheckin = dayjs(newCheckout, 'YYYY-MM-DD').subtract(1, 'day').format('YYYY-MM-DD');
-                      }
-
-                      setDateRange([newCheckin, newCheckout]);
-                    }}
+                    onChange={(e) => setDateRange([dateRange[0], e.target.value])}
                     onBlur={(e) => {
-                      const startStr = dateRange[0] || dayjs().add(1, 'day').format('YYYY-MM-DD');
+                      const startStr = dateRange[0];
                       const endStr = e.target.value;
 
                       let newStart = dayjs(startStr, 'YYYY-MM-DD', true);
                       let newEnd = dayjs(endStr, 'YYYY-MM-DD', true);
-                      const minEnd = newStart.add(1, 'day');
 
-                      // Nếu end không hợp lệ hoặc nhỏ hơn minEnd thì set = minEnd
-                      if (!newEnd.isValid() || newEnd.isBefore(minEnd)) {
-                        newEnd = minEnd;
+                      // Nếu checkout không hợp lệ hoặc < checkin => set checkout = checkin
+                      if (!newEnd.isValid() || newEnd.isBefore(newStart)) {
+                        newEnd = newStart;
                       }
 
                       setDateRange([newStart.format('YYYY-MM-DD'), newEnd.format('YYYY-MM-DD')]);
                     }}
                     min={
                       dateRange[0]
-                        ? dayjs(dateRange[0], 'YYYY-MM-DD').add(1, 'day').format('YYYY-MM-DD')
+                        ? dayjs(dateRange[0], 'YYYY-MM-DD').format('YYYY-MM-DD')
                         : dayjs().add(1, 'day').format('YYYY-MM-DD')
                     }
                   />
@@ -328,7 +358,7 @@ export default function BookingConfirmationPage() {
             {/* Price Summary */}
             <div className="space-y-4">
               <div className="flex justify-between items-center text-gray-700">
-                <span>Room Rate ({numberOfNights} nights)</span>
+                <span>Room Rate ({numberOfDays} days)</span>
                 <span className="font-semibold">{formatCurrencyUSD(calculateRoomTotal)}</span>
               </div>
               <div className="flex justify-between items-center text-xl font-bold text-gray-900 pt-4 border-t-2 border-gray-200 mt-4">
@@ -397,10 +427,33 @@ export default function BookingConfirmationPage() {
             </DialogTitle>
             <DialogDescription className="text-gray-600">{bookingMessage}</DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex justify-center">
-            <Button onClick={handleCloseConfirmation} className="bg-teal-600 hover:bg-teal-700">
-              {isBookingSuccessful ? 'Go to Home' : 'Try Again'}
-            </Button>
+          <DialogFooter>
+            {isBookingSuccessful ? (
+              <>
+                <Button
+                  className="bg-teal-600 hover:bg-teal-700"
+                  onClick={() => {
+                    navigate('/services');
+                    window.scrollTo(0, 0);
+                  }}
+                >
+                  Go to Services
+                </Button>
+                <Button
+                  className="bg-teal-600 hover:bg-teal-700"
+                  onClick={() => {
+                    navigate('/contracts');
+                    window.scrollTo(0, 0);
+                  }}
+                >
+                  Go to Contract
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setShowConfirmation(false)} className="bg-teal-600 hover:bg-teal-700">
+                Try Again
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

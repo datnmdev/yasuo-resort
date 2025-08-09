@@ -10,7 +10,6 @@ import bookingApi from '@apis/booking';
 import service from '@apis/service';
 import uploadApi from '@apis/upload';
 import { motion } from "framer-motion";
-import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useReactToPrint } from 'react-to-print';
 
@@ -456,7 +455,7 @@ export default function Contract() {
                           <button
                             aria-label="Đặt dịch vụ"
                             className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-blue-500 text-white hover:bg-blue-600 shadow-sm ring-1 ring-inset ring-blue-500/20 hover:ring-blue-500/40 transition-colors animate-pulse hover:animate-none"
-                            onClick={() => navigate('/services')}
+                            onClick={() => navigate('/services', { state: { bookingId: contract.id }})}
                           >
                             <PlusOutlined />
                           </button>
@@ -1115,7 +1114,6 @@ export default function Contract() {
           )}
         </Modal>
       </div >
-      <ToastContainer position="top-right" autoClose={3000} />
     </motion.div >
   );
 }

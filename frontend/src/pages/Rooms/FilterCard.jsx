@@ -3,13 +3,13 @@ import { Input } from '@ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui/select';
 import { Label } from '@ui/label';
 import { Button } from '@ui/button';
-import { Search, Users, XCircle, SlidersHorizontal } from 'lucide-react';
+import { Users, XCircle, SlidersHorizontal } from 'lucide-react';
 import dayjs from 'dayjs';
 import { Slider } from 'antd';
 import { formatCurrencyUSD } from '@libs/utils';
 
 const MIN = 0;
-const MAX = 50000;
+const MAX = 5000;
 
 export function FilterCard({ filterState, setFilterState, handleClearFilters, roomTypes, className }) {
   return (
@@ -22,21 +22,6 @@ export function FilterCard({ filterState, setFilterState, handleClearFilters, ro
       </CardHeader>
       <CardContent className="p-0">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Search Room Number */}
-          <div className="relative col-span-2">
-            <Label htmlFor="search-room" className="mb-2 block">
-              Search Room Number
-            </Label>
-            <Search className="absolute left-3 top-[calc(50%+0.5rem)] transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              id="search-room"
-              placeholder="Search by room number..."
-              value={filterState.keyword}
-              onChange={(e) => setFilterState((prev) => ({ ...prev, keyword: e.target.value }))}
-              className="pl-10"
-            />
-          </div>
-
           {/* Room Type */}
           <div>
             <Label htmlFor="room-type" className="mb-2 block">
@@ -121,6 +106,19 @@ export function FilterCard({ filterState, setFilterState, handleClearFilters, ro
                     dateRange: { ...prev.dateRange, startDate: e.target.value },
                   }))
                 }
+                onBlur={(e) => {
+                  let newStart = dayjs(e.target.value, 'YYYY-MM-DD', true);
+                  const todayPlus1 = dayjs().add(1, 'day').startOf('day');
+
+                  if (!newStart.isValid() || newStart.isBefore(todayPlus1)) {
+                    newStart = todayPlus1;
+                  }
+
+                  setFilterState((prev) => ({
+                    ...prev,
+                    dateRange: { ...prev.dateRange, startDate: newStart.format('YYYY-MM-DD') },
+                  }));
+                }}
                 min={dayjs().add(1, 'day').format('YYYY-MM-DD')}
                 className="flex-1"
               />
@@ -139,10 +137,27 @@ export function FilterCard({ filterState, setFilterState, handleClearFilters, ro
                     dateRange: { ...prev.dateRange, endDate: e.target.value },
                   }))
                 }
+                onBlur={(e) => {
+                  const startStr = filterState.dateRange.startDate;
+                  const endStr = e.target.value;
+
+                  let newStart = dayjs(startStr, 'YYYY-MM-DD', true);
+                  let newEnd = dayjs(endStr, 'YYYY-MM-DD', true);
+
+                  // Nếu checkout không hợp lệ hoặc < checkin => set checkout = checkin
+                  if (!newEnd.isValid() || newEnd.isBefore(newStart)) {
+                    newEnd = newStart;
+                  }
+
+                  setFilterState((prev) => ({
+                    ...prev,
+                    dateRange: { ...prev.dateRange, endDate: newEnd.format('YYYY-MM-DD') },
+                  }));
+                }}
                 min={
                   filterState.dateRange.startDate
-                    ? dayjs(filterState.dateRange.startDate).add(1, 'day').format('YYYY-MM-DD')
-                    : dayjs().format('YYYY-MM-DD')
+                    ? dayjs(filterState.dateRange.startDate).format('YYYY-MM-DD')
+                    : dayjs().add(1, 'day').format('YYYY-MM-DD')
                 }
               />
             </div>

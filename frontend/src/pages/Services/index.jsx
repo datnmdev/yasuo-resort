@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import Cart from './Cart';
@@ -10,14 +10,19 @@ import { Card, CardContent } from '@ui/card';
 import serviceApi from '@apis/service';
 import { Button } from '@ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@ui/popover';
-import bookingApi from '@apis/booking';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@ui/command';
 import { cn, formatDateVN } from '@libs/utils';
 import { useCart } from '@src/hooks/useCart';
 import { useSelector } from 'react-redux';
 import { userSelector } from '@src/stores/reducers/userReducer';
+import { useBookings } from '@src/hooks/useBookings';
+import { useLocation } from 'react-router';
 
 export default function ServicePage() {
+  const location = useLocation();
+  const { bookingId } = location.state || {};
+  const [hasSetFromBookingId, setHasSetFromBookingId] = useState(false);
+
   // States for Combobox
   const { booking, setBooking } = useCart();
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -26,24 +31,30 @@ export default function ServicePage() {
   const comboboxPageSize = 4;
   const user = useSelector(userSelector.selectUser);
 
-  const { data: bookingData, isPending: isFetchingComboboxBookings } = useQuery({
-    queryKey: ['bookings', comboboxPage, comboboxSearchQuery, user?.id], // thêm userId để cache chính xác
-    queryFn: () =>
-      bookingApi.getBookings({
-        page: comboboxPage,
-        limit: comboboxPageSize,
-        keyword: searchQuery,
-        userId: user?.id,
-        status: ['confirmed', 'pending'],
-      }),
-    keepPreviousData: true,
-    enabled: !!user?.id,
+  const { data: bookingData, isPending: isFetchingComboboxBookings } = useBookings({
+    page: comboboxPage,
+    limit: comboboxPageSize,
+    keyword: comboboxSearchQuery,
+    userId: user?.id,
+    status: ['confirmed', 'pending'],
   });
 
-  const bookings = bookingData?.data?.data[0] || [];
+  const bookings = useMemo(() => bookingData?.data?.data[0] || [], [bookingData?.data?.data]);
   const comboboxTotalPages = Math.ceil((bookingData?.data?.data[1] || 1) / comboboxPageSize);
 
   console.log(bookings);
+
+  useEffect(() => {
+    if (!bookingId || hasSetFromBookingId) return;
+
+    if (bookings.length > 0) {
+      const found = bookings.find((b) => b.id === bookingId);
+      if (found && booking?.id !== found.id) {
+        setBooking(found);
+        setHasSetFromBookingId(true);
+      }
+    }
+  }, [bookingId, bookings, booking, setBooking, hasSetFromBookingId]);
 
   const handleComboboxSelect = (id) => {
     setBooking(bookings.find((b) => `${b.id} - ${b.room.roomNumber}` === id));

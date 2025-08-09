@@ -9,35 +9,44 @@ import Cookies from 'js-cookie';
 import { useCart } from '@src/hooks/useCart';
 import { useMutation } from '@tanstack/react-query';
 import bookingApi from '@apis/booking';
+import { toast } from 'react-toastify';
+import { useBookings } from '@src/hooks/useBookings';
+import { userSelector } from '@src/stores/reducers/userReducer';
 
 export default function Cart() {
   const cart = useSelector(cartSelector.selectCart);
   const booking = useSelector(cartSelector.booking);
   const navigate = useNavigate();
-  const { clear } = useCart();
+  const { clear, setBooking } = useCart();
+  const user = useSelector(userSelector.selectUser);
 
   const totalAmount = cart.reduce((sum, item) => {
     const start = new Date(item.startDate);
     const end = new Date(item.endDate);
 
     const msPerDay = 1000 * 60 * 60 * 24;
-    const numberOfDays = Math.max(
-      1,
-      Math.ceil((end - start) / msPerDay) // include the end date
-    );
+    const numberOfDays = Math.max(1, Math.ceil((end - start) / msPerDay) + 1);
 
     return sum + item.price * item.quantity * numberOfDays;
   }, 0);
 
+  // Lấy hàm refetch từ useBookings
+  const { refetch } = useBookings({ userId: user?.id });
+
   const { mutate: placeOrder, isPending: isBookingService } = useMutation({
     mutationFn: bookingApi.bookingService,
-    onSuccess: () => {
+    onSuccess: async () => {
+      toast.success('Booking services successfully!');
       clear(); // clear the cart
-      alert('Booking services successfully!');
+      const { data: bookingData } = await refetch();
+      const updatedBooking = (bookingData?.data?.data[0] || [])?.find((b) => b.id === booking.id);
+      if (updatedBooking) {
+        setBooking(updatedBooking);
+      }
     },
     onError: (error) => {
       console.error('Error adding services to booking:', error);
-      alert('An error occurred while placing your order. Please try again.');
+      toast.error('An error occurred while placing your order. Please try again.');
     },
   });
 

@@ -24,6 +24,7 @@ import { RoomDetailDialog } from './RoomDetailDialog';
 import { useDispatch, useSelector } from 'react-redux';
 import { roomTypeActions, roomTypeSelector } from '@src/stores/reducers/roomTypeReducer';
 import { serviceActions, serviceSelector } from '@src/stores/reducers/serviceReducer';
+import dayjs from 'dayjs';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -41,7 +42,7 @@ const RoomPage = () => {
       maxPrice: '',
     },
     dateRange: {
-      startDate: '',
+      startDate: dayjs().add(1, 'day').format('YYYY-MM-DD'),
       endDate: '',
     },
   });

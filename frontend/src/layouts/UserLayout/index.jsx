@@ -3,6 +3,7 @@ import Navbar from '@src/components/navigation/Navbar';
 import { useAutoLogin } from '@src/hooks/useAutoLogin';
 import Footer from '@src/components/footer/Footer';
 import Logo from '@src/components/navigation/Logo';
+import { ToastContainer } from 'react-toastify';
 
 export default function UserLayout() {
   useAutoLogin();
@@ -12,6 +13,7 @@ export default function UserLayout() {
       <Navbar />
       <Outlet />
       <Footer />
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 }
