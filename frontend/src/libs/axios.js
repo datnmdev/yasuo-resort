@@ -41,7 +41,7 @@ axiosInstance.interceptors.response.use(
             refreshToken: Cookies.get('refreshToken'),
           },
         })
-      ).data;
+      ).data.data;
 
       if (refreshToken) {
         Cookies.set('accessToken', refreshToken.accessToken, {
