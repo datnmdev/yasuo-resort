@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Button, Modal } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import { Button, Modal, Tooltip } from 'antd';
+import { EditOutlined, CheckOutlined, CloseOutlined, StopOutlined, PlusOutlined } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import { userSelector } from '@src/stores/reducers/userReducer';
 import { formatCurrencyUSD } from '@src/libs/utils';
@@ -15,6 +17,7 @@ import { useReactToPrint } from 'react-to-print';
 export default function Contract() {
   // Lấy thông tin user từ Redux store
   const user = useSelector(userSelector.selectUser);
+  const navigate = useNavigate();
 
   // State quản lý danh sách hợp đồng
   const [contracts, setContracts] = useState([]);
@@ -306,22 +309,22 @@ export default function Contract() {
     }
 
     // Validation: Kiểm tra trùng thời gian với cùng loại dịch vụ
-    const overlapping = contract.bookingServices.some((other) => {
-      // Bỏ qua nếu khác loại service hoặc chính service đang edit
-      if (other.serviceId !== currentService.serviceId || other.id === serviceId || other.status === 'cancelled') return false;
+    // const overlapping = contract.bookingServices.some((other) => {
+    //   // Bỏ qua nếu khác loại service hoặc chính service đang edit
+    //   if (other.serviceId !== currentService.serviceId || other.id === serviceId || other.status === 'cancelled') return false;
 
-      const newStart = new Date(startDate);
-      const newEnd = new Date(endDate);
-      const otherStart = new Date(other.startDate);
-      const otherEnd = new Date(other.endDate);
+    //   const newStart = new Date(startDate);
+    //   const newEnd = new Date(endDate);
+    //   const otherStart = new Date(other.startDate);
+    //   const otherEnd = new Date(other.endDate);
 
-      // Kiểm tra có giao thời gian không
-      return newStart <= otherEnd && newEnd >= otherStart;
-    });
+    //   // Kiểm tra có giao thời gian không
+    //   return newStart <= otherEnd && newEnd >= otherStart;
+    // });
 
-    if (overlapping) {
-      return toast.warning('This service usage time overlaps with another booking (same service).');
-    }
+    // if (overlapping) {
+    //   return toast.warning('This service usage time overlaps with another booking (same service).');
+    // }
 
     try {
       // Gọi API cập nhật service
@@ -367,6 +370,7 @@ export default function Contract() {
             <option value="pending">Pending confirmation</option>
             <option value="confirmed">Confirmed</option>
             <option value="cancelled">Cancelled</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
         {/* Main content với conditional rendering */}
@@ -392,26 +396,26 @@ export default function Contract() {
                       <div className="font-semibold text-lg text-teal-700">Booking code: #{contract.id}</div>
                       {/* Hiển thị lý do từ chối nếu contract bị reject */}
                       {contract.status === 'rejected' && contract.reasonForRejection && (
-                        <div className="text-red-600 font-medium mb-4 p-3 bg-red-50 border border-red-200 rounded">
-                          <span className="font-semibold">❌ Rejected by admin:</span>
-                          <div
-                            className="mt-1 text-red-700"
-                            dangerouslySetInnerHTML={{ __html: contract.reasonForRejection }}
-                          />
+                        <div className="text-red-400 text-sm mb-3 p-3 bg-red-50 border border-red-200 rounded inline-flex items-center gap-1 flex-wrap">
+                          <span className="font-medium">❌ Rejected by admin:</span>
+                          <span className="font-medium [&_*]:inline" dangerouslySetInnerHTML={{ __html: contract.reasonForRejection }}></span>
                         </div>
                       )}
                       <div className="text-sm text-gray-500">
                         Date created: {new Date(contract.createdAt).toLocaleDateString()}
                       </div>
                     </div>
-                    {/* status hợp đồng - span */}
-                    < div >
+                    {/* status hợp đồng - pill */}
+                    <div className="flex md:justify-end">
                       {(() => {
                         const statusInfo = getContractStatusDisplay(contract);
-
                         return (
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.className}`}>
-                            {statusInfo.label}
+                          <span
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold ring-1 ring-inset shadow-sm ${statusInfo.className}`}
+                            aria-label={`Contract status: ${statusInfo.label}`}
+                          >
+                            <span className="h-2 w-2 rounded-full bg-current" />
+                            <span>{statusInfo.label}</span>
                           </span>
                         );
                       })()}
@@ -430,13 +434,36 @@ export default function Contract() {
                       <div className="text-gray-700">
                         {contract.room?.roomNumber} ({contract.room?.type?.name})
                       </div>
+                      <div className="text-gray-500 text-sm">Number of people staying: {contract?.capacity} people</div>
                       <div className="text-gray-500 text-sm">Date in: {contract.startDate}</div>
                       <div className="text-gray-500 text-sm">Date out: {contract.endDate}</div>
                       <div className="text-gray-500 text-sm">Room's price: {formatCurrencyUSD(contract.roomPrice)}</div>
                       <div className="text-gray-500 text-sm">Total: {formatCurrencyUSD(contract.totalPrice)}</div>
                     </div>
                   </div>
-                  <div className="mb-2 font-medium">Additional services</div>
+                  {(contract.status === 'confirmed' || contract.status === 'pending') && (
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="font-medium">Additional services</div>
+                      <div className="flex items-center gap-3">
+                        <motion.span
+                          className="text-blue-600 text-sm font-medium whitespace-nowrap"
+                          animate={{ x: [0, 8, 0] }}
+                          transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                        >
+                          Add additional services --&gt;&gt;
+                        </motion.span>
+                        <Tooltip placement="left">
+                          <button
+                            aria-label="Đặt dịch vụ"
+                            className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-blue-500 text-white hover:bg-blue-600 shadow-sm ring-1 ring-inset ring-blue-500/20 hover:ring-blue-500/40 transition-colors animate-pulse hover:animate-none"
+                            onClick={() => navigate('/services')}
+                          >
+                            <PlusOutlined />
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  )}
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm border rounded">
                       <thead>
@@ -465,7 +492,20 @@ export default function Contract() {
                                       max={contract.room?.maxPeople}
                                       className="border px-2 py-1 w-20"
                                       value={editedService.quantity ?? s.quantity}
-                                      onChange={(e) => setEditedService({ ...editedService, quantity: e.target.value })}
+                                      onChange={(e) => {
+                                        const max = contract.room?.maxPeople ?? 1;
+                                        const min = 1;
+                                        const raw = e.target.value;
+                                        // Allow empty while typing
+                                        if (raw === '') {
+                                          setEditedService({ ...editedService, quantity: '' });
+                                          return;
+                                        }
+                                        const num = Number(raw);
+                                        if (Number.isNaN(num)) return;
+                                        const clamped = Math.max(min, Math.min(max, Math.floor(num)));
+                                        setEditedService({ ...editedService, quantity: clamped });
+                                      }}
                                       disabled={new Date(s.startDate) <= new Date()} // khóa nếu dịch vụ đã bắt đầu
                                     />
                                   ) : (
@@ -481,6 +521,12 @@ export default function Contract() {
                                       max={formatDate(contract.endDate)}
                                       value={editedService.startDate ?? s.startDate}
                                       onChange={(e) => setEditedService({ ...editedService, startDate: e.target.value })}
+                                      // Chặn nhập bằng bàn phím; bắt buộc chọn ngày từ date picker
+                                      onKeyDown={(e) => e.preventDefault()}
+                                      // Chặn dán nội dung văn bản vào ô ngày
+                                      onPaste={(e) => e.preventDefault()}
+                                      // Chặn kéo-thả nội dung vào ô nhập
+                                      onDrop={(e) => e.preventDefault()}
                                     />
                                   ) : (
                                     s.startDate
@@ -495,6 +541,9 @@ export default function Contract() {
                                       max={formatDate(contract.endDate)}
                                       value={editedService.endDate ?? s.endDate}
                                       onChange={(e) => setEditedService({ ...editedService, endDate: e.target.value })}
+                                      onKeyDown={(e) => e.preventDefault()}
+                                      onPaste={(e) => e.preventDefault()}
+                                      onDrop={(e) => e.preventDefault()}
                                     />
                                   ) : (
                                     s.endDate
@@ -529,41 +578,50 @@ export default function Contract() {
                                 <td className="px-3 py-2">{formatCurrencyUSD(s.price)}/person/day</td>
                                 <td className="px-2 py-2"> {/* Cột chứa nút */}
                                   {isEditing ? (
-                                    <>
-                                      <button
-                                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                                        onClick={() => handleConfirmEdit(s.id, contract)}
-                                      >
-                                        Confirm
-                                      </button>
-                                      <button
-                                        className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                                        onClick={() => {
-                                          setEditingServiceId(null);
-                                          setEditedService({});
-                                        }}
-                                      >
-                                        Exit Edit
-                                      </button>
-                                    </>
+                                    <div className="flex items-center gap-2">
+                                      <Tooltip title="Xác nhận" placement="top">
+                                        <button
+                                          aria-label="Xác nhận"
+                                          className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-green-500 text-white hover:bg-green-600 shadow-sm ring-1 ring-inset ring-green-500/20 hover:ring-green-500/40 transition-colors"
+                                          onClick={() => handleConfirmEdit(s.id, contract)}
+                                        >
+                                          <CheckOutlined />
+                                        </button>
+                                      </Tooltip>
+                                      <Tooltip title="Thoát chỉnh sửa" placement="top">
+                                        <button
+                                          aria-label="Thoát chỉnh sửa"
+                                          className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 shadow-sm ring-1 ring-inset ring-gray-300 hover:ring-gray-400 transition-colors"
+                                          onClick={() => {
+                                            setEditingServiceId(null);
+                                            setEditedService({});
+                                          }}
+                                        >
+                                          <CloseOutlined />
+                                        </button>
+                                      </Tooltip>
+                                    </div>
                                   ) : (
-                                    <button
-                                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                      disabled={contract.status === 'cancelled'}
-                                      onClick={() => {
-                                        const today = new Date().toISOString().split("T")[0];
-                                        const isStarted = s.startDate <= today;
-                                        const isEditable = s.status === 'pending' && !isStarted;
-                                        if (!isEditable) {
-                                          toast.warning("Only services with 'pending' status and not yet started can be edited.");
-                                          return;
-                                        }
-                                        setEditingServiceId(s.id);
-                                        setEditedService({ quantity: s.quantity, startDate: s.startDate, endDate: s.endDate });
-                                      }}
-                                    >
-                                      Edit
-                                    </button>
+                                    (() => {
+                                      const today = new Date().toISOString().split("T")[0];
+                                      const isStarted = s.startDate <= today;
+                                      const isEditable = s.status === 'pending' && !isStarted && contract.status !== 'cancelled';
+                                      if (!isEditable) return null; // Ẩn nút Edit nếu không được phép
+                                      return (
+                                        <Tooltip title="Chỉnh sửa" placement="top">
+                                          <button
+                                            aria-label="Chỉnh sửa"
+                                            className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-blue-500 text-white hover:bg-blue-600 shadow-sm ring-1 ring-inset ring-blue-500/20 hover:ring-blue-500/40 transition-colors"
+                                            onClick={() => {
+                                              setEditingServiceId(s.id);
+                                              setEditedService({ quantity: s.quantity, startDate: s.startDate, endDate: s.endDate });
+                                            }}
+                                          >
+                                            <EditOutlined />
+                                          </button>
+                                        </Tooltip>
+                                      );
+                                    })()
                                   )}
 
                                   {(() => {
@@ -574,17 +632,17 @@ export default function Contract() {
                                     const isRejected = s.status === 'rejected';
                                     const isDisabled = isStarted || isCancelled || isConfirmed || contract.status === 'cancelled' || isRejected;
 
+                                    if (isDisabled) return null; // Ẩn nút Hủy nếu không được phép
                                     return (
-                                      <button
-                                        className={`px-3 py-1 rounded transition ${isDisabled
-                                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                          : 'bg-red-100 text-red-600 hover:bg-red-200'
-                                          }`}
-                                        disabled={isDisabled}
-                                        onClick={() => handleCancelService(s.id)}
-                                      >
-                                        Cancel
-                                      </button>
+                                      <Tooltip title="Hủy dịch vụ" placement="top">
+                                        <button
+                                          aria-label="Hủy dịch vụ"
+                                          className={`inline-flex items-center justify-center h-9 w-9 rounded-full shadow-sm ring-1 ring-inset transition-colors bg-red-100 text-red-600 hover:bg-red-200 ring-red-200 hover:ring-red-300`}
+                                          onClick={() => handleCancelService(s.id)}
+                                        >
+                                          <StopOutlined />
+                                        </button>
+                                      </Tooltip>
                                     );
                                   })()}
                                 </td>
@@ -599,6 +657,28 @@ export default function Contract() {
                           </tr>
                         )}
                       </tbody>
+                      {(() => {
+                        const total = (contract.bookingServices?.filter((s) => s.status === 'confirmed') || []).reduce((sum, s) => {
+                          const start = new Date(s.startDate);
+                          const end = new Date(s.endDate);
+                          // Tính số ngày theo dạng bao gồm cả ngày bắt đầu và kết thúc (inclusive)
+                          const startUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+                          const endUTC = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+                          const days = Math.floor((endUTC - startUTC) / (1000 * 60 * 60 * 24)) + 1;
+                          const quantity = Number(s.quantity) || 0;
+                          const price = Number(s.price) || 0;
+                          return sum + quantity * days * price;
+                        }, 0);
+                        return (
+                          <tfoot>
+                            <tr className="bg-gray-50 font-semibold">
+                              <td colSpan={5} className="px-3 py-2 text-right">Total price only confirmed:</td>
+                              <td className="px-3 py-2">{formatCurrencyUSD(total)}</td>
+                              <td className="px-3 py-2"></td>
+                            </tr>
+                          </tfoot>
+                        );
+                      })()}
                     </table>
                   </div>
 
@@ -669,15 +749,16 @@ export default function Contract() {
                                 day: 'numeric'
                               });
 
-                              // Tính tổng tiền dịch vụ (chỉ services confirmed)
+                              // Tính tổng tiền dịch vụ (chỉ services confirmed) với số ngày tính inclusive (bao gồm cả start và end)
                               const totalServicePrice = contract.bookingServices?.filter(s => s.status === 'confirmed').reduce((total, s) => {
-                                const quantity = s.quantity || 0;
-                                const price = parseFloat(s.price || 0);
+                                const quantity = Number(s.quantity) || 0;
+                                const price = Number(s.price) || 0;
                                 const start = new Date(s.startDate);
                                 const end = new Date(s.endDate);
-                                const timeDiff = end.getTime() - start.getTime();
-                                const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                                const serviceTotal = quantity * price * numberOfDays;
+                                const startUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+                                const endUTC = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+                                const numberOfDays = Math.floor((endUTC - startUTC) / (1000 * 60 * 60 * 24)) + 1;
+                                const serviceTotal = quantity * numberOfDays * price;
                                 return total + serviceTotal;
                               }, 0) || 0;
 
@@ -754,9 +835,10 @@ export default function Contract() {
                                         ${contract.bookingServices?.filter(s => s.status === 'confirmed').map(s => {
                                   const start = new Date(s.startDate);
                                   const end = new Date(s.endDate);
-                                  const timeDiff = end.getTime() - start.getTime();
-                                  const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                                  const serviceTotal = (s.quantity || 0) * parseFloat(s.price || 0) * numberOfDays;
+                                  const startUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+                                  const endUTC = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+                                  const numberOfDays = Math.floor((endUTC - startUTC) / (1000 * 60 * 60 * 24)) + 1;
+                                  const serviceTotal = (Number(s.quantity) || 0) * (Number(s.price) || 0) * numberOfDays;
                                   return `
                                             <tr>
                                               <td style="padding: 10px; border: 1px solid #e2e8f0;">${s.service?.name || 'N/A'}</td>
