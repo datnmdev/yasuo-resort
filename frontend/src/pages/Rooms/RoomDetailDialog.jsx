@@ -99,7 +99,7 @@ export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom
 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">Room Rate</h3>
-                  <div className="text-2xl font-bold text-teal-600">{formatCurrencyUSD(selectedRoom.price)}/night</div>
+                  <div className="text-2xl font-bold text-teal-600">{formatCurrencyUSD(selectedRoom.price)}/day</div>
                 </div>
 
                 <div>

@@ -223,9 +223,7 @@ const RoomPage = () => {
                           </div>
                         </div>
 
-                        <div className="text-2xl font-bold text-teal-600 mb-4">
-                          {formatCurrencyUSD(room.price)}/night
-                        </div>
+                        <div className="text-2xl font-bold text-teal-600 mb-4">{formatCurrencyUSD(room.price)}/day</div>
 
                         <div className="flex gap-2">
                           <Button
