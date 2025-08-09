@@ -985,7 +985,7 @@ export default function Contract() {
                                   setIsOpenCancelBooking(true);
                                 }}
                               >
-                                🛑 Cancel contract
+                                🛑 Cancel booking
                               </button>
                             </>
                           )
@@ -997,7 +997,7 @@ export default function Contract() {
                               setIsOpenCancelBooking(true);
                             }}
                           >
-                            🛑 Cancel contract
+                            🛑 Cancel booking
                           </button>
                         )}
                       </>
