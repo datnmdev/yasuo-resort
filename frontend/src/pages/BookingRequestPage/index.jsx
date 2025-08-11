@@ -242,13 +242,15 @@ export default function BookingRequestPage() {
             />
           </Tooltip>
 
-          <Tooltip title="Service Booking Request">
+          <Tooltip title="Service Booking Requests">
             <Button
               shape="circle"
               icon={<CustomerServiceOutlined />}
               onClick={() => setSelectedBookingToOpenServiceBookingRequestModal({
                 ...record
               })}
+              type={record?.bookingServices?.some((s) => s.status === 'pending') ? 'primary' : 'default'}
+              primary={record?.bookingServices?.some((s) => s.status === 'pending')}
               hidden={record.status !== 'confirmed'}
             />
           </Tooltip>
@@ -867,8 +869,8 @@ export default function BookingRequestPage() {
                       selectedBookingDetail?.status === 'pending'
                         ? 'gray'
                         : selectedBookingDetail?.status === 'confirmed'
-                        ? 'green'
-                        : 'volcano'
+                          ? 'green'
+                          : 'volcano'
                     }
                   >
                     {selectedBookingDetail?.status?.toUpperCase()}
@@ -1131,9 +1133,9 @@ export default function BookingRequestPage() {
                 options={
                   getRoomsResData?.isSuccess
                     ? getRoomsResData.data[0].filter(item => selectedBookingToChangeRoom.roomChangeHistories.sort((a, b) => b.id - a.id)?.[0]?.toRoomId != item.id).map((room) => ({
-                        label: room.roomNumber,
-                        value: room.id,
-                      }))
+                      label: room.roomNumber,
+                      value: room.id,
+                    }))
                     : []
                 }
               />
