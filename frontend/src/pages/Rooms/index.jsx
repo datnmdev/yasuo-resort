@@ -151,7 +151,7 @@ const RoomPage = () => {
   };
 
   const handleBookRoom = (room) => {
-    navigate('/booking-confirmation', {
+    navigate(`/booking-confirmation/${room.id}`, {
       state: { room, startDate: filterState.dateRange.startDate, endDate: filterState.dateRange.endDate },
     });
   };

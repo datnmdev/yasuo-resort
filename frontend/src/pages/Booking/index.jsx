@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@ui/card';
 import { Button } from '@ui/button';
 import { CheckCircle, XCircle, Users, Calendar as CalendarIcon, CircleDollarSign } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@ui/dialog';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { cn, formatCurrencyUSD, formatDateVN } from '@libs/utils';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import bookingApi from '@apis/booking';
@@ -17,6 +17,7 @@ import { Spin } from 'antd';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui/select';
 import { Carousel, CarouselContent, CarouselItem } from '@ui/carousel';
 import Cookies from 'js-cookie';
+import roomApi from '@apis/room';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -31,9 +32,18 @@ export default function BookingConfirmationPage() {
     }
   }, [navigate]);
 
-  const { room, startDate, endDate } = state || {};
-  const defaultStartDate = startDate || dayjs().add(1, 'day').format('YYYY-MM-DD');
+  const { id } = useParams();
+  const { startDate, endDate } = state || {};
 
+  const { data: roomData, isLoading: roomLoading } = useQuery({
+    queryKey: ['room', id],
+    queryFn: () => roomApi.getRooms({ page: 1, limit: 1, keyword: id }),
+    enabled: !state?.room, // chỉ gọi API khi không có room trong state
+  });
+
+  const room = state?.room ?? roomData?.data?.data?.[0]?.[0] ?? null;
+
+  const defaultStartDate = startDate || dayjs().add(1, 'day').format('YYYY-MM-DD');
   const [dateRange, setDateRange] = useState([defaultStartDate, endDate]);
   const [guests, setGuests] = useState(1);
 
@@ -184,6 +194,14 @@ export default function BookingConfirmationPage() {
       clearInterval(interval);
     };
   }, [carouselApi]);
+
+  if (roomLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Đang tải thông tin phòng...</p>
+      </div>
+    );
+  }
 
   if (!room) {
     return (

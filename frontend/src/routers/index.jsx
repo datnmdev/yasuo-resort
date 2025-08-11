@@ -59,7 +59,7 @@ const router = createBrowserRouter([
         element: <AboutPage />,
       },
       {
-        path: '/booking-confirmation',
+        path: '/booking-confirmation/:id',
         element: <BookingPage />,
       },
       {
