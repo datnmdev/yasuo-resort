@@ -17,6 +17,8 @@ import { useSelector } from 'react-redux';
 import { userSelector } from '@src/stores/reducers/userReducer';
 import { useBookings } from '@src/hooks/useBookings';
 import { useLocation } from 'react-router';
+import Cookies from 'js-cookie';
+import { toast } from 'react-toastify';
 
 export default function ServicePage() {
   const location = useLocation();
@@ -92,7 +94,17 @@ export default function ServicePage() {
           <div className="flex items-center gap-2">
             <Star className="w-5 h-5" />
             <span>Add services to your room booking</span>
-            <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+            <Popover
+              open={comboboxOpen}
+              onOpenChange={(open) => {
+                const accessToken = Cookies.get('accessToken');
+                if (!accessToken) {
+                  toast.warning('Please log in to view your room bookings!');
+                  return; // prevent opening
+                }
+                setComboboxOpen(open);
+              }}
+            >
               <PopoverTrigger asChild className="hover:bg-gray-100/50">
                 <Button
                   variant="outline"

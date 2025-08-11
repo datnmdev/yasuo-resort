@@ -3,11 +3,15 @@ import { Button } from '@ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@ui/dialog';
 import { formatCurrencyUSD } from '@libs/utils';
 import { useState } from 'react';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router';
+import Cookies from 'js-cookie';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const navigate = useNavigate();
 
   const nextImage = () => {
     if (selectedRoom) {
@@ -37,7 +41,7 @@ export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom
               <div className="relative">
                 <div className="relative h-64 md:h-80 rounded-lg overflow-hidden">
                   <img
-                    src={`${baseUrl}/${selectedRoom.media[0]?.path || 'placeholder.svg'}`}
+                    src={`${baseUrl}/${selectedRoom.media[currentImageIndex]?.path || 'placeholder.svg'}`}
                     alt={`Room ${selectedRoom.roomNumber}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -138,6 +142,13 @@ export function RoomDetailDialog({ selectedRoom, setSelectedRoom, handleBookRoom
                     className="w-full bg-teal-600 hover:bg-teal-700"
                     size="lg"
                     onClick={() => {
+                      const accessToken = Cookies.get('accessToken');
+                      if (!accessToken) {
+                        toast.warning('Please log in before booking a room!');
+                        setTimeout(() => navigate('/login'), 3000);
+                        return;
+                      }
+
                       setSelectedRoom(null);
                       handleBookRoom(selectedRoom);
                     }}

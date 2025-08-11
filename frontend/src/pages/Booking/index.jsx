@@ -16,12 +16,20 @@ import dayjs from 'dayjs';
 import { Spin } from 'antd';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui/select';
 import { Carousel, CarouselContent, CarouselItem } from '@ui/carousel';
+import Cookies from 'js-cookie';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export default function BookingConfirmationPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const accessToken = Cookies.get('accessToken');
+    if (!accessToken) {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   const { room, startDate, endDate } = state || {};
   const defaultStartDate = startDate || dayjs().add(1, 'day').format('YYYY-MM-DD');

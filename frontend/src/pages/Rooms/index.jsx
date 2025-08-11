@@ -25,6 +25,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { roomTypeActions, roomTypeSelector } from '@src/stores/reducers/roomTypeReducer';
 import { serviceActions, serviceSelector } from '@src/stores/reducers/serviceReducer';
 import dayjs from 'dayjs';
+import { toast } from 'react-toastify';
+import Cookies from 'js-cookie';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -238,7 +240,15 @@ const RoomPage = () => {
                           <Button
                             size="sm"
                             className="flex-1 bg-teal-600 hover:bg-teal-700"
-                            onClick={() => handleBookRoom(room)}
+                            onClick={() => {
+                              const accessToken = Cookies.get('accessToken');
+                              if (!accessToken) {
+                                toast.warning('Please log in before booking a room!');
+                                setTimeout(() => navigate('/login'), 3000);
+                                return;
+                              }
+                              handleBookRoom(room);
+                            }}
                           >
                             Book Room
                           </Button>
