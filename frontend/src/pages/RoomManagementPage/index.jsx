@@ -14,14 +14,7 @@ import {
   InputNumber,
   DatePicker,
 } from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  FilterOutlined,
-  GlobalOutlined,
-  LockOutlined,
-} from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, FilterOutlined } from '@ant-design/icons';
 import useFetch from '../../hooks/fetch.hook';
 import apis from '../../apis/index';
 import { useEffect, useState } from 'react';
@@ -35,7 +28,7 @@ export default function RoomManagementPage() {
   const [getRoomsReq, setGetRoomsReq] = useState({
     page: 1,
     limit: 10,
-    status: JSON.stringify(['active', 'inactive', 'maintenance']),
+    status: JSON.stringify(['active', 'maintenance']),
   });
   const {
     data: rooms,
@@ -71,8 +64,6 @@ export default function RoomManagementPage() {
     isLoading: isDeletingRoom,
     setRefetch: setReDeleteRoom,
   } = useFetch(apis.room.deleteRoom, deleteRoomReq, false);
-  const [selectedRoomToPublish, setSelectedRoomToPublish] = useState(null);
-  const [selectedRoomToUnpublish, setSelectedRoomToUnpublish] = useState(null);
   const statusFieldInUpdateRoomForm = Form.useWatch('status', updateRoomForm);
   const maintenanceStartDateFieldInUpdateRoomForm = Form.useWatch('maintenanceStartDate', updateRoomForm);
 
@@ -104,9 +95,6 @@ export default function RoomManagementPage() {
       render: (_, record) => {
         let color;
         switch (record.status) {
-          case 'inactive':
-            color = 'gray';
-            break;
           case 'active':
             color = 'green';
             break;
@@ -143,32 +131,6 @@ export default function RoomManagementPage() {
       key: 'action',
       render: (_, record) => (
         <Space size="middle">
-          {record.status === 'inactive' && (
-            <Tooltip title="Publish">
-              <Button
-                shape="circle"
-                icon={<GlobalOutlined />}
-                onClick={() =>
-                  setSelectedRoomToPublish(rooms?.data?.[0]?.find((item) => item.id === record.id) ?? null)
-                }
-                loading={selectedRoomToPublish?.id === record.id && isUpdatingRoom}
-              />
-            </Tooltip>
-          )}
-
-          {(record.status === 'active' || record.status === 'maintenance') && (
-            <Tooltip title="Unpublish">
-              <Button
-                shape="circle"
-                icon={<LockOutlined />}
-                onClick={() =>
-                  setSelectedRoomToUnpublish(rooms?.data?.[0]?.find((item) => item.id === record.id) ?? null)
-                }
-                loading={selectedRoomToUnpublish?.id === record.id && isUpdatingRoom}
-              />
-            </Tooltip>
-          )}
-
           <Tooltip title="Edit">
             <Button
               shape="circle"
@@ -187,7 +149,7 @@ export default function RoomManagementPage() {
               loading={selectedRoomToUpdate?.id === record.id && isUpdatingRoom}
             />
           </Tooltip>
-          
+
           <Tooltip title="Delete">
             <Button
               shape="circle"
@@ -303,7 +265,7 @@ export default function RoomManagementPage() {
       updateRoomForm.setFieldsValue({
         ...selectedRoomToUpdate,
         maintenanceStartDate: selectedRoomToUpdate.maintenanceStartDate
-          ? dayjs(selectedRoomToUpdate.maintenanceStartDate, "YYYY-MM-DD")
+          ? dayjs(selectedRoomToUpdate.maintenanceStartDate, 'YYYY-MM-DD')
           : null,
       });
       setOpenUpdateRoomModal(true);
@@ -359,34 +321,6 @@ export default function RoomManagementPage() {
   }, [isDeletingRoom]);
 
   useEffect(() => {
-    if (selectedRoomToPublish) {
-      setUpdateRoomReq({
-        param: {
-          roomId: selectedRoomToPublish.id,
-        },
-        body: {
-          status: 'active',
-        },
-      });
-      setSelectedRoomToPublish(null);
-    }
-  }, [selectedRoomToPublish]);
-
-  useEffect(() => {
-    if (selectedRoomToUnpublish) {
-      setUpdateRoomReq({
-        param: {
-          roomId: selectedRoomToUnpublish.id,
-        },
-        body: {
-          status: 'inactive',
-        },
-      });
-      setSelectedRoomToUnpublish(null);
-    }
-  }, [selectedRoomToUnpublish]);
-
-  useEffect(() => {
     if (maintenanceStartDateFieldInUpdateRoomForm) {
       updateRoomForm;
     }
@@ -432,10 +366,6 @@ export default function RoomManagementPage() {
                         title: 'Status',
                         key: 'status',
                         children: [
-                          {
-                            title: 'INACTIVE',
-                            key: 'inactive',
-                          },
                           {
                             title: 'ACTIVE',
                             key: 'active',
@@ -592,6 +522,7 @@ export default function RoomManagementPage() {
 
             <Form.Item name="typeId" label="Room type" rules={[{ required: true }]}>
               <Select
+                disabled
                 showSearch
                 placeholder="Select a room type..."
                 optionFilterProp="label"
@@ -630,32 +561,16 @@ export default function RoomManagementPage() {
                   }
                 }}
                 disabled={isUpdatingRoom}
-                options={
-                  selectedRoomToUpdate?.status === 'active'
-                    ? [
-                        {
-                          value: 'active',
-                          label: 'ACTIVE',
-                        },
-                        {
-                          value: 'maintenance',
-                          label: 'MAINTENANCE',
-                        },
-                      ]
-                    : selectedRoomToUpdate?.status === 'inactive'
-                    ? [
-                        {
-                          value: 'inactive',
-                          label: 'INACTIVE',
-                        },
-                      ]
-                    : [
-                        {
-                          value: 'maintenance',
-                          label: 'MAINTENANCE',
-                        },
-                      ]
-                }
+                options={[
+                  {
+                    value: 'active',
+                    label: 'ACTIVE',
+                  },
+                  {
+                    value: 'maintenance',
+                    label: 'MAINTENANCE',
+                  },
+                ]}
               />
             </Form.Item>
 

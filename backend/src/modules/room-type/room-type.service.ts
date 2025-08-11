@@ -95,24 +95,6 @@ export class RoomTypeService {
       });
       if (roomType) {
         // Kiểm tra min and max price
-        if (
-          body.minPrice &&
-          Number(body.minPrice) > Number(roomType.minPrice)
-        ) {
-          throw new ConflictException(
-            'Min price cannot be greater than current min price',
-          );
-        }
-
-        if (
-          body.maxPrice &&
-          Number(body.maxPrice) < Number(roomType.maxPrice)
-        ) {
-          throw new ConflictException(
-            'Max price cannot be less than current max price',
-          );
-        }
-
         if (body.minPrice && body.maxPrice) {
           if (Number(body.minPrice) > Number(body.maxPrice)) {
             throw new ConflictException(

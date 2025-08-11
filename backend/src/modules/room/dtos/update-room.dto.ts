@@ -24,8 +24,8 @@ export class UpdateRoomReqDto {
   description: string;
 
   @IsOptional()
-  @OneOf([RoomStatus.ACTIVE, RoomStatus.INACTIVE, RoomStatus.MAINTENANCE])
-  status: 'active' | 'inactive' | 'maintenance';
+  @OneOf([RoomStatus.ACTIVE, RoomStatus.MAINTENANCE])
+  status: 'active' | 'maintenance';
 
   @IsOptional()
   @IsInt()

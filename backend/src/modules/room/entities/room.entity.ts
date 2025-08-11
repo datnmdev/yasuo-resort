@@ -33,9 +33,9 @@ export class Room {
 
   @Column("enum", {
     name: "status",
-    enum: ["active", "inactive", "maintenance"],
+    enum: ["active", "maintenance"],
   })
-  status: "active" | "inactive" | "maintenance";
+  status: "active" | "maintenance";
 
   @Column("date", { name: "maintenance_start_date", nullable: true })
   maintenanceStartDate: string | null;

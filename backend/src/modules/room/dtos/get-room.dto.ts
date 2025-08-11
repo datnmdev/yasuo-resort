@@ -52,7 +52,6 @@ export class GetRoomsReqDto {
   @JsonToObject()
   @ArrayElementsIn([
     RoomStatus.ACTIVE,
-    RoomStatus.INACTIVE,
     RoomStatus.MAINTENANCE,
   ])
   status: string[] = [RoomStatus.ACTIVE];

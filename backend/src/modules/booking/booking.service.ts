@@ -120,7 +120,7 @@ export class BookingService {
       moment(bookingRoomBody.startDate),
       'days',
     );
-    if (totalRentalDays <= 0) {
+    if (totalRentalDays < 0) {
       throw new BadRequestException({
         message: 'The contract end date must be later than the signing date',
         error: 'BadRequest',
@@ -190,6 +190,7 @@ export class BookingService {
         startDate: moment(bookingRoomBody.startDate).format('YYYY-MM-DD'),
         endDate: moment(bookingRoomBody.endDate).format('YYYY-MM-DD'),
         userId,
+        
         totalPrice: String(
           Math.ceil(Number(roomInfo.price) * totalRentalDays * 100) / 100,
         ),
@@ -566,7 +567,7 @@ export class BookingService {
           periodOfTime:
             index < arr.length - 1
               ? `Từ ${moment(item.changeDate).format('DD-MM-YYYY')} đến hết ${moment(arr[index + 1].changeDate).format('DD-MM-YYYY')}`
-              : `Từ ${moment(item.changeDate).format('DD-MM-YYYY')} đến ${moment(booking.endDate).format('DD-MM-YYYY')}`,
+              : `Từ ${moment(item.changeDate).format('DD-MM-YYYY')} đến hết ${moment(booking.endDate).format('DD-MM-YYYY')}`,
         }));
       const contractHTML = await ejs.renderFile(
         path.join(process.cwd(), 'src/assets/templates/contract.ejs'),
@@ -991,37 +992,6 @@ export class BookingService {
           )
             ? now.format('YYYY-MM-DD')
             : bookingService.startDate,
-        },
-      );
-
-      // Cập nhật lại tổng chi phí thuê phòng + dịch vụ
-      const bookedServices = await queryRunner.manager.find(
-        BookingServiceEntity,
-        {
-          where: {
-            bookingId: bookingService.bookingId,
-          },
-        },
-      );
-      let totalPrice =
-        Number(bookingService.booking.roomPrice) *
-        moment(bookingService.booking.endDate).diff(
-          moment(bookingService.booking.startDate),
-          'days',
-        );
-      for (const service of bookedServices) {
-        totalPrice +=
-          Number(service.price) *
-          service.quantity *
-          moment(service.endDate).diff(moment(service.startDate), 'days');
-      }
-      await queryRunner.manager.update(
-        Booking,
-        {
-          id: bookingService.bookingId,
-        },
-        {
-          totalPrice: totalPrice.toString(),
         },
       );
 

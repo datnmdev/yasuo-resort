@@ -96,7 +96,7 @@ export class RoomService {
             qb.andWhere(
               `room.id NOT IN (
               SELECT b.room_id FROM booking b
-              WHERE b.status != 'cancelled' AND b.start_date < :endDate AND b.end_date > :startDate
+              WHERE b.status != 'cancelled' AND b.status != 'rejected' AND b.start_date < :endDate AND b.end_date > :startDate
             )`,
               {
                 startDate: moment(query.dateRange.startDate).format(
@@ -152,7 +152,7 @@ export class RoomService {
       // Tạo room mới
       const roomEntity = queryRunner.manager.create(Room, {
         ..._.omit(body, 'media'),
-        status: 'inactive',
+        status: 'active',
       });
       const newRoom = await queryRunner.manager.save(roomEntity);
 

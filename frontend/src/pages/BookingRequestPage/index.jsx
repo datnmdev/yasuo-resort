@@ -123,9 +123,9 @@ export default function BookingRequestPage() {
       key: 'userId',
     },
     {
-      title: 'Room Id',
-      dataIndex: 'roomId',
-      key: 'roomId',
+      title: 'Room Number',
+      dataIndex: 'roomNumber',
+      key: 'roomNumber',
     },
     {
       title: 'Capacity',
@@ -263,6 +263,7 @@ export default function BookingRequestPage() {
                 })
               }
               loading={changeRoomReq?.param?.id === record.id && isChangingRoom}
+              hidden={record.status === 'rejected' || record.status === 'cancelled' || moment().diff(moment(record.endDate), 'days') > 0}
             />
           </Tooltip>
         </Flex>
@@ -426,6 +427,7 @@ export default function BookingRequestPage() {
           bookings.data[0].map((booking) => ({
             ...booking,
             key: booking.id,
+            roomNumber: booking.roomChangeHistories.length > 0 ? `${booking.roomChangeHistories.sort((a, b) => b.id - a.id)[0].fromRoom.roomNumber} (cũ) -> ${booking.roomChangeHistories.sort((a, b) => b.id - a.id)[0].toRoom.roomNumber} (mới)` : booking.room.roomNumber,
             createdAt: moment(booking.createdAt).format('DD/MM/YYYY HH:mm:ss'),
             startDate: moment(booking.startDate).format('DD/MM/YYYY'),
             endDate: moment(booking.endDate).format('DD/MM/YYYY'),

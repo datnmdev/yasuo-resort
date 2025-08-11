@@ -1,20 +1,10 @@
-import {
-  Button,
-  Table,
-  Space,
-  Tooltip,
-  Input,
-  Pagination,
-  Modal,
-  Form,
-  InputNumber,
-} from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
-import useFetch from "../../hooks/fetch.hook";
-import apis from "../../apis/index";
-import { useEffect, useState } from "react";
-import TextEditor from "../../components/TextEditor";
-import useToast from "../../hooks/toast.hook";
+import { Button, Table, Space, Tooltip, Input, Pagination, Modal, Form, InputNumber } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import useFetch from '../../hooks/fetch.hook';
+import apis from '../../apis/index';
+import { useEffect, useState } from 'react';
+import TextEditor from '../../components/TextEditor';
+import useToast from '../../hooks/toast.hook';
 
 export default function RoomTypeManagementPage() {
   const [getRoomTypesReq, setGetRoomTypesReq] = useState({
@@ -27,15 +17,12 @@ export default function RoomTypeManagementPage() {
     setRefetch: setReGetRoomTypes,
   } = useFetch(apis.roomType.getRoomTypes, getRoomTypesReq);
   const [tableData, setTableData] = useState([[], 0]);
-  const [isOpenCreateRoomTypeModal, setOpenCreateRoomTypeModal] =
-    useState(false);
-  const [isOpenUpdateRoomTypeModal, setOpenUpdateRoomTypeModal] =
-    useState(false);
+  const [isOpenCreateRoomTypeModal, setOpenCreateRoomTypeModal] = useState(false);
+  const [isOpenUpdateRoomTypeModal, setOpenUpdateRoomTypeModal] = useState(false);
   const [createRoomTypeForm] = Form.useForm();
   const [updateRoomTypeForm] = Form.useForm();
   const [createRoomTypeReq, setCreateRoomTypeReq] = useState(null);
-  const [selectedRoomTypeToUpdate, setSelectedRoomTypeToUpdate] =
-    useState(null);
+  const [selectedRoomTypeToUpdate, setSelectedRoomTypeToUpdate] = useState(null);
   const [updateRoomTypeReq, setUpdateRoomTypeReq] = useState(null);
   const {
     data: createRoomTypeResData,
@@ -57,51 +44,45 @@ export default function RoomTypeManagementPage() {
 
   const columns = [
     {
-      title: "Id",
-      dataIndex: "id",
-      key: "id",
+      title: 'Id',
+      dataIndex: 'id',
+      key: 'id',
     },
     {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
     },
     {
-      title: "Min Price",
-      dataIndex: "minPrice",
-      key: "minPrice",
+      title: 'Min Price',
+      dataIndex: 'minPrice',
+      key: 'minPrice',
     },
     {
-      title: "Max Price",
-      dataIndex: "maxPrice",
-      key: "maxPrice",
+      title: 'Max Price',
+      dataIndex: 'maxPrice',
+      key: 'maxPrice',
     },
     {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      render: (htmlText) => (
-        <div dangerouslySetInnerHTML={{ __html: htmlText }}></div>
-      ),
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      render: (htmlText) => <div dangerouslySetInnerHTML={{ __html: htmlText }}></div>,
     },
     {
-      title: "Action",
-      key: "action",
+      title: 'Action',
+      key: 'action',
       render: (_, record) => (
         <Space size="middle">
           <Tooltip title="Edit">
             <Button
               shape="circle"
               icon={<EditOutlined />}
-              onClick={() =>
-                setSelectedRoomTypeToUpdate(
-                  roomTypes?.data?.[0]?.find((item) => item.id === record.id) ??
-                    null
-                )
-              }
-              loading={
-                selectedRoomTypeToUpdate?.id === record.id && isUpdatingRoomType
-              }
+              onClick={() => {
+                const roomType = roomTypes?.data?.[0]?.find((item) => item.id === record.id);
+                setSelectedRoomTypeToUpdate(roomType ? { ...roomType } : null);
+              }}
+              loading={selectedRoomTypeToUpdate?.id === record.id && isUpdatingRoomType}
             />
           </Tooltip>
           <Tooltip title="Delete">
@@ -113,10 +94,7 @@ export default function RoomTypeManagementPage() {
                   roomTypeId: record.id,
                 })
               }
-              loading={
-                deleteRoomTypeReq?.roomTypeId === record.id &&
-                isDeletingRoomType
-              }
+              loading={deleteRoomTypeReq?.roomTypeId === record.id && isDeletingRoomType}
             />
           </Tooltip>
         </Space>
@@ -192,7 +170,7 @@ export default function RoomTypeManagementPage() {
       if (createRoomTypeResData) {
         if (createRoomTypeResData.isSuccess) {
           openNotification({
-            title: "Room type created successfully!",
+            title: 'Room type created successfully!',
           });
           setReGetRoomTypes({
             value: true,
@@ -220,7 +198,7 @@ export default function RoomTypeManagementPage() {
       if (updateRoomTypeResData) {
         if (updateRoomTypeResData.isSuccess) {
           openNotification({
-            title: "Room type updated successfully!",
+            title: 'Room type updated successfully!',
           });
           setReGetRoomTypes({
             value: true,
@@ -249,7 +227,7 @@ export default function RoomTypeManagementPage() {
       if (deleteRoomTypeResData) {
         if (deleteRoomTypeResData.isSuccess) {
           openNotification({
-            title: "Room type deleted successfully!",
+            title: 'Room type deleted successfully!',
           });
           setReGetRoomTypes({
             value: true,
@@ -267,11 +245,7 @@ export default function RoomTypeManagementPage() {
     <div className="p-4">
       <div className="flex justify-between items-center">
         <div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setOpenCreateRoomTypeModal(true)}
-          >
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpenCreateRoomTypeModal(true)}>
             Create
           </Button>
         </div>
@@ -319,66 +293,42 @@ export default function RoomTypeManagementPage() {
           onCancel={() => setOpenCreateRoomTypeModal(false)}
           width={720}
           footer={[
-            <Button
-              key="back"
-              onClick={() => setOpenCreateRoomTypeModal(false)}
-            >
+            <Button key="back" onClick={() => setOpenCreateRoomTypeModal(false)}>
               Cancel
             </Button>,
-            <Button
-              key="reset"
-              onClick={() => createRoomTypeForm.resetFields()}
-            >
+            <Button key="reset" onClick={() => createRoomTypeForm.resetFields()}>
               Reset
             </Button>,
-            <Button
-              key="submit"
-              type="primary"
-              loading={isCreatingRoomType}
-              onClick={handleCreateRoomTypeSubmit}
-            >
+            <Button key="submit" type="primary" loading={isCreatingRoomType} onClick={handleCreateRoomTypeSubmit}>
               Submit
             </Button>,
           ]}
         >
-          <Form
-            layout="vertical"
-            form={createRoomTypeForm}
-            name="control-hooks"
-            style={{ marginTop: 16 }}
-          >
+          <Form layout="vertical" form={createRoomTypeForm} name="control-hooks" style={{ marginTop: 16 }}>
             <Form.Item name="name" label="Name" rules={[{ required: true }]}>
               <Input disabled={isCreatingRoomType} />
             </Form.Item>
 
-            <Form.Item
-              name="minPrice"
-              label="Min Price"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="minPrice" label="Min Price" rules={[{ required: true }]}>
               <InputNumber
                 addonAfter="$"
                 defaultValue={0.0}
                 min={0.0}
                 step={0.01}
                 stringMode
-                style={{ width: "100%" }}
+                style={{ width: '100%' }}
                 disabled={isCreatingRoomType}
               />
             </Form.Item>
 
-            <Form.Item
-              name="maxPrice"
-              label="Max Price"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="maxPrice" label="Max Price" rules={[{ required: true }]}>
               <InputNumber
                 addonAfter="$"
                 defaultValue={0.0}
                 min={0.0}
                 step={0.01}
                 stringMode
-                style={{ width: "100%" }}
+                style={{ width: '100%' }}
                 disabled={isCreatingRoomType}
               />
             </Form.Item>
@@ -397,24 +347,13 @@ export default function RoomTypeManagementPage() {
           onCancel={() => setOpenUpdateRoomTypeModal(false)}
           width={720}
           footer={[
-            <Button
-              key="back"
-              onClick={() => setOpenUpdateRoomTypeModal(false)}
-            >
+            <Button key="back" onClick={() => setOpenUpdateRoomTypeModal(false)}>
               Cancel
             </Button>,
-            <Button
-              key="reset"
-              onClick={() => updateRoomTypeForm.resetFields()}
-            >
+            <Button key="reset" onClick={() => updateRoomTypeForm.resetFields()}>
               Reset
             </Button>,
-            <Button
-              key="submit"
-              type="primary"
-              loading={isUpdatingRoomType}
-              onClick={handleUpdateRoomTypeSubmit}
-            >
+            <Button key="submit" type="primary" loading={isUpdatingRoomType} onClick={handleUpdateRoomTypeSubmit}>
               Submit
             </Button>,
           ]}
@@ -434,34 +373,26 @@ export default function RoomTypeManagementPage() {
               <Input disabled={isUpdatingRoomType} />
             </Form.Item>
 
-            <Form.Item
-              name="minPrice"
-              label="Min Price"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="minPrice" label="Min Price" rules={[{ required: true }]}>
               <InputNumber
                 addonAfter="$"
                 defaultValue={0.0}
                 min={0.0}
                 step={0.01}
                 stringMode
-                style={{ width: "100%" }}
+                style={{ width: '100%' }}
                 disabled={isCreatingRoomType}
               />
             </Form.Item>
 
-            <Form.Item
-              name="maxPrice"
-              label="Max Price"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="maxPrice" label="Max Price" rules={[{ required: true }]}>
               <InputNumber
                 addonAfter="$"
                 defaultValue={0.0}
                 min={0.0}
                 step={0.01}
                 stringMode
-                style={{ width: "100%" }}
+                style={{ width: '100%' }}
                 disabled={isCreatingRoomType}
               />
             </Form.Item>
@@ -469,7 +400,7 @@ export default function RoomTypeManagementPage() {
             <Form.Item name="description" label="Description">
               <TextEditor
                 disabled={isUpdatingRoomType}
-                initialValue={updateRoomTypeForm.getFieldValue("description")}
+                initialValue={updateRoomTypeForm.getFieldValue('description')}
               />
             </Form.Item>
           </Form>
