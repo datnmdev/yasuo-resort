@@ -29,7 +29,8 @@ axiosInstance.interceptors.response.use(
       !error.config.url.includes('/auth/sign-in') &&
       !error.config.url.includes('/auth/sign-up') &&
       !error.config.url.includes('/auth/verify-account') &&
-      !error.config.url.includes('/auth/send-otp')
+      !error.config.url.includes('/auth/send-otp') &&
+      !error.config.url.includes('/auth/verify-forgot-password')
     ) {
       const refreshToken = (
         await axios({

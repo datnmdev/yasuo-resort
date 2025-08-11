@@ -12,6 +12,7 @@ import uploadApi from '@apis/upload';
 import { motion } from "framer-motion";
 import 'react-toastify/dist/ReactToastify.css';
 import { useReactToPrint } from 'react-to-print';
+import { toast } from 'react-toastify';
 
 export default function Contract() {
   // Lấy thông tin user từ Redux store
@@ -244,7 +245,7 @@ export default function Contract() {
 
       // Kiểm tra xem service đã bắt đầu chưa
       const today = new Date().toISOString().split("T")[0];
-      const isStarted = service.startDate <= today;
+      const isStarted = serviceCheck.startDate <= today;
 
       if (isStarted) {
         return toast.warning("Service has already started. You cannot cancel it.");
@@ -257,7 +258,8 @@ export default function Contract() {
       await fetchContracts();
 
     } catch (err) {
-      toast.error("Failed to cancel service");
+      const msg = err?.response?.data?.error?.message || "Failed to cancel service";
+      toast.error(msg);
     }
   };
 
@@ -307,24 +309,6 @@ export default function Contract() {
       return toast.warning('Number of people cannot be changed once service has started..');
     }
 
-    // Validation: Kiểm tra trùng thời gian với cùng loại dịch vụ
-    // const overlapping = contract.bookingServices.some((other) => {
-    //   // Bỏ qua nếu khác loại service hoặc chính service đang edit
-    //   if (other.serviceId !== currentService.serviceId || other.id === serviceId || other.status === 'cancelled') return false;
-
-    //   const newStart = new Date(startDate);
-    //   const newEnd = new Date(endDate);
-    //   const otherStart = new Date(other.startDate);
-    //   const otherEnd = new Date(other.endDate);
-
-    //   // Kiểm tra có giao thời gian không
-    //   return newStart <= otherEnd && newEnd >= otherStart;
-    // });
-
-    // if (overlapping) {
-    //   return toast.warning('This service usage time overlaps with another booking (same service).');
-    // }
-
     try {
       // Gọi API cập nhật service
       await service.updateBookedService(
@@ -338,8 +322,10 @@ export default function Contract() {
 
       // Refresh lại danh sách hợp đồng
       await fetchContracts();
+      toast.success('Service updated successfully');
     } catch (err) {
-      toast.error('Update failed!');
+      const msg = err?.response?.data?.error?.message || 'Update failed!';
+      toast.error(msg);
     }
   };
 
@@ -455,7 +441,7 @@ export default function Contract() {
                           <button
                             aria-label="Đặt dịch vụ"
                             className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-blue-500 text-white hover:bg-blue-600 shadow-sm ring-1 ring-inset ring-blue-500/20 hover:ring-blue-500/40 transition-colors animate-pulse hover:animate-none"
-                            onClick={() => navigate('/services', { state: { bookingId: contract.id }})}
+                            onClick={() => navigate('/services', { state: { bookingId: contract.id } })}
                           >
                             <PlusOutlined />
                           </button>
@@ -788,7 +774,7 @@ export default function Contract() {
                                       <p style="margin: 5px 0;"><strong>Room:</strong> ${contract.room?.roomNumber || contract.roomNumber || 'N/A'}</p>
                                       <p style="margin: 5px 0;"><strong>Room Type:</strong> ${contract.room?.type?.name || 'Standard'}</p>
                                       <p style="margin: 5px 0;"><strong>Max Guests:</strong> ${contract.room?.maxPeople || 'N/A'} people</p>
-                                      <p style="margin: 5px 0;"><strong>Room Price:</strong> $${contract.roomPrice}/night</p>
+                                      <p style="margin: 5px 0;"><strong>Room Price:</strong> $${contract.roomPrice}/day</p>
                                       <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: ${contract.status === 'confirmed' ? '#059669' : contract.status === 'pending' ? '#d97706' : '#dc2626'}; font-weight: bold; text-transform: uppercase;">${contract.status}</span></p>
                                     </div>
                                   </div>
@@ -1018,13 +1004,32 @@ export default function Contract() {
         </Modal>
 
         <Modal
-          title="Cancel contract"
+          title="Cancel booking"
           open={isOpenCancelBooking}
           onCancel={() => setIsOpenCancelBooking(false)}
           footer={null}
           width={600}
         >
-          <div className="mb-2">Are you sure you want to cancel the contract?</div>
+          <div className="mb-2">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-9 w-9 flex items-center justify-center rounded-full bg-amber-100 text-amber-700 text-lg">🌅</div>
+                <div className="text-amber-900">
+                  <h3 className="font-semibold text-amber-900 mb-1">We’d hate to see you miss this...</h3>
+                  <p className="text-sm leading-relaxed">
+                    Your lakeside suite is prepared, the sunset dinner is planned, and our team is ready to welcome you.
+                    Canceling now means letting go of moments that could become some of your most treasured memories.
+                  </p>
+                  <ul className="mt-3 space-y-1 text-sm">
+                    <li>• Private balcony with sunset views</li>
+                    <li>• Personalized experiences curated for you</li>
+                    <li>• Limited availability that may be hard to rebook</li>
+                  </ul>
+                  <p className="mt-3 text-sm italic text-amber-800">Are you sure you want to cancel your booking?</p>
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="">
             <Button type="primary" onClick={handleCancelBooking}>
               Confirm

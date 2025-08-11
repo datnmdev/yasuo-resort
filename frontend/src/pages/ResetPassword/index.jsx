@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import apis from '@apis/index';
 
 const ResetPassword = () => {
@@ -24,7 +25,7 @@ const ResetPassword = () => {
       await apis.user.sendOtp(email);
       setStep(2);
     } catch (error) {
-      setError(error?.response?.data?.error?.message || 'Gửi OTP thất bại');
+      toast.error('Send OTP failed');
     } finally {
       setLoading(false);
     }
@@ -41,7 +42,7 @@ const ResetPassword = () => {
       setResetCode(res.data.data.code);
       setStep(3);
     } catch (error) {
-      setError(error?.response?.data?.error?.message || 'OTP không hợp lệ');
+      setError(error.response.data.error.message);
     } finally {
       setLoading(false);
     }
@@ -56,7 +57,7 @@ const ResetPassword = () => {
       await apis.user.resetPassword(email, newPassword, resetCode);
       setStep(4);
     } catch (error) {
-      setError(error?.response?.data?.error?.message || 'Đổi mật khẩu thất bại');
+      setError(error.response.data.error.message);
     } finally {
       setLoading(false);
     }
@@ -99,7 +100,7 @@ const ResetPassword = () => {
                   className="w-full bg-[#0D584D] hover:bg-teal-500 text-white font-semibold py-2 rounded-lg"
                   disabled={loading}
                 >
-                  {loading ? 'Đang gửi OTP...' : 'Send OTP'}
+                  {loading ? 'Sending OTP...' : 'Send OTP'}
                 </button>
               </form>
             </div>
@@ -141,7 +142,7 @@ const ResetPassword = () => {
                   className="w-full bg-[#0D584D] hover:bg-teal-500 text-white font-semibold py-2 rounded-lg"
                   disabled={loading}
                 >
-                  {loading ? 'Đang xác thực...' : 'Verify OTP'}
+                  {loading ? 'Verifying...' : 'Verify OTP'}
                 </button>
               </form>
             </div>
@@ -183,7 +184,7 @@ const ResetPassword = () => {
                   className="w-full bg-[#0D584D] hover:bg-teal-500 text-white font-semibold py-2 rounded-lg"
                   disabled={loading}
                 >
-                  {loading ? 'Đang đổi mật khẩu...' : 'Reset Password'}
+                  {loading ? 'Changing password...' : 'Reset Password'}
                 </button>
               </form>
             </div>
@@ -209,9 +210,9 @@ const ResetPassword = () => {
           </div>
           <div className="w-1/2 h-full flex items-center justify-center">
             <div className="w-full max-w-md p-8 bg-white/70 rounded-xl shadow-lg backdrop-blur-md flex flex-col items-center justify-center">
-              <h2 className="text-2xl font-semibold mb-6 text-gray-800">Đổi mật khẩu thành công!</h2>
+              <h2 className="text-2xl font-semibold mb-6 text-gray-800">Change password successfully!</h2>
               <a href="/login" className="text-teal-600 hover:underline">
-                Quay lại đăng nhập
+                Back to login
               </a>
             </div>
           </div>
