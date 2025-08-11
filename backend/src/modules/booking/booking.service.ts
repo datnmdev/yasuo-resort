@@ -119,7 +119,7 @@ export class BookingService {
     const totalRentalDays = moment(bookingRoomBody.endDate).diff(
       moment(bookingRoomBody.startDate),
       'days',
-    );
+    ) + 1;
     if (totalRentalDays < 0) {
       throw new BadRequestException({
         message: 'The contract end date must be later than the signing date',
