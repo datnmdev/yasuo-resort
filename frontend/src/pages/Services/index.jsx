@@ -5,7 +5,6 @@ import Cart from './Cart';
 import ServiceCard from './ServiceCard';
 import BookedServices from './BookedServices';
 import { CalendarDays, Check, ChevronLeft, ChevronRight, ChevronsUpDown, Loader2, Search, Star } from 'lucide-react';
-import { Input } from '@ui/input';
 import { Card, CardContent } from '@ui/card';
 import serviceApi from '@apis/service';
 import { Button } from '@ui/button';
@@ -65,26 +64,19 @@ export default function ServicePage() {
 
   // States for Services
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
   const limit = 4;
   const { data, isLoading } = useQuery({
-    queryKey: ['services', currentPage, searchQuery],
+    queryKey: ['services', currentPage],
     queryFn: () =>
       serviceApi.getServices({
         page: currentPage,
         limit,
-        keyword: searchQuery,
       }),
     keepPreviousData: true,
   });
 
   const services = data?.data?.data[0] || [];
   const totalPages = Math.ceil((data?.data?.data[1] || 1) / limit);
-
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    setCurrentPage(1);
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 pb-8">
@@ -182,18 +174,6 @@ export default function ServicePage() {
       </Card>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-4">
-          {/* Search Bar */}
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 transition-colors duration-200" />
-              <Input
-                placeholder="Search for services..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 h-12 bg-white rounded-lg outline-none border border-gray-300 focus:border-teal-500 focus:ring-teal-500 transition-colors duration-200"
-              />
-            </div>
-          </div>
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
