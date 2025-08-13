@@ -32,10 +32,12 @@ const SignUp = () => {
   //lấy data từ form
   const handleChangeForm = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (signUpError) setSignUpError('');
   };
 
   const handleChangeOtp = (e) => {
     setOtp(e.target.value);
+    if (otpError) setOtpError('');
   };
 
   const handleSignUp = async (e) => {
@@ -52,6 +54,27 @@ const SignUp = () => {
     }
     if (formData.password.length < 6) {
       setSignUpError('Password must be at least 6 characters.');
+      return;
+    }
+    if (!formData.dob) {
+      setSignUpError('Please select your date of birth.');
+      return;
+    }
+    // Age must be at least 15
+    try {
+      const today = new Date();
+      const dob = new Date(formData.dob);
+      let age = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      if (isNaN(age) || age < 15) {
+        setSignUpError('You must be at least 15 years old to sign up.');
+        return;
+      }
+    } catch (e) {
+      setSignUpError('Invalid date of birth.');
       return;
     }
 
@@ -106,6 +129,11 @@ const SignUp = () => {
   useEffect(() => {
     signUpRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  // Clear sign-up error whenever any field changes (covers custom handlers like phone input)
+  useEffect(() => {
+    if (signUpError) setSignUpError('');
+  }, [formData]);
 
   return (
     <>
@@ -203,9 +231,11 @@ const SignUp = () => {
                       <input
                         type="text"
                         name="cccd"
+                        placeholder='ID card include 12 number'
                         value={formData.cccd}
                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                         onChange={handleChangeForm}
+                        pattern="[0-9]{12}"
                       />
                     </div>
                   </div>
@@ -220,6 +250,12 @@ const SignUp = () => {
                         value={formData.dob}
                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                         onChange={handleChangeForm}
+                        max={(() => {
+                          const d = new Date();
+                          d.setFullYear(d.getFullYear() - 15);
+                          return d.toISOString().split('T')[0];
+                        })()}
+                        required
                         aria-label="Date of Birth"
                       />
                     </div>
