@@ -406,7 +406,7 @@ export default function BookingConfirmationPage() {
                 className="flex-1 text-gray-700 text-lg py-3 bg-transparent"
                 onClick={() => navigate('/rooms')}
               >
-                Cancel Booking
+                Cancel
               </Button>
             </div>
           </CardContent>
