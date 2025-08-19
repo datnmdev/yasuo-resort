@@ -40,10 +40,16 @@ export default function ServicePage() {
     status: ['confirmed', 'pending'],
   });
 
-  const bookings = useMemo(() => bookingData?.data?.data[0] || [], [bookingData?.data?.data]);
-  const comboboxTotalPages = Math.ceil((bookingData?.data?.data[1] || 1) / comboboxPageSize);
+  const bookings = useMemo(() => {
+    const now = new Date();
+    return (
+      bookingData?.data?.data[0]?.filter(
+        (b) => new Date(b.endDate) >= now // còn hạn
+      ) || []
+    );
+  }, [bookingData?.data?.data]);
 
-  console.log(bookings);
+  const comboboxTotalPages = Math.ceil((bookingData?.data?.data[1] || 1) / comboboxPageSize);
 
   useEffect(() => {
     if (!bookingId || hasSetFromBookingId) return;
