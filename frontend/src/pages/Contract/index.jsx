@@ -426,7 +426,10 @@ export default function Contract() {
                       <div className="text-gray-500 text-sm">Total: {formatCurrencyUSD(contract.totalPrice)}</div>
                     </div>
                   </div>
-                  {(contract.status === 'confirmed' || contract.status === 'pending') && (
+                  {(() => {
+                    const today = new Date().toISOString().split("T")[0];
+                    return contract.status === 'pending' || (contract.status === 'confirmed' && contract.endDate >= today);
+                  })() && (
                     <div className="mb-2 flex items-center justify-between">
                       <div className="font-medium">Additional services</div>
                       <div className="flex items-center gap-3">
@@ -724,7 +727,7 @@ export default function Contract() {
                         )}
 
                         {/* show phụ lục hợp đồng */}
-                        {contract.status === 'confirmed' && new Date(contract.endDate) > new Date() && (
+                        {contract.status === 'confirmed' && (
                           <button
                             onClick={() => {
                               // Tạo nội dung in động cho hợp đồng cụ thể này
