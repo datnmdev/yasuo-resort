@@ -8,14 +8,19 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { RoomChangeHistory } from "./room-change-history.entity";
-import { Room } from "modules/room/entities/room.entity";
-import { User } from "modules/user/entities/user.entity";
+import { User } from "../../user/entities/user.entity";
+import { UserVoucher } from "../../voucher/entities/user-voucher.entity";
 import { BookingService } from "./booking-service.entity";
+import { Room } from "modules/room/entities/room.entity";
 import { Contract } from "./contract.entity";
+import { Feedback } from "modules/feedback/entities/feedback.entity";
+import { Invoice } from "modules/invoice/entities/invoice.entity";
+import { Payment } from "modules/payment/entities/payment.entity";
+import { RoomChangeHistory } from "./room-change-history.entity";
 
-@Index("FK_booking__user_idx", ["userId"], {})
 @Index("FK_booking__room_idx", ["roomId"], {})
+@Index("FK_booking__user_idx", ["userId"], {})
+@Index("user_voucher_id_UNIQUE", ["userVoucherId"], { unique: true })
 @Entity("booking", { schema: "resort_booking" })
 export class Booking {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
@@ -49,8 +54,7 @@ export class Booking {
   status: "pending" | "confirmed" | "rejected" | "cancelled";
 
   @Column("text", { name: "reason_for_rejection", nullable: true })
-  reasonForRejection: string;
-
+  reasonForRejection: string | null;
 
   @Column("decimal", { name: "total_price", precision: 18, scale: 2 })
   totalPrice: string;
@@ -60,6 +64,9 @@ export class Booking {
     default: () => "CURRENT_TIMESTAMP",
   })
   createdAt: Date;
+
+  @Column("int", { name: "user_voucher_id", nullable: true, unique: true })
+  userVoucherId: number | null;
 
   @ManyToOne(() => Room, (room) => room.bookings, {
     onDelete: "NO ACTION",
@@ -75,11 +82,27 @@ export class Booking {
   @JoinColumn([{ name: "user_id", referencedColumnName: "id" }])
   user: User;
 
+  @OneToOne(() => UserVoucher, (userVoucher) => userVoucher.booking, {
+    onDelete: "NO ACTION",
+    onUpdate: "NO ACTION",
+  })
+  @JoinColumn([{ name: "user_voucher_id", referencedColumnName: "id" }])
+  userVoucher: UserVoucher;
+
   @OneToMany(() => BookingService, (bookingService) => bookingService.booking)
   bookingServices: BookingService[];
 
   @OneToOne(() => Contract, (contract) => contract.booking)
   contract: Contract;
+
+  @OneToMany(() => Feedback, (feedback) => feedback.booking)
+  feedbacks: Feedback[];
+
+  @OneToMany(() => Invoice, (invoice) => invoice.booking)
+  invoices: Invoice[];
+
+  @OneToMany(() => Payment, (payment) => payment.booking)
+  payments: Payment[];
 
   @OneToMany(
     () => RoomChangeHistory,

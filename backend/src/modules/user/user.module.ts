@@ -4,11 +4,15 @@ import { User } from "./entities/user.entity";
 import { AuthController, UserController } from "./user.controller";
 import { AuthService, UserService } from "./user.service";
 import { MailModule } from "common/mail/mail.module";
+import { FavoriteRoom } from "./entities/favorite-room.entity";
+import { FavoriteService } from "./entities/favorite-service.entity";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      User
+      User,
+      FavoriteRoom,
+      FavoriteService
     ]),
     MailModule
   ],

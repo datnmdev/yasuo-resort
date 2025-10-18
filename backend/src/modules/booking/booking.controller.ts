@@ -36,7 +36,7 @@ export class BookingController {
   }
 
   @Post()
-  @Roles(Role.USER)
+  @Roles(Role.CUSTOMER)
   @UseGuards(RolesGuard)
   async bookingRoom(
     @User('id') userId: number,
@@ -60,7 +60,7 @@ export class BookingController {
   }
 
   @Put(':bookingId/cancel-room-booking')
-  @Roles(Role.USER)
+  @Roles(Role.CUSTOMER)
   @UseGuards(RolesGuard)
   async cancelRoomBooking(
     @User('id') userId: number,
@@ -79,7 +79,7 @@ export class BookingController {
   }
 
   @Put(':bookingId/sign-contract')
-  @Roles(Role.USER)
+  @Roles(Role.CUSTOMER)
   @UseGuards(RolesGuard)
   async signContract(
     @User('id') userId: number,
@@ -118,7 +118,7 @@ export class BookingController {
   }
 
   @Post('service')
-  @Roles(Role.USER, Role.ADMIN)
+  @Roles(Role.CUSTOMER, Role.ADMIN)
   @UseGuards(RolesGuard)
   async bookingServices(
     @User('role') role: Role,
@@ -158,7 +158,7 @@ export class BookingController {
   }
 
   @Put('service/:bookingServiceId')
-  @Roles(Role.USER)
+  @Roles(Role.CUSTOMER)
   @UseGuards(RolesGuard)
   async updateServiceBooking(
     @User('id') userId: number,
@@ -171,7 +171,7 @@ export class BookingController {
   }
 
   @Put('service/:bookingServiceId/cancel')
-  @Roles(Role.USER)
+  @Roles(Role.CUSTOMER)
   @UseGuards(RolesGuard)
   async cancelServiceBooking(
     @User('id') userId: number,

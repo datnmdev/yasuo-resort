@@ -1,3 +1,4 @@
+import { Combo } from "modules/combo/entities/combo.entity";
 import { Room } from "modules/room/entities/room.entity";
 import {
   Column,
@@ -24,6 +25,9 @@ export class RoomType {
 
   @Column("longtext", { name: "description", nullable: true })
   description: string | null;
+
+  @OneToMany(() => Combo, (combo) => combo.roomType)
+  combos: Combo[];
 
   @OneToMany(() => Room, (room) => room.type)
   rooms: Room[];

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { SignUpReqDto } from './dtos/sign-up.dto';
 import { Role, UserStatus } from 'common/constants/user.constants';
 import * as bcrypt from 'bcrypt';
@@ -30,6 +30,10 @@ import * as _ from 'lodash';
 import { UpdateProfileReqDto } from './dtos/update-profile.dto';
 import { access, unlink } from 'fs/promises';
 import * as path from 'path';
+import { FavoriteRoom } from './entities/favorite-room.entity';
+import { FavoriteService } from './entities/favorite-service.entity';
+import { GetFavoriteRoomReqDto } from './dtos/get-favorite-room.dto';
+import { GetFavoriteServiceReqDto } from './dtos/get-favorite-service.dto';
 
 @Injectable()
 export class AuthService {
@@ -58,7 +62,7 @@ export class AuthService {
     const userEntity = this.userRepository.create({
       ...body,
       status: 'inactive',
-      role: Role.USER,
+      role: Role.CUSTOMER,
       passwordHash: await bcrypt.hash(body.password, 10),
     });
     return this.userRepository.save(userEntity);
@@ -285,6 +289,10 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(FavoriteRoom)
+    private readonly favoriteRoomRepository: Repository<FavoriteRoom>,
+    @InjectRepository(FavoriteService)
+    private readonly favoriteServiceRepository: Repository<FavoriteService>,
   ) {}
 
   async getProfile(userId: number) {
@@ -317,5 +325,147 @@ export class UserService {
       },
       body,
     );
+  }
+
+  async getFavoriteRooms(userId: number, query: GetFavoriteRoomReqDto) {
+    return this.favoriteRoomRepository
+      .createQueryBuilder('favoriteRoom')
+      .leftJoinAndSelect('favoriteRoom.room', 'room')
+      .leftJoinAndSelect('room.media', 'media')
+      .leftJoinAndSelect('room.type', 'type')
+      .where('favoriteRoom.user_id = :userId', {
+        userId,
+      })
+      .andWhere(
+        new Brackets((qb) => {
+          if (typeof query.roomId === 'number') {
+            qb.where('favoriteRoom.room_id = :roomId', {
+              roomId: query.roomId,
+            });
+          }
+        }),
+      )
+      .orderBy('favoriteRoom.createdAt', 'DESC')
+      .skip((query.page - 1) * query.limit)
+      .take(query.limit)
+      .getManyAndCount();
+  }
+
+  async createFavoriteRoom(userId: number, roomId: number) {
+    const user = await this.userRepository.findOne({
+      where: {
+        id: userId,
+      },
+      relations: ['favoriteRooms'],
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.favoriteRooms.some((fr) => fr.roomId === roomId)) {
+      throw new ConflictException('Room is already in favorites');
+    }
+
+    const room = await this.userRepository.manager.findOne('Room', {
+      where: {
+        id: roomId,
+      },
+    });
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    return this.favoriteRoomRepository.save(
+      this.favoriteRoomRepository.create({
+        userId,
+        roomId,
+      }),
+    );
+  }
+
+  async deleteFavoriteRoom(userId: number, favoriteRoomId: number) {
+    const favoriteRoom = await this.favoriteRoomRepository.findOne({
+      where: {
+        id: favoriteRoomId,
+        userId: userId,
+      },
+    });
+    if (!favoriteRoom) {
+      throw new NotFoundException('Favorite room not found');
+    }
+
+    return this.favoriteRoomRepository.delete({
+      id: favoriteRoomId,
+    });
+  }
+
+  async getFavoriteServices(userId: number, query: GetFavoriteServiceReqDto) {
+    return this.favoriteServiceRepository
+      .createQueryBuilder('favoriteService')
+      .leftJoinAndSelect('favoriteService.service', 'service')
+      .where('favoriteService.user_id = :userId', {
+        userId,
+      })
+      .andWhere(
+        new Brackets((qb) => {
+          if (typeof query.serviceId === 'number') {
+            qb.where('favoriteService.service_id = :serviceId', {
+              serviceId: query.serviceId,
+            });
+          }
+        }),
+      )
+      .orderBy('favoriteService.createdAt', 'DESC')
+      .skip((query.page - 1) * query.limit)
+      .take(query.limit)
+      .getManyAndCount();
+  }
+
+  async createFavoriteService(userId: number, serviceId: number) {
+    const user = await this.userRepository.findOne({
+      where: {
+        id: userId,
+      },
+      relations: ['favoriteServices'],
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.favoriteServices.some((fs) => fs.serviceId === serviceId)) {
+      throw new ConflictException('Service is already in favorites');
+    }
+
+    const service = await this.userRepository.manager.findOne('Service', {
+      where: {
+        id: serviceId,
+      },
+    });
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    return this.favoriteServiceRepository.save(
+      this.favoriteServiceRepository.create({
+        userId,
+        serviceId,
+      }),
+    );
+  }
+
+  async deleteFavoriteService(userId: number, favoriteServiceId: number) {
+    const favoriteService = await this.favoriteServiceRepository.findOne({
+      where: {
+        id: favoriteServiceId,
+        userId: userId,
+      },
+    });
+    if (!favoriteService) {
+      throw new NotFoundException('Favorite service not found');
+    }
+
+    return this.favoriteServiceRepository.delete({
+      id: favoriteServiceId,
+    });
   }
 }

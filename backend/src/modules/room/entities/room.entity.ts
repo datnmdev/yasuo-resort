@@ -1,4 +1,3 @@
-import { Booking } from "modules/booking/entities/booking.entity";
 import {
   Column,
   Entity,
@@ -8,12 +7,14 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { Booking } from "../../booking/entities/booking.entity";
 import { Media } from "./media.entity";
-import { RoomType } from "modules/room-type/entities/room-type.entity";
-import { RoomChangeHistory } from "modules/booking/entities/room-change-history.entity";
+import { RoomType } from "../../room-type/entities/room-type.entity";
+import { RoomChangeHistory } from "../../booking/entities/room-change-history.entity";
+import { FavoriteRoom } from "modules/user/entities/favorite-room.entity";
 
-@Index("room_number_UNIQUE", ["roomNumber"], { unique: true })
 @Index("FK_room__room_type_idx", ["typeId"], {})
+@Index("room_number_UNIQUE", ["roomNumber"], { unique: true })
 @Entity("room", { schema: "resort_booking" })
 export class Room {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
@@ -31,10 +32,7 @@ export class Room {
   @Column("longtext", { name: "description", nullable: true })
   description: string | null;
 
-  @Column("enum", {
-    name: "status",
-    enum: ["active", "maintenance"],
-  })
+  @Column("enum", { name: "status", enum: ["active", "maintenance"] })
   status: "active" | "maintenance";
 
   @Column("date", { name: "maintenance_start_date", nullable: true })
@@ -57,6 +55,9 @@ export class Room {
 
   @OneToMany(() => Booking, (booking) => booking.room)
   bookings: Booking[];
+
+  @OneToMany(() => FavoriteRoom, (favoriteRoom) => favoriteRoom.room)
+  favoriteRooms: FavoriteRoom[];
 
   @OneToMany(() => Media, (media) => media.room)
   media: Media[];

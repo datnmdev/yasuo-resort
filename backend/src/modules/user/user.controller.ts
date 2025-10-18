@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { AuthService, UserService } from './user.service';
 import { SignUpReqDto } from './dtos/sign-up.dto';
 import { AppResponse } from 'common/http/wrapper.http';
@@ -13,6 +13,10 @@ import { ResetPasswordReqDto } from './dtos/reset-password.dto';
 import { User } from 'common/decorators/user.decorator';
 import { UpdateProfileReqDto } from './dtos/update-profile.dto';
 import * as _ from 'lodash';
+import { CreateFavoriteRoomReqDto } from './dtos/create-favorite-room.dto';
+import { CreateFavoriteServiceReqDto } from './dtos/create-favorite-service.dto';
+import { GetFavoriteRoomReqDto } from './dtos/get-favorite-room.dto';
+import { GetFavoriteServiceReqDto } from './dtos/get-favorite-service.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -91,6 +95,66 @@ export class UserController {
   ) {
     return AppResponse.ok(
       await this.userService.updateProfile(userId, updateProfileBody),
+    );
+  }
+
+  @Get('favorite-room')
+  async getFavoriteRooms(
+    @User('id') userId: number,
+    @Query() getFavoriteRoomsQuery: GetFavoriteRoomReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.userService.getFavoriteRooms(userId, getFavoriteRoomsQuery),
+    );
+  }
+
+  @Post('favorite-room')
+  async createFavoriteRoom(
+    @User('id') userId: number,
+    @Body() createFavoriteRoomBody: CreateFavoriteRoomReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.userService.createFavoriteRoom(userId, createFavoriteRoomBody.roomId),
+    );
+  }
+
+  @Delete('favorite-room/:id')
+  async deleteFavoriteRoom(
+    @User('id') userId: number,
+    @Param('id') favoriteRoomId: number,
+  ) {
+    return AppResponse.ok(
+      await this.userService.deleteFavoriteRoom(userId, favoriteRoomId),
+    );
+  }
+
+  @Get('favorite-service')
+  async getFavoriteServices(
+    @User('id') userId: number,
+    @Query() getFavoriteServicesQuery: GetFavoriteServiceReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.userService.getFavoriteServices(userId, getFavoriteServicesQuery),
+    );
+  }
+
+  @Post('favorite-service')
+  async createFavoriteService(
+    @User('id') userId: number,
+    @Body() createFavoriteServiceBody: CreateFavoriteServiceReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.userService.createFavoriteService(userId, createFavoriteServiceBody.serviceId),
+    );
+  }
+
+  @Delete('favorite-service/:id')
+  async deleteFavoriteService(
+    @User('id') userId: number,
+    @Param('id') favoriteServiceId: number,
+  ) {
+    return AppResponse.ok(
+      await this.userService.deleteFavoriteService(userId, favoriteServiceId),
     );
   }
 }

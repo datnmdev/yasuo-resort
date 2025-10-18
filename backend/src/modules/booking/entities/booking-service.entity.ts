@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { Booking } from "./booking.entity";
-import { Service } from "modules/service/entities/service.entity";
+import { Service } from "../../service/entities/service.entity";
 
 @Index("FK_booking_service__booking_idx", ["bookingId"], {})
 @Index("FK_booking_service__service_idx", ["serviceId"], {})

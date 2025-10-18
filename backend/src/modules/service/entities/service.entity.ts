@@ -1,4 +1,3 @@
-import { BookingService } from "modules/booking/entities/booking-service.entity";
 import {
   Column,
   Entity,
@@ -6,6 +5,9 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { BookingService } from "../../booking/entities/booking-service.entity";
+import { ComboService } from "modules/combo/entities/combo-service.entity";
+import { FavoriteService } from "modules/user/entities/favorite-service.entity";
 
 @Index("FTS_service__name", ["name"], { fulltext: true })
 @Entity("service", { schema: "resort_booking" })
@@ -27,4 +29,13 @@ export class Service {
 
   @OneToMany(() => BookingService, (bookingService) => bookingService.service)
   bookingServices: BookingService[];
+
+  @OneToMany(() => ComboService, (comboService) => comboService.service)
+  comboServices: ComboService[];
+
+  @OneToMany(
+    () => FavoriteService,
+    (favoriteService) => favoriteService.service
+  )
+  favoriteServices: FavoriteService[];
 }

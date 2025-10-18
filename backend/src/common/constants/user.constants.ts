@@ -1,6 +1,7 @@
 export enum Role {
   ADMIN = 'admin',
-  USER = 'user',
+  CUSTOMER = 'customer',
+  RECEPTIONIST = 'receptionist'
 }
 
 export enum UserStatus {
