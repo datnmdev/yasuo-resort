@@ -306,6 +306,7 @@ export class UserService {
       where: {
         id: userId,
       },
+      relations: ['userTier'],
     });
     return _.omit(user, 'passwordHash');
   }
@@ -533,16 +534,32 @@ export class UserService {
   }
 
   async deleteTier(tierId: number) {
-    const tier = await this.userTierRepository.findOne({
-      where: {
+    const queryRunner =
+      this.userTierRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    try {
+      await queryRunner.startTransaction();
+      const tier = await queryRunner.manager.findOne(UserTier, {
+        where: {
+          id: tierId,
+        },
+        relations: ['users'],
+      });
+      if (!tier) {
+        throw new NotFoundException('Tier not found');
+      }
+      tier.users = [];
+      await queryRunner.manager.save(tier);
+      const result = await queryRunner.manager.delete(UserTier, {
         id: tierId,
-      },
-    });
-    if (!tier) {
-      throw new NotFoundException('Tier not found');
+      });
+      await queryRunner.commitTransaction();
+      return result;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-    return this.userTierRepository.delete({
-      id: tierId,
-    });
   }
 }
