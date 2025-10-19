@@ -6,13 +6,15 @@ import { AuthService, UserService } from "./user.service";
 import { MailModule } from "common/mail/mail.module";
 import { FavoriteRoom } from "./entities/favorite-room.entity";
 import { FavoriteService } from "./entities/favorite-service.entity";
+import { UserTier } from "./entities/user-tier.entity";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       User,
       FavoriteRoom,
-      FavoriteService
+      FavoriteService,
+      UserTier
     ]),
     MailModule
   ],

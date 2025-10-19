@@ -34,6 +34,10 @@ import { FavoriteRoom } from './entities/favorite-room.entity';
 import { FavoriteService } from './entities/favorite-service.entity';
 import { GetFavoriteRoomReqDto } from './dtos/get-favorite-room.dto';
 import { GetFavoriteServiceReqDto } from './dtos/get-favorite-service.dto';
+import { CreateTierReqDto } from './dtos/create-tier.dto';
+import { UserTier } from './entities/user-tier.entity';
+import { UpdateTierReqDto } from './dtos/update-tier.dto';
+import { GetTierReqDto } from './dtos/get-tier.dto';
 
 @Injectable()
 export class AuthService {
@@ -293,6 +297,8 @@ export class UserService {
     private readonly favoriteRoomRepository: Repository<FavoriteRoom>,
     @InjectRepository(FavoriteService)
     private readonly favoriteServiceRepository: Repository<FavoriteService>,
+    @InjectRepository(UserTier)
+    private readonly userTierRepository: Repository<UserTier>,
   ) {}
 
   async getProfile(userId: number) {
@@ -466,6 +472,77 @@ export class UserService {
 
     return this.favoriteServiceRepository.delete({
       id: favoriteServiceId,
+    });
+  }
+
+  async getTier(query: GetTierReqDto) {
+    return this.userTierRepository
+      .createQueryBuilder('userTier')
+      .where(
+        new Brackets((qb) => {
+          if (typeof query.id === 'number') {
+            qb.where('userTier.id = :id', {
+              id: query.id,
+            });
+          }
+        }),
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          if (typeof query.tierName === 'string') {
+            qb.where('userTier.tierName = :tierName', {
+              tierName: query.tierName,
+            });
+          }
+        }),
+      )
+      .andWhere(
+        new Brackets((qb) => {
+          if (typeof query.tierSlug === 'string') {
+            qb.where('userTier.tierSlug = :tierSlug', {
+              tierSlug: query.tierSlug,
+            });
+          }
+        }),
+      )
+      .orderBy('userTier.tierOrder', 'ASC')
+      .skip((query.page - 1) * query.limit)
+      .take(query.limit)
+      .getManyAndCount();
+  }
+
+  async createTier(body: CreateTierReqDto) {
+    return this.userTierRepository.save(this.userTierRepository.create(body));
+  }
+
+  async updateTier(tierId: number, body: UpdateTierReqDto) {
+    const tier = await this.userTierRepository.findOne({
+      where: {
+        id: tierId,
+      },
+    });
+    if (!tier) {
+      throw new NotFoundException('Tier not found');
+    }
+    return this.userTierRepository.update(
+      {
+        id: tierId,
+      },
+      body,
+    );
+  }
+
+  async deleteTier(tierId: number) {
+    const tier = await this.userTierRepository.findOne({
+      where: {
+        id: tierId,
+      },
+    });
+    if (!tier) {
+      throw new NotFoundException('Tier not found');
+    }
+    return this.userTierRepository.delete({
+      id: tierId,
     });
   }
 }

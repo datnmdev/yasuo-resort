@@ -6,13 +6,13 @@ export class UserTier {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
 
-  @Column("varchar", { name: "tier_name", length: 50 })
+  @Column("varchar", { name: "tier_name", length: 50, unique: true })
   tierName: string;
 
-  @Column("varchar", { name: "tier_slug", length: 50 })
+  @Column("varchar", { name: "tier_slug", length: 50, unique: true })
   tierSlug: string;
 
-  @Column("int", { name: "tier_order" })
+  @Column("int", { name: "tier_order", unique: true })
   tierOrder: number;
 
   @Column("decimal", { name: "min_spending", precision: 18, scale: 2 })
@@ -23,9 +23,6 @@ export class UserTier {
 
   @Column("int", { name: "duration_months" })
   durationMonths: number;
-
-  @Column("decimal", { name: "discount_rate", precision: 5, scale: 2 })
-  discountRate: string;
 
   @Column("longtext", { name: "description", nullable: true })
   description: string | null;

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { AuthService, UserService } from './user.service';
 import { SignUpReqDto } from './dtos/sign-up.dto';
 import { AppResponse } from 'common/http/wrapper.http';
@@ -17,6 +17,12 @@ import { CreateFavoriteRoomReqDto } from './dtos/create-favorite-room.dto';
 import { CreateFavoriteServiceReqDto } from './dtos/create-favorite-service.dto';
 import { GetFavoriteRoomReqDto } from './dtos/get-favorite-room.dto';
 import { GetFavoriteServiceReqDto } from './dtos/get-favorite-service.dto';
+import { Roles } from 'common/decorators/roles.decorator';
+import { Role } from 'common/constants/user.constants';
+import { CreateTierReqDto } from './dtos/create-tier.dto';
+import { UpdateTierReqDto } from './dtos/update-tier.dto';
+import { RolesGuard } from 'common/guards/roles.guard';
+import { GetTierReqDto } from './dtos/get-tier.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -155,6 +161,49 @@ export class UserController {
   ) {
     return AppResponse.ok(
       await this.userService.deleteFavoriteService(userId, favoriteServiceId),
+    );
+  }
+
+  @Get('tier')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async getTier(
+    @Query() getTierQuery: GetTierReqDto,
+  ) {
+    return AppResponse.ok(await this.userService.getTier(getTierQuery));
+  }
+
+  @Post('tier')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async createTier(
+    @Body() createTierBody: CreateTierReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.userService.createTier(createTierBody),
+    );
+  }
+
+  @Put('tier/:id')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async updateTier(
+    @Param('id') tierId: number,
+    @Body() updateTierBody: UpdateTierReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.userService.updateTier(tierId, updateTierBody),
+    );
+  }
+
+  @Delete('tier/:id')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async deleteTier(
+    @Param('id') tierId: number,
+  ) {
+    return AppResponse.ok(
+      await this.userService.deleteTier(tierId),
     );
   }
 }
