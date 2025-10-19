@@ -7,8 +7,9 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { ComboService } from "./combo-service.entity";
 import { RoomType } from "modules/room-type/entities/room-type.entity";
+import { Booking } from "modules/booking/entities/booking.entity";
+import { ComboService } from "./combo-service.entity";
 import { Media } from "modules/room/entities/media.entity";
 
 @Index("FK_combo__room_type_idx", ["roomTypeId"], {})
@@ -55,6 +56,9 @@ export class Combo {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedAt: Date;
+
+  @OneToMany(() => Booking, (booking) => booking.combo)
+  bookings: Booking[];
 
   @ManyToOne(() => RoomType, (roomType) => roomType.combos, {
     onDelete: "NO ACTION",

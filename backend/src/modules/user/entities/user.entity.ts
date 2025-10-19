@@ -7,11 +7,11 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Booking } from "../../booking/entities/booking.entity";
 import { UserTier } from "./user-tier.entity";
 import { UserVoucher } from "../../voucher/entities/user-voucher.entity";
 import { FavoriteRoom } from "./favorite-room.entity";
 import { FavoriteService } from "./favorite-service.entity";
+import { Booking } from "modules/booking/entities/booking.entity";
 import { Feedback } from "modules/feedback/entities/feedback.entity";
 
 @Index("cccd_UNIQUE", ["cccd"], { unique: true })

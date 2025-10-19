@@ -8,19 +8,21 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { User } from "../../user/entities/user.entity";
-import { UserVoucher } from "../../voucher/entities/user-voucher.entity";
-import { BookingService } from "./booking-service.entity";
+import { Combo } from "modules/combo/entities/combo.entity";
 import { Room } from "modules/room/entities/room.entity";
+import { User } from "modules/user/entities/user.entity";
+import { UserVoucher } from "modules/voucher/entities/user-voucher.entity";
+import { BookingService } from "./booking-service.entity";
 import { Contract } from "./contract.entity";
 import { Feedback } from "modules/feedback/entities/feedback.entity";
 import { Invoice } from "modules/invoice/entities/invoice.entity";
 import { Payment } from "modules/payment/entities/payment.entity";
 import { RoomChangeHistory } from "./room-change-history.entity";
 
-@Index("FK_booking__room_idx", ["roomId"], {})
-@Index("FK_booking__user_idx", ["userId"], {})
 @Index("user_voucher_id_UNIQUE", ["userVoucherId"], { unique: true })
+@Index("FK_booking__user_idx", ["userId"], {})
+@Index("FK_booking__room_idx", ["roomId"], {})
+@Index("FK_booking__combo_idx", ["comboId"], {})
 @Entity("booking", { schema: "resort_booking" })
 export class Booking {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
@@ -67,6 +69,16 @@ export class Booking {
 
   @Column("int", { name: "user_voucher_id", nullable: true, unique: true })
   userVoucherId: number | null;
+
+  @Column("int", { name: "combo_id", nullable: true })
+  comboId: number | null;
+
+  @ManyToOne(() => Combo, (combo) => combo.bookings, {
+    onDelete: "NO ACTION",
+    onUpdate: "NO ACTION",
+  })
+  @JoinColumn([{ name: "combo_id", referencedColumnName: "id" }])
+  combo: Combo;
 
   @ManyToOne(() => Room, (room) => room.bookings, {
     onDelete: "NO ACTION",

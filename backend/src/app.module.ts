@@ -17,6 +17,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { ServiceModule } from 'modules/service/service.module';
 import { BookingModule } from 'modules/booking/booking.module';
 import { BackgroundModule } from 'modules/background/background.module';
+import { FeedbackModule } from 'modules/feedback/feedback.module';
 
 @Module({
   imports: [
@@ -53,7 +54,8 @@ import { BackgroundModule } from 'modules/background/background.module';
     RoomModule,
     ServiceModule,
     BookingModule,
-    BackgroundModule
+    BackgroundModule,
+    FeedbackModule
   ],
   controllers: [],
   providers: [],
@@ -100,7 +102,8 @@ export class AppModule implements NestModule {
             path: 'service/:serviceId',
             method: RequestMethod.DELETE
           },
-          'booking'
+          'booking',
+          'feedback'
         )
   }
 }
