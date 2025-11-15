@@ -1,3 +1,5 @@
+import { Booking } from "modules/booking/entities/booking.entity";
+import { User } from "modules/user/entities/user.entity";
 import {
   Column,
   Entity,
@@ -5,10 +7,9 @@ import {
   JoinColumn,
   ManyToOne,
   OneToOne,
+  PrimaryGeneratedColumn,
 } from "typeorm";
-import { User } from "../../user/entities/user.entity";
 import { Voucher } from "./voucher.entity";
-import { Booking } from "modules/booking/entities/booking.entity";
 
 @Index("FK_user_voucher__voucher_idx", ["voucherId"], {})
 @Index("id_UNIQUE", ["id"], { unique: true })

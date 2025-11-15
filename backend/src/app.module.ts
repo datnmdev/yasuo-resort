@@ -18,6 +18,7 @@ import { ServiceModule } from 'modules/service/service.module';
 import { BookingModule } from 'modules/booking/booking.module';
 import { BackgroundModule } from 'modules/background/background.module';
 import { FeedbackModule } from 'modules/feedback/feedback.module';
+import { VoucherModule } from 'modules/voucher/voucher.module';
 
 @Module({
   imports: [
@@ -55,7 +56,8 @@ import { FeedbackModule } from 'modules/feedback/feedback.module';
     ServiceModule,
     BookingModule,
     BackgroundModule,
-    FeedbackModule
+    FeedbackModule,
+    VoucherModule
   ],
   controllers: [],
   providers: [],
@@ -103,7 +105,8 @@ export class AppModule implements NestModule {
             method: RequestMethod.DELETE
           },
           'booking',
-          'feedback'
+          'feedback',
+          'voucher'
         )
   }
 }

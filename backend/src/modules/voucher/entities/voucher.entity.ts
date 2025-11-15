@@ -1,5 +1,12 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { UserVoucher } from "./user-voucher.entity";
+import { UserTier } from "modules/user/entities/user-tier.entity";
 
 @Entity("voucher", { schema: "resort_booking" })
 export class Voucher {
@@ -35,14 +42,17 @@ export class Voucher {
   @Column("datetime", { name: "end_date" })
   endDate: Date;
 
-  @Column("int", { name: "usage_limit" })
-  usageLimit: number;
+  @Column("int", { name: "claim_limit" })
+  claimLimit: number;
 
   @Column("decimal", { name: "min_booking_amount", precision: 18, scale: 2 })
   minBookingAmount: string;
 
   @Column("tinyint", { name: "is_active", default: () => "'0'" })
   isActive: number;
+
+  @ManyToMany(() => UserTier, (userTier) => userTier.vouchers)
+  userTiers: UserTier[];
 
   @OneToMany(() => UserVoucher, (userVoucher) => userVoucher.voucher)
   userVouchers: UserVoucher[];
