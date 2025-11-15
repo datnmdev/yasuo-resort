@@ -27,17 +27,17 @@ export class VoucherService {
   ) {}
 
   async getVouchers(userId: number, query: GetVoucherReqDto) {
-    if (query.role === 'admin') {
-      return this.voucherRepository.findAndCount({
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
-      });
-    }
     const user = await this.dataSource.manager.findOne(User, {
       where: {
         id: userId,
       },
     });
+    if (user.role === 'admin') {
+      return this.voucherRepository.findAndCount({
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      });
+    }
     if (user.userTierId === null) {
       return [[], 0];
     }
@@ -210,5 +210,17 @@ export class VoucherService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async publicationVoucher(voucherId: number, isActive: number) {
+    const voucher = await this.voucherRepository.findOne({
+      where: {
+        id: voucherId,
+      },
+    });
+    if (!voucher) {
+      throw new NotFoundException('Voucher not found');
+    }
+    return this.voucherRepository.update(voucherId, { isActive });
   }
 }

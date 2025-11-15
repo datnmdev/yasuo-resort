@@ -19,6 +19,7 @@ import { UpdateVoucherReqDto } from './dtos/update-voucher.dto';
 import { GetVoucherReqDto } from './dtos/get-voucher.dto';
 import { User } from 'common/decorators/user.decorator';
 import { ClaimVoucherReqDto } from './dtos/claim-voucher.dto';
+import { PublicationVoucherReqDto } from './dtos/publication-voucher.dto';
 
 @Controller('voucher')
 export class VoucherController {
@@ -74,5 +75,20 @@ export class VoucherController {
   @UseGuards(RolesGuard)
   async deleteVoucher(@Param('id') id: number) {
     return AppResponse.ok(await this.voucherService.deleteVoucher(id));
+  }
+
+  @Put('publication/:id')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async publicationVoucher(
+    @Param('id') id: number,
+    @Body() publicationVoucherBody: PublicationVoucherReqDto,
+  ) {
+    return AppResponse.ok(
+      await this.voucherService.publicationVoucher(
+        id,
+        publicationVoucherBody.isActive,
+      ),
+    );
   }
 }
