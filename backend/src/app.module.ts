@@ -19,6 +19,7 @@ import { BookingModule } from 'modules/booking/booking.module';
 import { BackgroundModule } from 'modules/background/background.module';
 import { FeedbackModule } from 'modules/feedback/feedback.module';
 import { VoucherModule } from 'modules/voucher/voucher.module';
+import { ComboModule } from 'modules/combo/combo.module';
 
 @Module({
   imports: [
@@ -57,7 +58,8 @@ import { VoucherModule } from 'modules/voucher/voucher.module';
     BookingModule,
     BackgroundModule,
     FeedbackModule,
-    VoucherModule
+    VoucherModule,
+    ComboModule
   ],
   controllers: [],
   providers: [],
@@ -107,9 +109,21 @@ export class AppModule implements NestModule {
           'booking',
           {
             path: 'feedback',
-            method: RequestMethod.POST
+            method: RequestMethod.POST,
           },
-          'voucher'
+          'voucher',
+          {
+            path: 'combo',
+            method: RequestMethod.POST,
+          },
+          {
+            path: 'combo/publication/:id',
+            method: RequestMethod.PUT,
+          },
+          {
+            path: 'combo/admin',
+            method: RequestMethod.GET,
+          },
         )
   }
 }

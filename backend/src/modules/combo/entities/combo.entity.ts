@@ -27,13 +27,7 @@ export class Combo {
   @Column("longtext", { name: "description", nullable: true })
   description: string | null;
 
-  @Column("enum", {
-    name: "discount_type",
-    enum: ["percentage", "fixed_amount"],
-  })
-  discountType: "percentage" | "fixed_amount";
-
-  @Column("decimal", { name: "discount_value", precision: 18, scale: 2 })
+  @Column("decimal", { name: "discount_value", precision: 5, scale: 2 })
   discountValue: string;
 
   @Column("decimal", { name: "max_discount_amount", precision: 18, scale: 2 })
@@ -67,7 +61,9 @@ export class Combo {
   @JoinColumn([{ name: "room_type_id", referencedColumnName: "id" }])
   roomType: RoomType;
 
-  @OneToMany(() => ComboService, (comboService) => comboService.combo)
+  @OneToMany(() => ComboService, (comboService) => comboService.combo, {
+    cascade: true,
+  })
   comboServices: ComboService[];
 
   @OneToMany(() => Media, (media) => media.combo)

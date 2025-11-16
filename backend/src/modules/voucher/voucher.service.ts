@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Voucher } from './entities/voucher.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { UserVoucher } from './entities/user-voucher.entity';
 import { CreateVoucherReqDto } from './dtos/create-voucher.dto';
 import * as moment from 'moment';
@@ -27,6 +27,7 @@ export class VoucherService {
   ) {}
 
   async getVouchers(userId: number, query: GetVoucherReqDto) {
+    const now = moment().toDate();
     const user = await this.dataSource.manager.findOne(User, {
       where: {
         id: userId,
@@ -38,16 +39,30 @@ export class VoucherService {
         take: query.limit,
       });
     }
+
+    if (query.scope === 'personal') {
+      return this.dataSource.manager.findAndCount(UserVoucher, {
+        where: {
+          userId,
+        },
+        relations: ['voucher'],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      });
+    }
+
     if (user.userTierId === null) {
       return [[], 0];
     }
     const vouchers = await this.voucherRepository.find({
       where: {
         isActive: 1,
+        startDate: LessThanOrEqual(now),
+        endDate: MoreThanOrEqual(now),
       },
       relations: ['userTiers'],
     });
-    const result = await vouchers
+    const result = vouchers
       .filter((voucher) =>
         voucher.userTiers.some((userTier) => userTier.id === user.userTierId),
       )
@@ -120,6 +135,9 @@ export class VoucherService {
       });
       if (!voucher) {
         throw new NotFoundException('Voucher not found');
+      }
+      if (moment().isAfter(moment(voucher.endDate)) || moment().isBefore(moment(voucher.startDate))) {
+        throw new ConflictException('Voucher is not active currently');
       }
       if (voucher.userTiers.every((tier) => tier.id !== user.userTierId)) {
         throw new ConflictException(

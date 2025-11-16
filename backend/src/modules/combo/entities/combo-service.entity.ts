@@ -11,20 +11,11 @@ export class ComboService {
   @Column("int", { primary: true, name: "service_id" })
   serviceId: number;
 
-  @Column("int", { name: "quantity" })
-  quantity: number;
-
   @Column("datetime", {
     name: "created_at",
     default: () => "CURRENT_TIMESTAMP",
   })
   createdAt: Date;
-
-  @Column("datetime", {
-    name: "updated_at",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  updatedAt: Date;
 
   @ManyToOne(() => Combo, (combo) => combo.comboServices, {
     onDelete: "NO ACTION",
