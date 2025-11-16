@@ -26,15 +26,27 @@ export class VoucherController {
   constructor(private readonly voucherService: VoucherService) {}
 
   @Get()
-  @Roles(Role.CUSTOMER, Role.ADMIN)
-  @UseGuards(RolesGuard)
-  async getVouchers(
-    @User('id') userId: number,
-    @Query() query: GetVoucherReqDto,
-  ) {
+  async getPublishedVouchers(@Query() query: GetVoucherReqDto) {
     return AppResponse.ok(
-      await this.voucherService.getVouchers(userId, query),
+      await this.voucherService.getPublishedVouchers(query),
     );
+  }
+
+  @Get('admin')
+  @Roles(Role.ADMIN)
+  @UseGuards(RolesGuard)
+  async getVouchersForAdmin(@Query() query: GetVoucherReqDto) {
+    return AppResponse.ok(await this.voucherService.getVouchersForAdmin(query));
+  }
+
+  @Get('customer')
+  @Roles(Role.CUSTOMER)
+  @UseGuards(RolesGuard)
+  async getVouchersForCustomer(
+    @User('id') userId: number,
+    @Query() query: GetVoucherReqDto
+  ) {
+    return AppResponse.ok(await this.voucherService.getVouchersForCustomer(userId, query));
   }
 
   @Post()
@@ -51,7 +63,7 @@ export class VoucherController {
   @UseGuards(RolesGuard)
   async claimVoucher(
     @User('id') userId: number,
-    @Body() claimVoucherBody: ClaimVoucherReqDto
+    @Body() claimVoucherBody: ClaimVoucherReqDto,
   ) {
     return AppResponse.ok(
       await this.voucherService.claimVoucher(userId, claimVoucherBody.id),

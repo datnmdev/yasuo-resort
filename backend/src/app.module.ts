@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { ConfigModule } from './common/config/config.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from './common/config/config.service';
@@ -20,6 +25,8 @@ import { BackgroundModule } from 'modules/background/background.module';
 import { FeedbackModule } from 'modules/feedback/feedback.module';
 import { VoucherModule } from 'modules/voucher/voucher.module';
 import { ComboModule } from 'modules/combo/combo.module';
+import { PaymentModule } from 'modules/payment/payment.module';
+import { InvoiceModule } from 'modules/invoice/invoice.module';
 
 @Module({
   imports: [
@@ -59,71 +66,83 @@ import { ComboModule } from 'modules/combo/combo.module';
     BackgroundModule,
     FeedbackModule,
     VoucherModule,
-    ComboModule
+    ComboModule,
+    PaymentModule,
+    InvoiceModule,
   ],
   controllers: [],
   providers: [],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-      consumer
-        .apply(AuthorizationMiddleware)
-        .forRoutes(
-          'user',
-          {
-            path: 'room-type',
-            method: RequestMethod.POST
-          },
-          {
-            path: 'room-type/:roomTypeId',
-            method: RequestMethod.PUT
-          },
-          {
-            path: 'room-type/:roomTypeId',
-            method: RequestMethod.DELETE
-          },
-          {
-            path: 'room',
-            method: RequestMethod.POST
-          },
-          {
-            path: 'room/:roomId',
-            method: RequestMethod.PUT
-          },
-          {
-            path: 'room/:roomId',
-            method: RequestMethod.DELETE
-          },
-          {
-            path: 'service',
-            method: RequestMethod.POST
-          },
-          {
-            path: 'service/:serviceId',
-            method: RequestMethod.PUT
-          },
-          {
-            path: 'service/:serviceId',
-            method: RequestMethod.DELETE
-          },
-          'booking',
-          {
-            path: 'feedback',
-            method: RequestMethod.POST,
-          },
-          'voucher',
-          {
-            path: 'combo',
-            method: RequestMethod.POST,
-          },
-          {
-            path: 'combo/publication/:id',
-            method: RequestMethod.PUT,
-          },
-          {
-            path: 'combo/admin',
-            method: RequestMethod.GET,
-          },
-        )
+    consumer
+      .apply(AuthorizationMiddleware)
+      .exclude({
+        path: 'voucher',
+        method: RequestMethod.GET,
+      })
+      .forRoutes(
+        'user',
+        {
+          path: 'room-type',
+          method: RequestMethod.POST,
+        },
+        {
+          path: 'room-type/:roomTypeId',
+          method: RequestMethod.PUT,
+        },
+        {
+          path: 'room-type/:roomTypeId',
+          method: RequestMethod.DELETE,
+        },
+        {
+          path: 'room',
+          method: RequestMethod.POST,
+        },
+        {
+          path: 'room/:roomId',
+          method: RequestMethod.PUT,
+        },
+        {
+          path: 'room/:roomId',
+          method: RequestMethod.DELETE,
+        },
+        {
+          path: 'service',
+          method: RequestMethod.POST,
+        },
+        {
+          path: 'service/:serviceId',
+          method: RequestMethod.PUT,
+        },
+        {
+          path: 'service/:serviceId',
+          method: RequestMethod.DELETE,
+        },
+        'booking',
+        {
+          path: 'feedback',
+          method: RequestMethod.POST,
+        },
+        'voucher',
+        {
+          path: 'combo',
+          method: RequestMethod.POST,
+        },
+        {
+          path: 'combo/:id',
+          method: RequestMethod.PUT,
+        },
+        {
+          path: 'combo/publication/:id',
+          method: RequestMethod.PUT,
+        },
+        {
+          path: 'combo/admin',
+          method: RequestMethod.GET,
+        },
+        'invoice',
+        'payment',
+      );
   }
 }

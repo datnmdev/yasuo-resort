@@ -6,7 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Voucher } from './entities/voucher.entity';
-import { DataSource, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  DataSource,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { UserVoucher } from './entities/user-voucher.entity';
 import { CreateVoucherReqDto } from './dtos/create-voucher.dto';
 import * as moment from 'moment';
@@ -26,34 +31,8 @@ export class VoucherService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async getVouchers(userId: number, query: GetVoucherReqDto) {
-    const now = moment().toDate();
-    const user = await this.dataSource.manager.findOne(User, {
-      where: {
-        id: userId,
-      },
-    });
-    if (user.role === 'admin') {
-      return this.voucherRepository.findAndCount({
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
-      });
-    }
-
-    if (query.scope === 'personal') {
-      return this.dataSource.manager.findAndCount(UserVoucher, {
-        where: {
-          userId,
-        },
-        relations: ['voucher'],
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
-      });
-    }
-
-    if (user.userTierId === null) {
-      return [[], 0];
-    }
+  async getPublishedVouchers(query: GetVoucherReqDto) {
+    const now = new Date();
     const vouchers = await this.voucherRepository.find({
       where: {
         isActive: 1,
@@ -62,17 +41,31 @@ export class VoucherService {
       },
       relations: ['userTiers'],
     });
-    const result = vouchers
-      .filter((voucher) =>
-        voucher.userTiers.some((userTier) => userTier.id === user.userTierId),
-      )
-      .map((voucher) =>
-        _.omit(voucher, ['userTiers', 'userVouchers', 'isActive']),
-      );
+    const result = vouchers.map((voucher) =>
+      _.omit(voucher, ['userVouchers', 'isActive']),
+    );
     return [
       result.slice((query.page - 1) * query.limit, query.page * query.limit),
       result.length,
     ];
+  }
+
+  async getVouchersForAdmin(query: GetVoucherReqDto) {
+    return this.voucherRepository.findAndCount({
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+    });
+  }
+
+  async getVouchersForCustomer(userId: number, query: GetVoucherReqDto) {
+    return this.dataSource.manager.findAndCount(UserVoucher, {
+      where: {
+        userId,
+      },
+      relations: ['voucher'],
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+    });
   }
 
   async createVoucher(body: CreateVoucherReqDto) {
@@ -136,7 +129,10 @@ export class VoucherService {
       if (!voucher) {
         throw new NotFoundException('Voucher not found');
       }
-      if (moment().isAfter(moment(voucher.endDate)) || moment().isBefore(moment(voucher.startDate))) {
+      if (
+        moment().isAfter(moment(voucher.endDate)) ||
+        moment().isBefore(moment(voucher.startDate))
+      ) {
         throw new ConflictException('Voucher is not active currently');
       }
       if (voucher.userTiers.every((tier) => tier.id !== user.userTierId)) {
