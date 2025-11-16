@@ -4,6 +4,8 @@ import { Feedback } from "./entities/feedback.entity";
 import { DataSource, Repository } from "typeorm";
 import { CreateFeedbackReqDto } from "./dtos/create-feedback.dto";
 import { Booking } from "modules/booking/entities/booking.entity";
+import { GetFeedbackReqDto } from "./dtos/get-feedback.dto";
+import * as _ from 'lodash';
 
 @Injectable()
 export class FeedbackService {
@@ -12,6 +14,29 @@ export class FeedbackService {
     private readonly feedbackRepository: Repository<Feedback>,
     private readonly dataSource: DataSource,
   ) {}
+
+  async getFeedback(query: GetFeedbackReqDto) {
+    const result = await this.feedbackRepository.findAndCount({
+      where: {
+        targetType: query.targetType,
+      },
+      relations: [
+        'user',
+      ],
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+      order: {
+        createdAt: query.sortOrder,
+      },
+    });
+    return [
+      result[0].map(feedback => ({
+        ..._.omit(feedback, ['bookingId']),
+        user: _.pick(feedback.user, ['id', 'name', 'avatar']),
+      }) ),
+      result[1],
+    ];
+  }
   
   async createFeedback(userId: number, body: CreateFeedbackReqDto) {
     const booking = await this.dataSource.manager.findOne(Booking, {

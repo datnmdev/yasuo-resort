@@ -105,7 +105,10 @@ export class AppModule implements NestModule {
             method: RequestMethod.DELETE
           },
           'booking',
-          'feedback',
+          {
+            path: 'feedback',
+            method: RequestMethod.POST
+          },
           'voucher'
         )
   }
