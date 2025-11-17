@@ -27,6 +27,8 @@ import * as _ from 'lodash';
 import { ChangeRoomReqDto } from './dtos/change-room.dto';
 import { RoomChangeHistory } from './entities/room-change-history.entity';
 import { UpdateServiceBookingReqDto } from './dtos/update-service-booking.dto';
+import { UserVoucher } from 'modules/voucher/entities/user-voucher.entity';
+import { Combo } from 'modules/combo/entities/combo.entity';
 
 @Injectable()
 export class BookingService {
@@ -116,15 +118,50 @@ export class BookingService {
         error: 'BadRequest',
       });
     }
-    const totalRentalDays = moment(bookingRoomBody.endDate).diff(
-      moment(bookingRoomBody.startDate),
-      'days',
-    ) + 1;
+    const totalRentalDays =
+      moment(bookingRoomBody.endDate).diff(
+        moment(bookingRoomBody.startDate),
+        'days',
+      ) + 1;
     if (totalRentalDays < 0) {
       throw new BadRequestException({
         message: 'The contract end date must be later than the signing date',
         error: 'BadRequest',
       });
+    }
+
+    // Kiểm tra danh sách dịch vụ đặt kèm (nếu có)
+    if (bookingRoomBody.serviceIds && bookingRoomBody.serviceIds.length > 0) {
+      for (const serviceId of bookingRoomBody.serviceIds) {
+        const serviceInfo = await this.dataSource.manager.findOne(Service, {
+          where: {
+            id: serviceId,
+            status: 'active',
+          },
+        });
+        if (!serviceInfo) {
+          throw new BadRequestException({
+            message: `Invalid service ID: ${serviceId}`,
+            error: 'BadRequest',
+          });
+        }
+      }
+    }
+
+    // Kiểm tra voucher người dùng (nếu có)
+    if (typeof bookingRoomBody.userVoucherId === 'number') {
+      const userVoucher = await this.dataSource.manager.findOne(UserVoucher, {
+        where: {
+          id: bookingRoomBody.userVoucherId,
+          userId,
+        },
+      });
+      if (!userVoucher) {
+        throw new BadRequestException({
+          message: 'Invalid user voucher ID',
+          error: 'BadRequest',
+        });
+      }
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -155,6 +192,30 @@ export class BookingService {
         });
       }
 
+      // Kiểm tra combo (nếu có)
+      if (typeof bookingRoomBody.comboId === 'number') {
+        const combo = await this.dataSource.manager.findOne(Combo, {
+          where: {
+            id: bookingRoomBody.comboId,
+            isActive: 1,
+            roomTypeId: roomInfo.typeId,
+          },
+        });
+        if (!combo) {
+          throw new BadRequestException({
+            message: 'Invalid combo ID for the selected room type',
+            error: 'BadRequest',
+          });
+        }
+
+        if (totalRentalDays < combo.minStayNights) {
+          throw new BadRequestException({
+            message: `The selected combo requires a minimum stay of ${combo.minStayNights} nights`,
+            error: 'BadRequest',
+          });
+        }
+      }
+
       // Kiểm tra phòng này có sẵn sàng để đặt không
       if (roomInfo.status != 'active') {
         throw new ConflictException(
@@ -182,6 +243,18 @@ export class BookingService {
         );
       }
 
+      // Tính tổng tiền đặt phòng + dịch vụ kèm theo (nếu có)
+      let totalPrice = Math.ceil(Number(roomInfo.price) * totalRentalDays * 100) / 100; // Tiền phòng
+      if (bookingRoomBody.serviceIds && bookingRoomBody.serviceIds.length > 0) {
+        for (const serviceId of bookingRoomBody.serviceIds) {
+          const serviceInfo = await queryRunner.manager.findOne(Service, {
+            where: {
+              id: serviceId
+            }
+          })
+        }
+      }
+
       // Lưu thông tin đặt phòng
       const bookingEntity = this.bookingRepository.create({
         ...bookingRoomBody,
@@ -190,9 +263,7 @@ export class BookingService {
         startDate: moment(bookingRoomBody.startDate).format('YYYY-MM-DD'),
         endDate: moment(bookingRoomBody.endDate).format('YYYY-MM-DD'),
         userId,
-        
         totalPrice: String(
-          Math.ceil(Number(roomInfo.price) * totalRentalDays * 100) / 100,
         ),
       });
       const newBooking = await queryRunner.manager.save(bookingEntity);

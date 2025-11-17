@@ -1,4 +1,10 @@
-import { IsDateString, IsInt, IsNotEmpty } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+} from 'class-validator';
 
 export class BookingRoomReqDto {
   @IsNotEmpty()
@@ -16,4 +22,17 @@ export class BookingRoomReqDto {
   @IsNotEmpty()
   @IsInt()
   capacity: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  serviceIds?: number[];
+
+  @IsOptional()
+  @IsInt()
+  userVoucherId?: number;
+
+  @IsOptional()
+  @IsInt()
+  comboId: number;
 }

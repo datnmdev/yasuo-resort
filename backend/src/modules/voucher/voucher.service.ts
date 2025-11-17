@@ -52,6 +52,7 @@ export class VoucherService {
 
   async getVouchersForAdmin(query: GetVoucherReqDto) {
     return this.voucherRepository.findAndCount({
+      relations: ['userTiers'],
       skip: (query.page - 1) * query.limit,
       take: query.limit,
     });
@@ -182,16 +183,38 @@ export class VoucherService {
     if (!voucher) {
       throw new NotFoundException('Voucher not found');
     }
+    let partialBody: typeof body & { userTiers?: UserTier[] } = { ...body };
+    if (body.userTierIds && body.userTierIds.length > 0) {
+      partialBody = {
+        ...partialBody,
+        userTiers: [],
+      };
+      for (const tierId of body.userTierIds) {
+        const tier = await this.dataSource.manager.findOne(UserTier, {
+          where: {
+            id: tierId,
+          },
+        });
+        if (!tier) {
+          throw new BadRequestException(
+            `User tier with id ${tierId} does not exist`,
+          );
+        }
+        partialBody.userTiers.push(tier);
+      }
+      voucher.userTiers = partialBody.userTiers;
+    }
     if (
       body.name === undefined &&
       body.description === undefined &&
-      body.claimLimit === undefined
+      body.claimLimit === undefined &&
+      body.userTierIds === undefined
     ) {
       throw new BadRequestException(
         'At least one of name, description or claimLimit must be provided for update',
       );
     }
-    return this.voucherRepository.update(voucherId, body);
+    return this.voucherRepository.save(voucher);
   }
 
   async deleteVoucher(voucherId: number) {
