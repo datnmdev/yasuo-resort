@@ -15,4 +15,7 @@ export default {
   deleteRoom: (param) => {
     return axiosInstance.delete(`/room/${param.roomId}`);
   },
+  getAllRoom: () => {
+    return axiosInstance.get("/room");
+  },
 };

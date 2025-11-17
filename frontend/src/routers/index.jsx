@@ -18,6 +18,10 @@ import BookingPage from '@src/pages/Booking';
 import Contract from '@src/pages/Contract';
 import Profile from '@src/pages/Profile';
 import EditProfile from '@src/pages/Profile/EditProfile';
+import FavoriteRoom from '@src/pages/FavoriteRoom/FavoriteRoom';
+import FavoriteService from '@src/pages/FavoriteService/FavoriteService';
+import Favorites from '@src/pages/Favorites/Favorites';
+import BookingHistory from '@src/pages/BookingHistory/BookingHistory';
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -65,6 +69,22 @@ const router = createBrowserRouter([
       {
         path: '/contracts',
         element: <Contract />,
+      },
+      {
+        path: '/favorite-rooms',
+        element: <FavoriteRoom />,
+      },
+      {
+        path: '/favorite-services',
+        element: <FavoriteService />,
+      },
+      {
+        path: '/favorites',
+        element: <Favorites />,
+      },
+      {
+        path: '/booking-history',
+        element: <BookingHistory />,
       },
       {
         path: '/profile',

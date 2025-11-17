@@ -82,6 +82,7 @@ export default function ServicePage() {
   });
 
   const services = data?.data?.data[0] || [];
+  console.log('Services data:', data);
   const totalPages = Math.ceil((data?.data?.data[1] || 1) / limit);
 
   return (
@@ -234,9 +235,8 @@ export default function ServicePage() {
                       variant={currentPage === page ? 'default' : 'outline'}
                       size="icon"
                       onClick={() => setCurrentPage(page)}
-                      className={`transition-colors duration-200 hover:bg-teal-700 ${
-                        currentPage === page ? 'bg-teal-600 ' : ''
-                      }`}
+                      className={`transition-colors duration-200 hover:bg-teal-700 ${currentPage === page ? 'bg-teal-600 ' : ''
+                        }`}
                     >
                       {page}
                     </Button>

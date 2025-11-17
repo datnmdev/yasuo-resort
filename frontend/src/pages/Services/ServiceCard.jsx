@@ -1,4 +1,4 @@
-import { Star, Gift, Sparkles, Users, Calendar } from 'lucide-react';
+import { Star, Gift, Sparkles, Users, Calendar, Heart } from 'lucide-react';
 import { useCart } from '@src/hooks/useCart';
 import { formatCurrencyUSD } from '@src/libs/utils';
 import { Label } from '@ui/label';
@@ -8,6 +8,7 @@ import { Button } from '@ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
+import userApi from '@apis/user';
 
 const iconMap = [
   <Gift key={0} className="w-5 h-5 text-teal-600" />,
@@ -26,6 +27,8 @@ export default function ServiceCard({ service }) {
   const [tempEndDate, setTempEndDate] = useState('');
   const [isAddDisabled, setIsAddDisabled] = useState(true);
 
+  const [selectedFavoriteService, setSelectedFavoriteService] = useState(null);
+
   const handleAddToCart = () => {
     if (Object.keys(booking).length === 0) {
       toast.info('Please select a room before adding services');
@@ -33,6 +36,15 @@ export default function ServiceCard({ service }) {
     }
     setIsBooking(true);
   };
+  const onHandleSelectFavoriteservice = async (selectedFavoriteService) => {
+    try {
+      await userApi.createFavoriteService({ serviceId: selectedFavoriteService });
+      toast.success('Added to favorite services');
+    } catch (err) {
+      console.error('Create favorite failed', err);
+      toast.error('Service had been added to favorites');
+    }
+  }
 
   useEffect(() => {
     const start = dayjs(tempStartDate, 'YYYY-MM-DD', true);
@@ -61,13 +73,29 @@ export default function ServiceCard({ service }) {
         <div className="text-right">
           <p className="font-bold text-teal-700 text-lg">{formatCurrencyUSD(price)}/person/day</p>
           {!isBooking && (
-            <Button
-              size="sm"
-              onClick={handleAddToCart}
-              className="mt-2 px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm"
-            >
-              + Add to cart
-            </Button>
+            <div className='flex justify-center align-center'>
+              <Button
+                title="Add to favorite"
+                size="xl"
+                className="mt-2 px-4 py-1.5 bg-red-300 hover:bg-red-400 text-white rounded-lg text-sm mr-2"
+                onClick={async () => {
+                  console.log('Selected favorite service ID:', id);
+                  setSelectedFavoriteService(id);
+                  onHandleSelectFavoriteservice(id);
+                }}
+              >
+                <Heart className="w-4 h-4 inline-block" />
+              </Button>
+              <Button
+
+                onClick={handleAddToCart}
+                className="mt-2 px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm"
+              >
+                + Add to cart
+              </Button>
+
+            </div>
+
           )}
         </div>
       </div>

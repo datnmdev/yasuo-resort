@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import roomApi from '@apis/room';
 import roomTypeApi from '@apis/room-type';
 import serviceApi from '@apis/service';
-import { Eye, MapPin, Users } from 'lucide-react';
+import userApi from '@apis/user';
+import { Eye, MapPin, Users, Heart } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Card, CardContent } from '@ui/card';
 import { Badge } from '@ui/badge';
@@ -50,6 +51,7 @@ const RoomPage = () => {
   });
 
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const [selectedFavoriteRoom, setSelectedFavoriteRoom] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 4;
 
@@ -117,8 +119,22 @@ const RoomPage = () => {
   });
 
   const rooms = roomData?.data?.data[0] ?? [];
+  console.log('check rooms', rooms);
   const totalPages = Math.ceil((roomData?.data?.data[1] || 1) / limit);
 
+  // Read access token from cookies for display/use in this page
+  const accessToken = Cookies.get('accessToken') || null;
+  console.log('Access Token:', accessToken);
+
+  const onHandleSelectFavoriteRoom = async () => {
+    try {
+      await userApi.createFavoriteRoom({ roomId: selectedFavoriteRoom.id });
+      toast.success('Added to favorites');
+    } catch (err) {
+      console.error('Create favorite failed', err);
+      toast.error('Room had been added to favorites');
+    }
+  }
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -174,6 +190,29 @@ const RoomPage = () => {
 
           {/* Results Section */}
           <main className="lg:col-span-1">
+            {/* Debug: show current user access token (masked) */}
+            {/* {accessToken && (
+              <div className="mb-4 text-sm text-gray-600 flex items-center justify-between bg-gray-50 p-3 rounded">
+                <div>
+                  Token: <code className="text-xs text-gray-800">{`${accessToken.slice(0, 8)}...${accessToken.slice(-8)}`}</code>
+                </div>
+                <div>
+                  <button
+                    className="px-2 py-1 bg-teal-600 text-white rounded text-xs"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(accessToken);
+                        toast.success('Token copied to clipboard');
+                      } catch (err) {
+                        toast.error('Copy failed');
+                      }
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )} */}
             {isLoading ? (
               <></>
             ) : rooms.length === 0 ? (
@@ -225,8 +264,25 @@ const RoomPage = () => {
                           </div>
                         </div>
 
-                        <div className="text-2xl font-bold text-teal-600 mb-4">{formatCurrencyUSD(room.price)}/day</div>
-
+                        <div className="text-2xl font-bold text-teal-600 mb-4 flex justify-between items-center">
+                          <span>
+                            {formatCurrencyUSD(room.price)}/day
+                          </span>
+                          <div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 border-red-400 text-red-400 hover:bg-red-50 bg-transparent"
+                              onClick={async () => {
+                                setSelectedFavoriteRoom(room);
+                                onHandleSelectFavoriteRoom();
+                              }}
+                            >
+                              <Heart className="w-4 h-4 mr-2" />
+                              Add to favorites
+                            </Button>
+                          </div>
+                        </div>
                         <div className="flex gap-2">
                           <Button
                             variant="outline"

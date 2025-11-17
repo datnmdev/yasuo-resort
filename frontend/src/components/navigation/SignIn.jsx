@@ -183,6 +183,30 @@ const SignIn = () => {
                     My Contracts
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/favorite-rooms" className="flex items-center">
+                    {' '}
+                    {/* New link for Favorite Room */}
+                    <FileText className="w-4 h-4 mr-2" />
+                    My Favorite Rooms
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/favorite-services" className="flex items-center">
+                    {' '}
+                    {/* New link for Favorite Room */}
+                    <FileText className="w-4 h-4 mr-2" />
+                    My Favorite Services
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/booking-history" className="flex items-center">
+                    {' '}
+                    {/* New link for Favorite Room */}
+                    <FileText className="w-4 h-4 mr-2" />
+                    FeedBack
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
                   <LogOut className="w-4 h-4 mr-2" />

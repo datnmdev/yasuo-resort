@@ -430,28 +430,28 @@ export default function Contract() {
                     const today = new Date().toISOString().split("T")[0];
                     return contract.status === 'pending' || (contract.status === 'confirmed' && contract.endDate >= today);
                   })() && (
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="font-medium">Additional services</div>
-                      <div className="flex items-center gap-3">
-                        <motion.span
-                          className="text-blue-600 text-sm font-medium whitespace-nowrap"
-                          animate={{ x: [0, 8, 0] }}
-                          transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-                        >
-                          Add additional services --&gt;&gt;
-                        </motion.span>
-                        <Tooltip placement="left">
-                          <button
-                            aria-label="Đặt dịch vụ"
-                            className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-blue-500 text-white hover:bg-blue-600 shadow-sm ring-1 ring-inset ring-blue-500/20 hover:ring-blue-500/40 transition-colors animate-pulse hover:animate-none"
-                            onClick={() => navigate('/services', { state: { bookingId: contract.id } })}
+                      <div className="mb-2 flex items-center justify-between">
+                        <div className="font-medium">Additional services</div>
+                        <div className="flex items-center gap-3">
+                          <motion.span
+                            className="text-blue-600 text-sm font-medium whitespace-nowrap"
+                            animate={{ x: [0, 8, 0] }}
+                            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
                           >
-                            <PlusOutlined />
-                          </button>
-                        </Tooltip>
+                            Add additional services --&gt;&gt;
+                          </motion.span>
+                          <Tooltip placement="left">
+                            <button
+                              aria-label="Đặt dịch vụ"
+                              className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-blue-500 text-white hover:bg-blue-600 shadow-sm ring-1 ring-inset ring-blue-500/20 hover:ring-blue-500/40 transition-colors animate-pulse hover:animate-none"
+                              onClick={() => navigate('/services', { state: { bookingId: contract.id } })}
+                            >
+                              <PlusOutlined />
+                            </button>
+                          </Tooltip>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm border rounded">
                       <thead>
