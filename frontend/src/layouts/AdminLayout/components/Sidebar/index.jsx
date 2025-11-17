@@ -5,6 +5,7 @@ import {
   FormOutlined,
   DashboardOutlined,
 } from "@ant-design/icons";
+import TierManagement from "@src/pages/TierManagement";
 import { Menu } from "antd";
 import { useLocation, useNavigate } from "react-router";
 
@@ -29,6 +30,21 @@ const items = [
     key: "/admin/service-management",
     icon: <CustomerServiceOutlined />,
     label: "Services Management",
+  },
+  {
+    key: "/admin/combo-management",
+    icon: <CustomerServiceOutlined />,
+    label: "Combo Management",
+  },
+  {
+    key: "/admin/voucher-management",
+    icon: <CustomerServiceOutlined />,
+    label: "Voucher Management",
+  },
+  {
+    key: "/admin/tier-management",
+    icon: <CustomerServiceOutlined />,
+    label: "Tier Management",
   },
 ];
 

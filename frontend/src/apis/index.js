@@ -4,6 +4,7 @@ import service from "./service";
 import room from "./room";
 import booking from "./booking";
 import upload from "./upload";
+import voucher from "./voucher";
 
 export default {
   user,
@@ -12,4 +13,5 @@ export default {
   room,
   booking,
   upload,
+  voucher,
 };

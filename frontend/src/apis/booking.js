@@ -55,5 +55,19 @@ export default {
       `/booking/change-room`,
       req.body
     );
+  },
+  createCombo: (req) => {
+    return axiosInstance.post(`/combo`, req);
+  },
+  getComboForAdmin: (query) => {
+    return axiosInstance.get("/combo/admin", {
+      params: query,
+    });
+  },
+  toggleComboPublication: (comboId, isActive) => {
+    return axiosInstance.put(`/combo/publication/${comboId}`, { isActive });
+  },
+  updateCombo: (comboId, data) => {
+    return axiosInstance.put(`/combo/${comboId}`, data);
   }
 };

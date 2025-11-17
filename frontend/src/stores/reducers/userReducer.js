@@ -26,6 +26,7 @@ export const userSelector = {
   selectUser: (state) => state.user.info,
   selectRole: (state) => state.user.info?.role,
   isLoggedIn: (state) => state.user.info?.isSuccess,
+  selectTier: (state) => state.user.info?.tier,
 };
 
 export default userSlice.reducer;

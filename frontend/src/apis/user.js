@@ -86,4 +86,32 @@ export default {
   getFeedbacks: (params = {}) => {
     return axiosInstance.get('/feedback', { params });
   },
+
+  /**
+   * Get user tiers with pagination
+   * @param {Object} params - Query parameters
+   * @param {number} [params.page=1] - Page number
+   * @param {number} [params.limit=10] - Items per page
+   * @param {string} [params.tierSlug] - Filter by tier slug
+   * @returns {Promise} Axios response
+   */
+  getUserTiers: (params = {}) => {
+    return axiosInstance.get('/user/tier', {
+      params: {
+        page: 1,
+        limit: 10,
+        ...params
+      }
+    });
+  },
+  createTier: (data) => {
+    return axiosInstance.post('/user/tier', data);
+  },
+
+  updateTier: (id, data) => {
+    return axiosInstance.put(`/user/tier/${id}`, data);
+  },
+  deleteTier: (id) => {
+    return axiosInstance.delete(`/user/tier/${id}`);
+  }
 };

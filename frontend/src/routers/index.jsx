@@ -22,6 +22,9 @@ import FavoriteRoom from '@src/pages/FavoriteRoom/FavoriteRoom';
 import FavoriteService from '@src/pages/FavoriteService/FavoriteService';
 import Favorites from '@src/pages/Favorites/Favorites';
 import BookingHistory from '@src/pages/BookingHistory/BookingHistory';
+import ComboManagement from '@src/pages/ComboManagement';
+import VoucherManagement from '@src/pages/VoucherManagement';
+import TierManagement from '@src/pages/TierManagement';
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -122,6 +125,18 @@ const router = createBrowserRouter([
       {
         path: 'booking-request',
         element: <BookingRequestPage />,
+      },
+      {
+        path: 'combo-management',
+        element: <ComboManagement />,
+      },
+      {
+        path: 'voucher-management',
+        element: <VoucherManagement />,
+      },
+      {
+        path: 'tier-management',
+        element: <TierManagement />,
       },
     ],
   },
