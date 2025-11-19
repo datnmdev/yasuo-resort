@@ -29,6 +29,7 @@ import { RoomChangeHistory } from './entities/room-change-history.entity';
 import { UpdateServiceBookingReqDto } from './dtos/update-service-booking.dto';
 import { UserVoucher } from 'modules/voucher/entities/user-voucher.entity';
 import { Combo } from 'modules/combo/entities/combo.entity';
+import { Voucher } from 'modules/voucher/entities/voucher.entity';
 
 @Injectable()
 export class BookingService {
@@ -131,17 +132,60 @@ export class BookingService {
     }
 
     // Kiểm tra danh sách dịch vụ đặt kèm (nếu có)
-    if (bookingRoomBody.serviceIds && bookingRoomBody.serviceIds.length > 0) {
-      for (const serviceId of bookingRoomBody.serviceIds) {
+    if (
+      bookingRoomBody.attachedService &&
+      bookingRoomBody.attachedService.length > 0
+    ) {
+      for (const e of bookingRoomBody.attachedService) {
+        if (
+          e.startDate &&
+          !moment(e.startDate).isBetween(
+            moment(bookingRoomBody.startDate),
+            moment(bookingRoomBody.endDate),
+            'days',
+            '[]',
+          )
+        ) {
+          throw new BadRequestException({
+            message: 'Start date must be within the booking period',
+            error: 'BadRequest',
+          });
+        }
+
+        if (
+          e.endDate &&
+          !moment(e.endDate).isBetween(
+            moment(bookingRoomBody.startDate),
+            moment(bookingRoomBody.endDate),
+            'days',
+            '[]',
+          )
+        ) {
+          throw new BadRequestException({
+            message: 'Start date must be within the booking period',
+            error: 'BadRequest',
+          });
+        }
+
+        if (
+          e.startDate &&
+          e.endDate &&
+          moment(e.startDate).isAfter(moment(e.endDate))
+        ) {
+          throw new BadRequestException({
+            message: 'Start date must be before or same end date',
+            error: 'BadRequest',
+          });
+        }
         const serviceInfo = await this.dataSource.manager.findOne(Service, {
           where: {
-            id: serviceId,
+            id: e.id,
             status: 'active',
           },
         });
         if (!serviceInfo) {
           throw new BadRequestException({
-            message: `Invalid service ID: ${serviceId}`,
+            message: `Invalid service ID: ${e.id}`,
             error: 'BadRequest',
           });
         }
@@ -243,29 +287,110 @@ export class BookingService {
         );
       }
 
-      // Tính tổng tiền đặt phòng + dịch vụ kèm theo (nếu có)
-      let totalPrice = Math.ceil(Number(roomInfo.price) * totalRentalDays * 100) / 100; // Tiền phòng
-      if (bookingRoomBody.serviceIds && bookingRoomBody.serviceIds.length > 0) {
-        for (const serviceId of bookingRoomBody.serviceIds) {
-          const serviceInfo = await queryRunner.manager.findOne(Service, {
-            where: {
-              id: serviceId
-            }
-          })
-        }
-      }
-
-      // Lưu thông tin đặt phòng
+      // Tạo entity booking
       const bookingEntity = this.bookingRepository.create({
-        ...bookingRoomBody,
+        userId,
+        roomId: bookingRoomBody.roomId,
         roomNumber: roomInfo.roomNumber,
+        capacity: bookingRoomBody.capacity,
         roomPrice: roomInfo.price,
         startDate: moment(bookingRoomBody.startDate).format('YYYY-MM-DD'),
         endDate: moment(bookingRoomBody.endDate).format('YYYY-MM-DD'),
-        userId,
-        totalPrice: String(
-        ),
+        status: 'pending',
       });
+
+      // Tính tổng tiền đặt phòng + dịch vụ kèm theo (nếu có) + ưu đãi combo (nếu có)
+      let totalPrice = Number(roomInfo.price) * totalRentalDays; // Tiền phòng
+      // TÍnh giá ưu đãi nếu đặt theo combo
+      if (typeof bookingRoomBody.comboId === 'number') {
+        bookingEntity.comboId = bookingRoomBody.comboId;
+        bookingEntity.bookingServices = [];
+        const combo = await this.dataSource.manager.findOne(Combo, {
+          where: {
+            id: bookingRoomBody.comboId,
+          },
+          relations: ['comboServices', 'comboServices.service'],
+        });
+        for (const comboService of combo.comboServices) {
+          const servicePrice = Number(comboService.service.price);
+          totalPrice +=
+            bookingRoomBody.capacity * totalRentalDays * servicePrice;
+
+          // Lưu thông tin dịch vụ đặt kèm từ combo
+          bookingEntity.bookingServices.push(
+            queryRunner.manager.create(BookingServiceEntity, {
+              serviceId: comboService.serviceId,
+              price: servicePrice.toFixed(2),
+              quantity: bookingRoomBody.capacity,
+              status: 'pending',
+              startDate: bookingRoomBody.startDate,
+              endDate: bookingRoomBody.endDate,
+              isBookedViaCombo: 1,
+            }),
+          );
+        }
+        const discountAmount = (totalPrice * Number(combo.discountValue)) / 100;
+        totalPrice =
+          totalPrice -
+          (discountAmount > Number(combo.maxDiscountAmount)
+            ? Number(combo.maxDiscountAmount)
+            : discountAmount);
+      }
+      // Tính giá dịch vụ bổ sung (nếu có)
+      if (
+        bookingRoomBody.attachedService &&
+        bookingRoomBody.attachedService.length > 0
+      ) {
+        if (!bookingEntity.bookingServices) {
+          bookingEntity.bookingServices = [];
+        }
+        for (const e of bookingRoomBody.attachedService) {
+          const serviceInfo = await queryRunner.manager.findOne(Service, {
+            where: {
+              id: e.id,
+            },
+          });
+          const serviceRentalDays =
+            moment(e.endDate).diff(moment(e.startDate), 'days') + 1;
+          totalPrice +=
+            e.quantity * serviceRentalDays * Number(serviceInfo.price);
+
+          // Lưu thông tin dịch vụ đặt kèm từ yêu cầu người dùng
+          bookingEntity.bookingServices.push(
+            queryRunner.manager.create(BookingServiceEntity, {
+              serviceId: e.id,
+              price: serviceInfo.price,
+              quantity: e.quantity,
+              status: 'pending',
+              startDate: e.startDate,
+              endDate: e.endDate,
+            }),
+          );
+        }
+      }
+
+      // Áp dụng voucher (nếu có)
+      if (typeof bookingRoomBody.userVoucherId === 'number') {
+        const userVoucher = await queryRunner.manager.findOne(UserVoucher, {
+          where: {
+            id: bookingRoomBody.userVoucherId,
+          },
+          relations: ['voucher'],
+        });
+        let discountAmount =
+          userVoucher.voucher.discountType === 'fixed_amount'
+            ? Number(userVoucher.voucher.discountValue)
+            : (totalPrice * Number(userVoucher.voucher.discountValue)) / 100;
+        if (discountAmount > Number(userVoucher.voucher.maxDiscountAmount)) {
+          discountAmount = Number(userVoucher.voucher.maxDiscountAmount);
+        }
+        if (discountAmount > totalPrice) {
+          discountAmount = totalPrice;
+        }
+        totalPrice -= discountAmount;
+      }
+      bookingEntity.totalPrice = totalPrice.toFixed(2);
+
       const newBooking = await queryRunner.manager.save(bookingEntity);
       await queryRunner.commitTransaction();
       return newBooking;

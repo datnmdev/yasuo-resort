@@ -1,9 +1,11 @@
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsDateString,
   IsInt,
   IsNotEmpty,
   IsOptional,
+  ValidateNested,
 } from 'class-validator';
 
 export class BookingRoomReqDto {
@@ -25,8 +27,9 @@ export class BookingRoomReqDto {
 
   @IsOptional()
   @IsArray()
-  @IsInt({ each: true })
-  serviceIds?: number[];
+  @ValidateNested({ each: true })
+  @Type(() => AttachedServiceDto)
+  attachedService?: AttachedServiceDto[];
 
   @IsOptional()
   @IsInt()
@@ -35,4 +38,22 @@ export class BookingRoomReqDto {
   @IsOptional()
   @IsInt()
   comboId: number;
+}
+
+class AttachedServiceDto {
+  @IsNotEmpty()
+  @IsInt()
+  id: number;
+
+  @IsNotEmpty()
+  @IsInt()
+  quantity: number;
+
+  @IsNotEmpty()
+  @IsDateString()
+  startDate: string;
+
+  @IsNotEmpty()
+  @IsDateString()
+  endDate: string;
 }

@@ -26,7 +26,7 @@ export class ComboService {
       where: {
         isActive: 1,
       },
-      relations: ['roomType'],
+      relations: ['roomType', 'comboServices', 'comboServices.service'],
       skip: (query.page - 1) * query.limit,
       take: query.limit,
       order: {
@@ -38,7 +38,9 @@ export class ComboService {
   async getCombosForAdmin(query: GetComboForAdminReqDto) {
     return this.comboRepository
       .createQueryBuilder('combo')
-      .innerJoinAndSelect('combo.roomType', 'roomType')
+      .leftJoinAndSelect('combo.roomType', 'roomType')
+      .leftJoinAndSelect('combo.comboServices', 'comboServices')
+      .leftJoinAndSelect('comboServices.service', 'service')
       .where(
         new Brackets((qb) => {
           if (typeof query.isActive === 'number') {
