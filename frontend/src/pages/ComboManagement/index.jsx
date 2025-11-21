@@ -20,31 +20,15 @@ const RoomCard = ({ room, isSelected, onSelect, baseUrl }) => (
             style={{ backgroundColor: 'transparent' }}
         >
             <div className="flex flex-col gap-3">
-                <div className="w-full h-48 rounded overflow-hidden bg-gray-200 flex items-center justify-center">
-                    {room.media?.[0]?.path ? (
-                        <Image
-                            src={`${baseUrl}/${room.media[0].path}`}
-                            alt={room.roomNumber}
-                            className="w-full h-full object-cover"
-                            preview
-                            onError={(e) => { e.target.src = '/placeholder.svg'; }}
-                        />
-                    ) : (
-                        <span className="text-gray-400">No Image</span>
-                    )}
-                </div>
                 <div className="flex justify-between items-start">
                     <div>
-                        <h4 className="font-semibold">{room.roomNumber}</h4>
-                        <p className="text-sm text-gray-600">{room.type?.name}</p>
+                        <Tag color={'green'}>{room.name}</Tag>
+                        <p className="text-sm text-gray-600 mt-1">Min price: <Tag color={'green'}>{room.minPrice}</Tag></p>
+                        <p className="text-sm text-gray-600 mt-1">Max price: <Tag color={'green'}>{room.maxPrice}</Tag></p>
                     </div>
-                    <Tag color={room.status === 'active' ? 'green' : 'red'}>
-                        {room.status?.toUpperCase()}
-                    </Tag>
                 </div>
                 <div className="flex justify-between text-sm">
-                    <span>👥 {room.maxPeople} people</span>
-                    <span className="font-bold text-teal-600">${room.price}</span>
+
                 </div>
             </div>
         </Badge>
@@ -102,7 +86,7 @@ const ComboManagement = () => {
 
     // 2. FETCH DATA HOOKS
     // Fetch all rooms and services (for combo creation modal)
-    const { data: roomsData } = useFetch(() => apis.room.getRooms({ page: 1, limit: 9999 }), []);
+    const { data: roomsData } = useFetch(() => apis.roomType.getRoomTypes({ page: 1, limit: 9999 }), []);
     const { data: servicesData } = useFetch(() => apis.service.getServices({ page: 1, limit: 9999 }), []);
     const {
         data: combos,
@@ -152,18 +136,18 @@ const ComboManagement = () => {
 
     const handleCreateCombo = async () => {
         if (selectedRooms.length === 0) {
-            toast.warning("Please select a room");
+            toast.warning("Please select a room type");
             return;
         }
         if (selectedServices.length === 0) {
-            toast.warning("Plaease select at least one service for the combo");
+            toast.warning("Please select at least one service for the combo");
             return;
         }
         setLoading(true);
         try {
             const values = await form.validateFields();
             const payload = {
-                roomTypeId: selectedRooms[0].type?.id,
+                roomTypeId: selectedRooms[0].id,
                 name: values.name,
                 description: values.description,
                 discountValue: values.discountValue,
@@ -362,8 +346,8 @@ const ComboManagement = () => {
                     <Button key="submit" type="primary" onClick={handleCreateCombo} loading={loading} disabled={selectedRooms.length === 0 || selectedServices.length === 0}>Submit</Button>,
                 ]}
             >
-                {/* Select Rooms Section */}
-                <h3>Select Room Type (Only one selection allowed)</h3>
+                {/* Select Room Type Section */}
+                <h3 className="font-semibold text-lg mb-4">1. Select Room Type (Chọn 1 loại phòng)</h3>
                 {currentRoomList.length > 0 ? (
                     <>
                         <div className="grid grid-cols-3 gap-4">
@@ -393,7 +377,7 @@ const ComboManagement = () => {
                     <div className="flex flex-wrap gap-2 mt-2">
                         {selectedRooms.map(room => (
                             <Tag key={room.id} closable onClose={() => setSelectedRooms([])} color="blue">
-                                {room.roomNumber} - {room.type?.name}
+                                {room.name}
                             </Tag>
                         ))}
                     </div>
@@ -402,7 +386,7 @@ const ComboManagement = () => {
                 <hr className="my-6" />
 
                 {/* Select Services Section */}
-                <h3>Select Services (Multiple selections allowed)</h3>
+                <h3 className="font-semibold text-lg mb-4 mt-6">2. Select Services (Chọn một hoặc nhiều dịch vụ)</h3>
                 {currentServiceList.length > 0 ? (
                     <>
                         <div className="grid grid-cols-3 gap-4">
@@ -440,7 +424,7 @@ const ComboManagement = () => {
                 <hr className="my-6" />
 
                 {/* Combo Details Form */}
-                <h3>Combo Details</h3>
+                <h3 className="font-semibold text-lg mb-4 mt-6">3. Combo Details (Thông tin chi tiết combo)</h3>
                 <Form layout="vertical" form={form}>
                     <Form.Item
                         label="Combo Name"

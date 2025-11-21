@@ -59,9 +59,10 @@ const FavoriteService = () => {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
             <section id="favorite-services" className=" relative py-8">
                 <div className="max-w-7xl mx-auto px-6 pb-8">
-                    <div className="mb-8">
-                        <h1 className="text-2xl font-bold mb-2">Your favorite services</h1>
-                        <p className="text-gray-600">List of services you saved for later.</p>
+                    <div className="flex">
+                        <span className="text-xl font-bold mb-2">Your favorite services</span>
+                        <span className="mx-2">-</span>
+                        <span className="text-xl font-bold mb-2">List of services you saved for later.</span>
                     </div>
 
                     {favorites.length === 0 ? (

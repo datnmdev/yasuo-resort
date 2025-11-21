@@ -1,233 +1,346 @@
 import React, { useEffect, useState } from "react";
-import { useSelector } from 'react-redux';
-import { userSelector } from '@src/stores/reducers/userReducer';
-import bookingApi from '@apis/booking';
-import userApi from '@apis/user';
-import { Card, CardContent, CardHeader, CardTitle } from '@ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui/select';
-import { useQuery } from '@tanstack/react-query';
-import { Eye, MapPin, Users, Heart, Star } from 'lucide-react';
-import roomApi from '@apis/room';
-import { motion } from 'framer-motion';
+import useFetch from "../../hooks/fetch.hook";
+import apis from "../../apis/index";
+import { useSelector } from "react-redux";
+import { userSelector } from "../../stores/reducers/userReducer";
+import { Button, Card, Image, Tag, Modal, Form, Rate, Input, Tabs, message } from "antd";
+import { formatCurrencyUSD } from "@libs/utils";
+import dayjs from "dayjs";
+import { CalendarOutlined, UserOutlined } from "@ant-design/icons";
 import { toast } from 'react-toastify';
-import { Badge } from '@ui/badge';
-import { Button } from '@ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@ui/dialog';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatCurrencyUSD } from '@libs/utils';
-import 'react-toastify/dist/ReactToastify.css';
-import FeedbackModal from '@components/FeedbackModal/FeedbackModal';
 
 export default function BookingHistory() {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-
-    const fadeInUp = {
-        initial: { opacity: 0, y: 60 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.6 },
-    };
-
-    // chọn loại feedback
-    const [typeFeedback, setTypeFeedback] = useState('room');
-    const [contracts, setContracts] = useState([]);
-    const [rooms, setRooms] = useState([]);
-    const [isOpenModalFeedback, setIsOpenModalFeedback] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
-    const [feedbackLoading, setFeedbackLoading] = useState(false);
-    console.log("check contracts", contracts);
-    console.log("check rooms", rooms);
 
-    //lấy lịch sử phòng đã đặt của user, những phòng ở trang thái completed, có endDate < hiện tại
+    const [loading, setLoading] = useState(true);
+    const [bookings, setBookings] = useState([]);
     const user = useSelector(userSelector.selectUser);
-    const getBookingByUserId = async () => {
-        try {
-            const res = await bookingApi.getBookings({ page: 1, limit: Number.MAX_SAFE_INTEGER });
-            const bookings = res.data.data[0] || [];
-            // Lọc chỉ lấy booking của user hiện tại
-            const userBookings = bookings.filter((booking) => booking.userId === user?.id
-                && booking.status === 'confirmed' && booking.endDate < new Date().toISOString());
-            setContracts(userBookings);
-        } catch (err) {
-            toast.error('Cannot get booking history');
+
+    // Fetch all required data
+    const { data: bookingsData } = useFetch(() =>
+        apis.booking.getBookings({ page: 1, limit: Number.MAX_SAFE_INTEGER })
+    );
+    const { data: roomsData } = useFetch(() =>
+        apis.room.getRooms({ page: 1, limit: Number.MAX_SAFE_INTEGER })
+    );
+    const { data: servicesData } = useFetch(() =>
+        apis.service.getServices({ page: 1, limit: Number.MAX_SAFE_INTEGER })
+    );
+
+    useEffect(() => {
+        if (
+            !user ||
+            !bookingsData?.data?.[0] ||
+            !roomsData?.data?.[0] ||
+            !servicesData?.data?.[0]
+        ) {
+            return;
         }
-    };
 
-    const getRoomsByContract = async () => {
-        try {
-            const res = await roomApi.getRooms({ page: 1, limit: Number.MAX_SAFE_INTEGER });
-            console.log(res.data); // xem data thực tế
-            const rooms = res.data.data || [];
-            setRooms(rooms);
-        } catch (err) {
-            toast.error('Cannot get room');
-        }
-    };
+        const currentDate = new Date();
+        const bookingsList = bookingsData.data[0];
+        const roomsList = roomsData.data[0];
+        const servicesList = servicesData.data[0];
 
-    const mapImageRoomFromContract = (id) => {
-        const room = rooms[0].find((room) => room.id === id);
-        return room?.media[0]?.path || 'placeholder.svg';
-    };
+        const filteredBookings = bookingsList
+            .filter(
+                (booking) =>
+                    booking.userId === user.id &&
+                    booking.status === "confirmed" &&
+                    new Date(booking.endDate) < currentDate
+            )
+            .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
-    const handleFeedbackOpen = (booking) => {
+        const combined = filteredBookings.map((booking) => {
+            const room = roomsList.find((r) => r.id === booking.roomId) || null;
+
+            const services = booking.bookingServices
+                ?.filter(bs => bs.status === "confirmed")
+                ?.map((bs) => servicesList.find((s) => s.id === bs.serviceId))
+                .filter(Boolean) || [];
+
+            return {
+                ...booking,
+                room,
+                services,
+                key: booking.id,
+            };
+        });
+
+        setBookings(combined);
+        setLoading(false);
+    }, [bookingsData, roomsData, servicesData, user]);
+
+    const showModal = (booking) => {
         setSelectedBooking(booking);
-        setIsOpenModalFeedback(true);
+        setIsModalVisible(true);
     };
 
-    const handleFeedbackSubmit = async (feedback) => {
-        if (!selectedBooking) return;
-        setFeedbackLoading(true);
+    const handleCancel = () => {
+        setIsModalVisible(false);
+    };
+
+    // ----------- Review Handlers -----------
+    const handleRoomReview = async (values) => {
         try {
-            // Create feedback for room
-            const feedbackPromises = [
-                userApi.createFeedback({
-                    rating: feedback.roomRating,
-                    comment: feedback.roomComment,
-                    bookingId: selectedBooking.id,
-                    targetType: 'room',
-                    targetId: selectedBooking.roomId,
-                }),
-            ];
-
-            // Create feedback for each confirmed service with its own comment
-            if (feedback.serviceRatings && Object.keys(feedback.serviceRatings).length > 0) {
-                selectedBooking.bookingServices?.forEach((bookingService) => {
-                    // Use bookingService.id as key (from FeedbackModal state)
-                    const rating = feedback.serviceRatings[bookingService.id];
-                    const comment = feedback.serviceComments?.[bookingService.id];
-                    if (rating && comment) {
-                        feedbackPromises.push(
-                            userApi.createFeedback({
-                                rating,
-                                comment,
-                                bookingId: selectedBooking.id,
-                                targetType: 'service',
-                                targetId: bookingService.serviceId, // Send actual serviceId to API
-                            })
-                        );
-                    }
-                });
+            await apis.user.createFeedback({
+                bookingId: selectedBooking.id,
+                rating: values.roomRating,
+                comment: values.roomComment,
+                targetType: 'room',
+                targetId: selectedBooking.roomId
+            });
+            toast.success('Room review submitted successfully!');
+            setIsModalVisible(false);
+        } catch (error) {
+            if (error.response?.data?.error?.code === 'Conflict') {
+                toast.warning('You have already reviewed this room');
+            } else {
+                toast.error('An error occurred while submitting your review');
             }
-
-            await Promise.all(feedbackPromises);
-            toast.success('Thank you for your feedback!');
-        } catch (err) {
-            console.error('Feedback submission error:', err);
-            toast.warning(err?.error?.message || "This room/service has already been reviewed.");
-        } finally {
-            setFeedbackLoading(false);
         }
     };
 
-    useEffect(() => {
-        getBookingByUserId();
-    }, [user]);
+    const handleServiceReview = async (serviceId, values) => {
+        try {
+            await apis.user.createFeedback({
+                bookingId: selectedBooking.id,
+                rating: values.serviceRating,
+                comment: values.serviceComment,
+                targetType: 'service',
+                targetId: serviceId
+            });
+            toast.success('Service review submitted successfully!');
+        } catch (error) {
+            if (error.response?.data?.error?.code === 'Conflict') {
+                toast.warning('You have already reviewed this service');
+            } else {
+                toast.error('An error occurred while submitting your service review');
+            }
+        }
+    };
 
-    useEffect(() => {
-        getRoomsByContract();
-    }, []);
-
+    const handleComboReview = async (values) => {
+        try {
+            await apis.user.createFeedback({
+                bookingId: selectedBooking.id,
+                rating: values.comboRating,
+                comment: values.comboComment,
+                targetType: 'combo',
+                targetId: selectedBooking.comboId
+            });
+            toast.success('Combo review submitted successfully!');
+            setIsModalVisible(false);
+        } catch (error) {
+            if (error.response?.data?.error?.code === 'Conflict') {
+                toast.warning('You have already reviewed this combo');
+            } else {
+                toast.error('An error occurred while submitting your combo review');
+            }
+        }
+    };
 
     return (
         <>
-            <div className="container mx-auto px-20">
-                {/* chọn loại feedback */}
-                <Card className="shadow-sm border-none">
-                    <CardContent className="flex items-center py-4">
-                        <CardTitle className="text-base mr-4">Type of Feedback</CardTitle>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                    <h2 className="text-2xl font-bold mb-6 text-[#0d584d]">Booking History</h2>
 
-                        <Select value={typeFeedback} onValueChange={setTypeFeedback}>
-                            <SelectTrigger className="w-100">
-                                <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                                <SelectItem value="room">Room</SelectItem>
-                                <SelectItem value="service">Service</SelectItem>
-                                <SelectItem value="combo">Combo</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </CardContent>
-
-                    <div className="grid grid-cols-1 gap-6">
-                        {contracts.map((contract, index) => (
-                            <motion.div
-                                key={contract.id}
-                                {...fadeInUp}
-                                transition={{ delay: index * 0.2 }}
-                                className="border rounded-lg shadow p-4 flex items-center"
-                            >
-                                {/* Cột 1: Ảnh */}
-                                <div className="w-1/4">
-                                    <img
-                                        src={`${baseUrl}/${mapImageRoomFromContract(contract.roomId) || 'placeholder.svg'}`}
-                                        alt={`Room ${rooms.roomNumber}`}
-                                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                                        onError={(e) => {
-                                            e.target.onerror = null; // tránh loop vô hạn
-                                            e.target.src = '/placeholder.svg';
-                                        }}
-                                    />
-                                </div>
-
-                                {/* Cột 2: Thông tin */}
-                                <div className="w-2/4 px-4 flex justify-between">
-                                    <div>
-                                        <div className="font-medium mb-1">Customer</div>
-                                        <div className="text-gray-700">{contract.user?.name}</div>
-                                        <div className="text-gray-500">Email: {contract.user?.email}</div>
-                                        <div className="text-gray-500">Phone: {contract.user?.phone}</div>
-                                        <div className="text-gray-500 ">Citizen identification: {contract.user?.cccd}</div>
+                    {loading ? (
+                        <div className="flex justify-center items-center h-64">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#0d584d]"></div>
+                        </div>
+                    ) : bookings.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            You don't have any bookings yet
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {bookings.map((booking) => (
+                                <Card
+                                    key={booking.id}
+                                    className="shadow-md hover:shadow-lg transition-shadow duration-300"
+                                >
+                                    <div className="aspect-[4/3] overflow-hidden mb-2">
+                                        <Image
+                                            alt="Room"
+                                            src={`${import.meta.env.VITE_API_BASE_URL}/${booking?.room?.media?.[0]?.path}`}
+                                            className="w-full h-full object-cover"
+                                        />
                                     </div>
-                                    <div>
-                                        <div className="font-medium mb-1">Room</div>
-                                        <div className="text-gray-700">
-                                            {contract.room?.roomNumber} ({contract.room?.type?.name})
+
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="text-lg font-semibold">
+                                                {booking.room?.roomNumber} - {booking.room?.type?.name}
+                                            </h3>
+                                            <Tag color="green" className="m-0">
+                                                Ended
+                                            </Tag>
                                         </div>
-                                        <div className="text-gray-500 ">Number of people staying: {contract?.capacity} people</div>
-                                        <div className="text-gray-500 ">Date in: {contract.startDate}</div>
-                                        <div className="text-gray-500 ">Date out: {contract.endDate}</div>
-                                        <div className="text-gray-500 ">Room's price: {formatCurrencyUSD(contract.roomPrice)}</div>
-                                        <div className="text-gray-500 ">Total: {formatCurrencyUSD(contract.totalPrice)}</div>
-                                    </div>
-                                </div>
 
-                                {/* Cột 3: Button */}
-                                <div className="w-1/4 flex flex-col items-end">
+                                        <div className="text-gray-600 space-y-1">
+                                            <div className="flex items-center">
+                                                <CalendarOutlined className="mr-2" />
+                                                <span>
+                                                    {dayjs(booking.startDate).format('DD/MM/YYYY')} -{' '}
+                                                    {dayjs(booking.endDate).format('DD/MM/YYYY')}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <UserOutlined className="mr-2" />
+                                                <span>{booking.user?.name || 'N/A'}</span>
+                                            </div>
+                                            <div className="font-semibold text-[#0d584d] text-lg">
+                                                {formatCurrencyUSD(booking.totalPrice)}
+                                            </div>
+                                        </div>
+
+                                        {booking.services?.length > 0 && (
+                                            <div className="pt-2 border-t border-gray-100">
+                                                <div className="text-sm font-medium text-gray-500 mb-1">Services:</div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {booking.services.map((service) => (
+                                                        <Tag key={service.id} color="blue">
+                                                            {service.name}
+                                                        </Tag>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex-1 border-teal-600 text-teal-600 hover:bg-blue-200 bg-transparent px-4 py-2  mb-2"
-                                        onClick={() => console.log(contract.id)}
+                                        type="primary"
+                                        className="w-full mt-4 bg-[#009689] hover:bg-[#007f73] border-none text-white transition-colors duration-300"
+                                        size="large"
+                                        onClick={() => showModal(booking)}
                                     >
-                                        <Heart className="w-4 h-4 mr-2" />
-                                        Detail
+                                        Review
                                     </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex-1 border-teal-600 text-teal-600 hover:bg-teal-50 px-4 py-2"
-                                        onClick={() => handleFeedbackOpen(contract)}
-                                    >
-                                        <Heart className="w-4 h-4 mr-2" />
-                                        Feedback
-                                    </Button>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </Card>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
-            <FeedbackModal
-                isOpen={isOpenModalFeedback}
-                onClose={() => {
-                    setIsOpenModalFeedback(false);
-                    setSelectedBooking(null);
-                }}
-                title="Share Your Experience"
-                onSubmit={handleFeedbackSubmit}
-                loading={feedbackLoading}
-                bookingServices={selectedBooking?.bookingServices || []}
-            />
+
+            {/* ----------- Modal Review ----------- */}
+            <Modal
+                title="Share your experience"
+                open={isModalVisible}
+                onCancel={handleCancel}
+                footer={null}
+                width={800}
+            >
+                <Tabs
+                    defaultActiveKey="room"
+                    items={[
+                        {
+                            key: 'room',
+                            label: 'Room',
+                            children: (
+                                <Form onFinish={handleRoomReview} layout="vertical">
+                                    <Form.Item
+                                        name="roomRating"
+                                        label="Room rating"
+                                        rules={[{ required: true, message: 'Please select a star rating' }]}
+                                    >
+                                        <Rate allowHalf />
+                                    </Form.Item>
+
+                                    <Form.Item
+                                        name="roomComment"
+                                        label="Room review"
+                                        rules={[{ required: true, message: 'Please enter your review' }]}
+                                    >
+                                        <Input.TextArea rows={4} placeholder="Share your thoughts about the room..." />
+                                    </Form.Item>
+
+                                    <div className="flex justify-end gap-2">
+                                        <Button onClick={handleCancel}>Cancel</Button>
+                                        <Button type="primary" htmlType="submit">Submit review</Button>
+                                    </div>
+                                </Form>
+                            )
+                        },
+
+                        {
+                            key: 'services',
+                            label: 'Services',
+                            children: (
+                                <div className="space-y-4">
+                                    {selectedBooking?.services?.map(service => (
+                                        <div key={service.id} className="p-4 border rounded">
+                                            <h4 className="font-medium mb-2">{service.name}</h4>
+
+                                            <Form onFinish={(values) => handleServiceReview(service.id, values)}>
+                                                <Form.Item
+                                                    name="serviceRating"
+                                                    label="Rating"
+                                                    rules={[{ required: true, message: 'Please select a star rating' }]}
+                                                >
+                                                    <Rate allowHalf />
+                                                </Form.Item>
+
+                                                <Form.Item
+                                                    name="serviceComment"
+                                                    label="Review"
+                                                    rules={[{ required: true, message: 'Please enter your review' }]}
+                                                >
+                                                    <Input.TextArea
+                                                        rows={3}
+                                                        placeholder={`Write your review for ${service.name}`}
+                                                    />
+                                                </Form.Item>
+
+                                                <div className="text-right">
+                                                    <Button type="primary" htmlType="submit">Submit review</Button>
+                                                </div>
+                                            </Form>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
+                        },
+
+                        ...(selectedBooking?.comboId
+                            ? [{
+                                key: 'combo',
+                                label: 'Combo',
+                                children: (
+                                    <Form onFinish={handleComboReview} layout="vertical">
+                                        <Form.Item
+                                            name="comboRating"
+                                            label="Combo rating"
+                                            rules={[{ required: true, message: 'Please select a star rating' }]}
+                                        >
+                                            <Rate allowHalf />
+                                        </Form.Item>
+
+                                        <Form.Item
+                                            name="comboComment"
+                                            label="Combo review"
+                                            rules={[{ required: true, message: 'Please enter your review' }]}
+                                        >
+                                            <Input.TextArea
+                                                rows={4}
+                                                placeholder="Share your thoughts about the combo..."
+                                            />
+                                        </Form.Item>
+
+                                        <div className="flex justify-end gap-2">
+                                            <Button onClick={handleCancel}>Cancel</Button>
+                                            <Button type="primary" htmlType="submit">Submit review</Button>
+                                        </div>
+                                    </Form>
+                                )
+                            }]
+                            : [])
+                    ]}
+                />
+            </Modal>
         </>
     );
 }

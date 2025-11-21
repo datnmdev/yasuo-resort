@@ -16,5 +16,14 @@ export default {
     },
     deleteVoucher: (id) => {
         return axiosInstance.delete(`/voucher/${id}`);
-    }
+    },
+    getVouchersForAll: (params = {}) => {
+        return axiosInstance.get('/voucher', { params });
+    },
+    getVouchersOfCustomer: (params = {}) => {
+        return axiosInstance.get('/voucher/customer', { params });
+    },
+    claimVoucher: (id) => {
+        return axiosInstance.post(`/voucher/claim`, id);
+    },
 };

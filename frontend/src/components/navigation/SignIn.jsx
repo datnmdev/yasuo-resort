@@ -172,7 +172,7 @@ const SignIn = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="flex items-center">
                     <User className="w-4 h-4 mr-2" />
-                    Profile
+                    Myself
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -181,22 +181,6 @@ const SignIn = () => {
                     {/* New link for Contracts */}
                     <FileText className="w-4 h-4 mr-2" />
                     My Contracts
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/favorite-rooms" className="flex items-center">
-                    {' '}
-                    {/* New link for Favorite Room */}
-                    <FileText className="w-4 h-4 mr-2" />
-                    My Favorite Rooms
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/favorite-services" className="flex items-center">
-                    {' '}
-                    {/* New link for Favorite Room */}
-                    <FileText className="w-4 h-4 mr-2" />
-                    My Favorite Services
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

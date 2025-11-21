@@ -8,6 +8,8 @@ const Navbar = () => {
     { url: '/', name: 'Home' },
     { url: '/rooms', name: 'Rooms' },
     { url: '/services', name: 'Services' },
+    { url: '/voucher', name: 'Voucher' },
+    { url: '/combo', name: 'Combo' },
     { url: '/about-us', name: 'About us' },
   ];
 
@@ -21,9 +23,7 @@ const Navbar = () => {
               <Link
                 to={item.url}
                 state={{ scrollTo: item.hash || '' }}
-                className={`text-[1.2rem] font-bold ${
-                  isActive ? 'text-teal-600 underline scale-105' : 'text-deep-teal hover:text-teal-600'
-                }`}
+                className={`text-[1.2rem] font-bold ${isActive ? 'text-teal-600 underline scale-105' : 'text-deep-teal hover:text-teal-600'}`}
               >
                 {item.name}
               </Link>

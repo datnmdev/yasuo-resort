@@ -69,5 +69,10 @@ export default {
   },
   updateCombo: (comboId, data) => {
     return axiosInstance.put(`/combo/${comboId}`, data);
-  }
+  },
+  getCombosForAll: (query) => {
+    return axiosInstance.get("/combo", {
+      params: query,
+    });
+  },
 };

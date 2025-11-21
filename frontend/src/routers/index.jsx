@@ -25,6 +25,10 @@ import BookingHistory from '@src/pages/BookingHistory/BookingHistory';
 import ComboManagement from '@src/pages/ComboManagement';
 import VoucherManagement from '@src/pages/VoucherManagement';
 import TierManagement from '@src/pages/TierManagement';
+import Voucher from '@src/pages/Voucher';
+import Combos from '@src/pages/Combos';
+import BookingCombo from '@src/pages/BookingCombo';
+import BookingComBoConfirmationPage from '@src/pages/BookingCombo';
 
 const router = createBrowserRouter([
   // Cấu hình route cho các trang dành cho user
@@ -62,12 +66,24 @@ const router = createBrowserRouter([
         element: <ServicePage />,
       },
       {
+        path: '/voucher',
+        element: <Voucher />,
+      },
+      {
+        path: '/combo',
+        element: <Combos />,
+      },
+      {
         path: '/about-us',
         element: <AboutPage />,
       },
       {
         path: '/booking-confirmation/:id',
         element: <BookingPage />,
+      },
+      {
+        path: '/booking-combo/:id',
+        element: <BookingComBoConfirmationPage />,
       },
       {
         path: '/contracts',
