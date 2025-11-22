@@ -29,7 +29,6 @@ import { RoomChangeHistory } from './entities/room-change-history.entity';
 import { UpdateServiceBookingReqDto } from './dtos/update-service-booking.dto';
 import { UserVoucher } from 'modules/voucher/entities/user-voucher.entity';
 import { Combo } from 'modules/combo/entities/combo.entity';
-import { Voucher } from 'modules/voucher/entities/voucher.entity';
 
 @Injectable()
 export class BookingService {
@@ -388,6 +387,7 @@ export class BookingService {
           discountAmount = totalPrice;
         }
         totalPrice -= discountAmount;
+        bookingEntity.userVoucherId = bookingRoomBody.userVoucherId;
       }
       bookingEntity.totalPrice = totalPrice.toFixed(2);
 
