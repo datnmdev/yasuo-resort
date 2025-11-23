@@ -1,13 +1,16 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import apis from '@apis/index';
 import useFetch from '@src/hooks/fetch.hook';
-import { Card, Image, Carousel, Pagination, Spin, message } from "antd";
+import { Card, Image, Carousel, Pagination, Spin, message, Modal } from "antd";
 import { Button } from '@ui/button';
 import { InputNumber, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import { CheckCircle } from 'lucide-react';
+import { format, eachDayOfInterval } from 'date-fns';
 import { toast } from 'react-toastify';
+import Calendar from 'react-calendar';
 import Cookies from 'js-cookie';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -51,6 +54,19 @@ export default function BookingComBoConfirmationPage() {
     // Voucher
     const [selectedVoucher, setSelectedVoucher] = useState(null);
     console.log("check selectedVoucher", selectedVoucher);
+
+    const { data: bookingData, isLoading } = useQuery({
+        queryKey: ['bookings', selectedRoom?.id],
+        queryFn: () =>
+            apis.booking.getBookings({
+                page: 1,
+                limit: 1000,
+                roomId: selectedRoom?.id,
+                status: ['confirmed', 'pending'],
+            }),
+        keepPreviousData: true,
+        enabled: !!selectedRoom?.id,
+    });
 
     // ======================
     // 3. API Calls
@@ -102,8 +118,9 @@ export default function BookingComBoConfirmationPage() {
         const currentDate = dayjs();
         const endDate = dayjs(voucher.voucher.endDate);
         const minOrder = parseFloat(voucher.voucher.minBookingAmount);
+        const isUsed = !!voucher.dateUsed;
 
-        return currentDate.isBefore(endDate) && totalAmount >= minOrder;
+        return !isUsed && currentDate.isBefore(endDate) && totalAmount >= minOrder;
     };
 
     // ======================
@@ -112,6 +129,26 @@ export default function BookingComBoConfirmationPage() {
     const onPageChange = (page, pageSize) => {
         setCurrentPage(page);
         setPageSize(pageSize);
+    };
+
+    const getBookedDates = (bookings) => {
+        const bookedDates = bookings.flatMap((booking) => {
+            const range = eachDayOfInterval({
+                start: new Date(booking.startDate),
+                end: new Date(booking.endDate),
+            });
+
+            return range.map((date) => format(date, 'yyyy-MM-dd'));
+        });
+
+        return [...new Set(bookedDates)];
+    };
+
+    const bookings = useMemo(() => bookingData?.data?.data[0] || [], [bookingData]);
+
+    // Ktra ngày đấy của phòng có đã bị đặt chưa (dùng cho Calendar)
+    const isDateBooked = (date) => {
+        return getBookedDates(bookings).includes(dayjs(date).format('YYYY-MM-DD'));
     };
 
     const handleConfirmBooking = async () => {
@@ -127,25 +164,26 @@ export default function BookingComBoConfirmationPage() {
             comboId: state?.combo?.id,
             capacity: guestCount,
             ...(selectedVoucher?.id && { userVoucherId: selectedVoucher.id }),
-            attachedService: servicesInCombo.map(service => ({
-                id: service.service.id,
-                quantity: guestCount,
-                startDate: dateRange[0].format('YYYY-MM-DD'),
-                endDate: dateRange[1].format('YYYY-MM-DD')
-            }))
+            // attachedService: servicesInCombo.map(service => ({
+            //     id: service.service.id,
+            //     quantity: guestCount,
+            //     startDate: dateRange[0].format('YYYY-MM-DD'),
+            //     endDate: dateRange[1].format('YYYY-MM-DD')
+            // }))
         };
         console.log("check bookingData", bookingData);
 
         try {
             const response = await apis.booking.bookingRoom(bookingData);
-            if (response.statusCode === 200) {
+            console.log("check response", response);
+            if (response?.data?.statusCode === 200) {
                 toast.success('Booking created successfully!');
             } else {
                 toast.error(response.message || 'Failed to create booking');
             }
         } catch (error) {
             console.error('Error creating booking:', error);
-            message.error(error.response?.data?.message || 'An error occurred while creating the booking');
+            toast.error(error.response?.data?.message || 'An error occurred while creating the booking');
         }
     };
 
@@ -184,7 +222,6 @@ export default function BookingComBoConfirmationPage() {
         }
     }, [selectedRoom, guestCount, totalDays, servicesInCombo]);
 
-
     //component voucher
     const VoucherList = () => {
 
@@ -198,39 +235,6 @@ export default function BookingComBoConfirmationPage() {
         const totalAmount = (parseFloat(totalPriceRoom) + parseFloat(totalPriceService)) || 0;
 
         return (
-            // <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-            //     {listVoucherFromAPI?.data?.[0].map((voucher) => (
-            //         <div
-            //             key={voucher.id}
-            //             className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedVoucher?.id === voucher.id
-            //                 ? 'border-teal-500 bg-teal-50'
-            //                 : 'border-gray-200 hover:border-teal-300'
-            //                 }`}
-            //             onClick={() => setSelectedVoucher(voucher)}
-            //         >
-            //             <div className="flex justify-between items-start">
-            //                 <div>
-            //                     <h4 className="font-medium text-teal-700">{voucher.voucher.name}</h4>
-            //                     <p className="text-sm text-gray-600">
-            //                         {voucher.voucher.discountValue}% OFF
-            //                         {voucher.voucher.maxDiscountAmount &&
-            //                             ` (max $${voucher.voucher.maxDiscountAmount})`
-            //                         }
-            //                     </p>
-            //                     <p className="text-xs text-gray-500 mt-1">
-            //                         Min order: ${voucher.voucher.minBookingAmount}
-            //                     </p>
-            //                     <p className="text-xs text-gray-500">
-            //                         Expires: {dayjs(voucher.voucher.endDate).format('DD/MM/YYYY')}
-            //                     </p>
-            //                 </div>
-            //                 {selectedVoucher?.id === voucher.id && (
-            //                     <CheckCircle className="h-5 w-5 text-teal-500" />
-            //                 )}
-            //             </div>
-            //         </div>
-            //     ))}
-            // </div>
             <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                 {listVoucherFromAPI?.data?.[0]?.map((voucher) => {
                     const isValid = isVoucherValid(voucher, totalAmount);
@@ -292,6 +296,19 @@ export default function BookingComBoConfirmationPage() {
     };
     const SelectedRoomCard = ({ room, onRemove }) => {
         if (!room) return null;
+        const [isModalVisible, setIsModalVisible] = useState(false);
+
+        const showModal = () => {
+            setIsModalVisible(true);
+        };
+
+        const handleOk = () => {
+            setIsModalVisible(false);
+        };
+
+        const handleCancel = () => {
+            setIsModalVisible(false);
+        };
 
         return (
             <div className="p-4 rounded-lg">
@@ -308,6 +325,46 @@ export default function BookingComBoConfirmationPage() {
                         </div>
                     )}
                     <div className="flex-1 space-y-4">
+                        {/* Availability Modal */}
+                        <Modal
+                            title="Room Availability"
+                            open={isModalVisible}
+                            onOk={handleOk}
+                            onCancel={handleCancel}
+                            footer={[
+                                <Button key="ok" type="primary" onClick={handleOk}>
+                                    OK
+                                </Button>
+                            ]}
+                            width={500}
+                        >
+                            <div className="p-4">
+                                <div className="rounded-lg p-6 bg-white">
+                                    <h2 className="text-xl font-semibold mb-4">📅 Room Availability</h2>
+                                    <Spin spinning={isLoading} tip="Loading...">
+                                        <Calendar
+                                            locale="en-US"
+                                            className="!border-0"
+                                            selectRange={false}
+                                            tileClassName={({ date }) => {
+                                                if (isDateBooked(date)) return '!bg-red-500 !text-white !cursor-not-allowed';
+                                                return '!bg-white !text-gray-700';
+                                            }}
+                                        />
+                                    </Spin>
+                                    <div className="mt-4 space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 bg-red-500 rounded-sm"></div>
+                                            <span>Booked</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 bg-white border rounded-sm"></div>
+                                            <span>Available</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Modal>
                         <div>
                             <h3 className="text-lg font-semibold text-teal-600">
                                 Room {room.roomNumber} - {room.type?.name}
@@ -361,19 +418,39 @@ export default function BookingComBoConfirmationPage() {
                                     value={[dayjs(dateRange[0]), dayjs(dateRange[1])]}
                                     onChange={(dates) => {
                                         if (dates && dates[0] && dates[1]) {
-                                            const nights = dates[1].diff(dates[0], 'days') + 1;
+                                            const start = dates[0];
+                                            const end = dates[1];
+                                            const nights = end.diff(start, 'days') + 1;
+
+                                            // Check if any date in the range is booked
+                                            const hasBookedDate = getBookedDates(bookings).some(bookedDate => {
+                                                const date = dayjs(bookedDate);
+                                                return (date.isSame(start, 'day') || date.isAfter(start, 'day')) &&
+                                                    (date.isSame(end, 'day') || date.isBefore(end, 'day'));
+                                            });
+
+                                            if (hasBookedDate) {
+                                                setDateError('Selected dates include already booked dates');
+                                                return;
+                                            }
+
                                             if (nights < minStayNights) {
                                                 setDateError(`Minimum stay for this combo is ${minStayNights} days`);
                                             } else {
                                                 setDateError('');
                                             }
                                             setTotalDays(nights);
-                                            setDateRange([dates[0], dates[1]]);
+                                            setDateRange([start, end]);
                                         }
                                     }}
                                     className="w-full"
                                     disabledDate={(current) => {
-                                        return current && current < dayjs().startOf('day');
+                                        // Disable past dates and already booked dates
+                                        const isPastDate = current && current < dayjs().startOf('day');
+                                        const isBooked = getBookedDates(bookings).some(bookedDate =>
+                                            current.isSame(dayjs(bookedDate), 'day')
+                                        );
+                                        return isPastDate || isBooked;
                                     }}
                                     format="DD/MM/YYYY"
                                     showTime={false}
@@ -406,6 +483,16 @@ export default function BookingComBoConfirmationPage() {
                 >
                     Remove
                 </Button>
+                {/* Check Availability Button */}
+
+                <Button
+                    size="sm"
+                    className="flex-1 bg-teal-600 hover:bg-teal-700 mx-2"
+                    onClick={showModal}
+                >
+                    Check Availability
+                </Button>
+
             </div>
         );
     };

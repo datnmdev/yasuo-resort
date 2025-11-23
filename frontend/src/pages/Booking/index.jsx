@@ -150,9 +150,12 @@ export default function BookingConfirmationPage() {
       startDate: checkin ? format(checkin, 'yyyy-MM-dd') : null,
       endDate: checkout ? format(checkout, 'yyyy-MM-dd') : null,
       capacity: guests,
-      // ...(selectedServices.length > 0 && {
-      //   attachedServices: selectedServices.map(service => service.id)
-      // }),
+      // attachedServices: selectedServices.map(service => ({
+      //   id: service.id,
+      //   quantity: guests,
+      //   startDate: checkin ? format(checkin, 'yyyy-MM-dd') : null,
+      //   endDate: checkout ? format(checkout, 'yyyy-MM-dd') : null
+      // })),
       // ...(selectedVoucher?.id && {
       //   userVoucherId: selectedVoucher.id
       // })
@@ -267,7 +270,7 @@ export default function BookingConfirmationPage() {
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const totalAmount = useMemo(() => {
     const servicesTotal = selectedServices.reduce(
-      (sum, service) => sum + parseFloat(service.price || 0),
+      (sum, service) => sum + (parseFloat(service.price || 0) * guests * numberOfDays),
       0
     );
     const subtotal = calculateRoomTotal + servicesTotal;
@@ -326,9 +329,9 @@ export default function BookingConfirmationPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="container mx-auto min-h-screen bg-gray-50 py-12">
       <div className="flex gap-8 px-8 mx-6">
-        <Card className="w-full max-w-3xl p-8 shadow-xl border border-gray-100">
+        <Card className="w-full max-w-4xl p-8 shadow-xl border border-gray-100">
           <CardHeader className="p-0 mb-6">
             <CardTitle className="text-2xl font-bold text-gray-800">Booking Details</CardTitle>
           </CardHeader>
@@ -501,23 +504,6 @@ export default function BookingConfirmationPage() {
                     <span>Room Total:</span>
                     <span>${calculateRoomTotal.toFixed(2)}</span>
                   </div>
-                  {selectedServices.length > 0 && (
-                    <div className="flex justify-between">
-                      <span>Services Total:</span>
-                      <span>${(totalAmount.subtotal - calculateRoomTotal).toFixed(2)}</span>
-                    </div>
-                  )}
-                  {selectedVoucher && (
-                    <>
-                      <div className="flex justify-between text-green-600">
-                        <span>Discount ({selectedVoucher.voucher.discountValue}% off):</span>
-                        <span>-${totalAmount.discount.toFixed(2)}</span>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Using voucher: {selectedVoucher.voucher.name}
-                      </div>
-                    </>
-                  )}
                   <div className="flex justify-between font-bold border-t pt-2 mt-2">
                     <span>Total Amount:</span>
                     <span>${totalAmount.total.toFixed(2)}</span>
@@ -546,7 +532,7 @@ export default function BookingConfirmationPage() {
         </Card>
 
         {/* Right: Room Availability Calendar */}
-        <div className="rounded-lg p-6 bg-white shadow-lg">
+        <div className="flex-1 rounded-lg p-6 bg-white shadow-lg">
           <h2 className="text-xl font-semibold mb-4">📅 Room Availability</h2>
           <Spin spinning={isLoading} tip="Loading...">
             <Calendar
@@ -570,143 +556,7 @@ export default function BookingConfirmationPage() {
             </div>
           </div>
         </div>
-        {/* danh sách voucher */}
-        {selectedServices.length > 0 && (
-          <div className="p-6 bg-white rounded-lg shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Available Vouchers</h2>
-            {vouchersLoading ? (
-              <div className="flex justify-center py-4">
-                <Spin size="small" />
-              </div>
-            ) : processedVouchers.length > 0 ? (
-              <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4 -mx-2 px-2">
-                <div className="grid grid-cols-2 gap-4 min-w-full mt-2">
-                  {processedVouchers.map((voucher) => {
-                    const isEligible = voucher.isEligible;
-                    const bgColor = isEligible ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
-                    const textColor = isEligible ? 'text-green-800' : 'text-red-800';
-                    const tagColor = isEligible ? 'green' : 'red';
-
-                    return (
-                      <div
-                        key={voucher.id}
-                        className={`p-4 border rounded-lg min-w-0 ${isEligible
-                          ? 'bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer'
-                          : 'bg-red-50 border-red-200'
-                          } ${selectedVoucher?.id === voucher.id ? 'ring-2 ring-blue-500' : ''}`}
-                        onClick={() => {
-                          if (isEligible) {
-                            setSelectedVoucher(selectedVoucher?.id === voucher.id ? null : voucher);
-                          }
-                        }}
-                      >
-                        {/* Rest of the voucher card content remains the same */}
-                        <div className="flex justify-between items-start">
-                          <div className="min-w-0">
-                            <p className={`font-medium ${textColor} truncate`}>{voucher.voucher.name}</p>
-                            <p className="text-sm text-gray-600">
-                              {voucher.voucher.discountValue}% OFF
-                              {voucher.voucher.maxDiscountAmount && ` (max $${voucher.voucher.maxDiscountAmount})`}
-                            </p>
-                            <p className="text-sm mt-1 truncate">
-                              Min order: ${voucher.minAmount.toFixed(2)}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1 truncate">
-                              Expires: {dayjs(voucher.voucher.endDate).format('DD/MM/YYYY')}
-                            </p>
-                            {!isEligible && (
-                              <p className="text-xs text-red-500 mt-1">
-                                {totalAmount.subtotal < voucher.minAmount
-                                  ? `Need more $${(voucher.minAmount - totalAmount.subtotal).toFixed(2)} to apply`
-                                  : 'Voucher expired or not available'}
-                              </p>
-                            )}
-                          </div>
-                          <Tag color={tagColor} className="ml-2 flex-shrink-0">
-                            {voucher.voucher.code}
-                          </Tag>
-                        </div>
-                        {selectedVoucher?.id === voucher.id && (
-                          <div className="mt-2 text-sm text-blue-600 font-medium">
-                            ✓ Selected
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-500">No vouchers available</p>
-            )}
-          </div>
-        )}
       </div>
-
-      {/* danh sách dịch vụ */}
-      <div className="px-8 mx-6">
-        <div className="mt-6 p-6 bg-white rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Add Services to get more discount</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {isServicesLoading ? (
-              <div className="col-span-3 flex justify-center py-8">
-                <Spin size="large" />
-              </div>
-            ) : servicesData?.data?.[0].length === 0 ? (
-              <div className="col-span-3 text-center py-8 text-gray-500">
-                No services available
-              </div>
-            ) : (
-              servicesData?.data?.[0].map((service) => (
-                <div
-                  key={service.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${selectedServices.some(s => s.id === service.id)
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-blue-300'
-                    }`}
-                  onClick={() => handleServiceSelect(service)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium">{service.name}</h4>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2"
-                        dangerouslySetInnerHTML={{ __html: service.description }} />
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium text-blue-600">
-                        ${service.price}
-                      </div>
-                      {selectedServices.some(s => s.id === service.id) && (
-                        <CheckCircle className="h-5 w-5 text-green-500 mt-1 ml-auto" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )))}
-          </div>
-
-          {/* Hiển thị tổng tiền dịch vụ đã chọn */}
-          {selectedServices.length > 0 && (
-            <div className="mt-4 pt-4 border-t">
-              <div className="flex justify-between font-medium">
-                <span>Selected Services:</span>
-                <div>
-                  {selectedServices.map(service => (
-                    <div key={service.id} className="text-right">
-                      {service.name} (${service.price})
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-between font-semibold text-lg mt-2 pt-2 border-t">
-                <span>Total Services:</span>
-                <span>${selectedServices.reduce((sum, service) => sum + parseFloat(service.price), 0).toFixed(2)}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>

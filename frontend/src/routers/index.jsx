@@ -15,7 +15,7 @@ import BookingRequestPage from '../pages/BookingRequestPage';
 import ResetPassword from '@src/pages/ResetPassword';
 import AboutPage from '@src/pages/AboutUs';
 import BookingPage from '@src/pages/Booking';
-import Contract from '@src/pages/Contract';
+import Contract from '@src/pages/ContractClone';
 import Profile from '@src/pages/Profile';
 import EditProfile from '@src/pages/Profile/EditProfile';
 import FavoriteRoom from '@src/pages/FavoriteRoom/FavoriteRoom';
