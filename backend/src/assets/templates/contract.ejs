@@ -105,7 +105,7 @@
         Trong thời hạn hợp đồng còn hiệu lực nếu bên B có nhu cầu thuê các dịch vụ 
         được cung cấp bởi bên A thì bên B phải có trách nhiệm thanh toán đầy đủ. 
       </p>
-      <!-- <table border="1" style="width: 100%; border-collapse: collapse">
+      <table border="1" style="width: 100%; border-collapse: collapse">
         <thead>
           <tr>
             <th style="text-align: center; padding: 8px;">STT</th>
@@ -115,7 +115,7 @@
             <th style="text-align: center; padding: 8px;">Số lượng</th>
             <th style="text-align: center; padding: 8px;">Ngày bắt đầu</th>
             <th style="text-align: center; padding: 8px;">Ngày kết thúc</th>
-            <th style="text-align: center; padding: 8px;">Thành tiền</th>
+            <!-- <th style="text-align: center; padding: 8px;">Thành tiền</th> -->
           </tr>
         </thead>
         <tbody>
@@ -123,20 +123,19 @@
             <tr>
               <td style="text-align: center; padding: 8px;"><%= bookedService.index %></td>
               <td style="text-align: center; padding: 8px;"><%= bookedService.serviceId %></td>
-              <td style="text-align: center; padding: 8px;"><%= bookedService.service.name %></td>
+              <td style="text-align: center; padding: 8px;"><%= bookedService.service.name %><%= bookedService.service.isBookedViaCombo ? ` (Booked via combo #${locals.booking.comboId})` : '' %></td>
               <td style="text-align: center; padding: 8px;">$<%= bookedService.price %></td>
               <td style="text-align: center; padding: 8px;"><%= bookedService.quantity %></td>
               <td style="text-align: center; padding: 8px;"><%= bookedService.startDate %></td>
               <td style="text-align: center; padding: 8px;"><%= bookedService.endDate %></td>
-              <td style="text-align: center; padding: 8px;">$<%= bookedService.totalPrice %></td>
             </tr>
           <% }) %>
-          <tr>
+          <!-- <tr>
             <td colspan="7" style="text-align: center; padding: 8px; font-weight: bold;">Tổng cộng</td>
             <td style="text-align: center; padding: 8px; font-weight: bold;">$<%= locals.totalBookedServicePrice %></td>
-          </tr>
+          </tr> -->
         </tbody>
-      </table> -->
+      </table>
       <p>2.3. Lịch sử đổi phòng</p>
       <p>
         Trong thời gian hơp đồng còn hiệu lực, nếu phòng mà bên B đang thuê gặp sự cố hoặc bảo trì thì bên A phải có trách nhiệm đổi phòng cho bên B.

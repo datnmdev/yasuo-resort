@@ -47,6 +47,12 @@ export class BookingService {
   @Column('tinyint', { name: 'is_booked_via_combo', default: () => "'0'" })
   isBookedViaCombo: number;
 
+  @Column("datetime", {
+    name: "created_at",
+    default: () => "CURRENT_TIMESTAMP",
+  })
+  createdAt: Date;
+
   @ManyToOne(() => Booking, (booking) => booking.bookingServices, {
     onDelete: 'NO ACTION',
     onUpdate: 'NO ACTION',

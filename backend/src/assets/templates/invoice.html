@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Detailed Invoice</title>
+    <style>
+        /* General Setup (Consistent Style) */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .invoice-container {
+            width: 800px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Header Section */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            color: #fff;
+            background-color: #fff;
+        }
+
+        .header-left {
+            background-color: #00A389;
+            /* Teal/Green Color */
+            padding: 30px;
+            width: 60%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header-left::after {
+            /* Curved shape effect */
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -50px;
+            width: 100px;
+            height: 100%;
+            background-color: #00A389;
+            border-bottom-left-radius: 50px;
+            z-index: 1;
+            transform: skewX(-20deg);
+            transform-origin: top left;
+        }
+
+        .header-left h1 {
+            font-size: 30px;
+            margin: 0 0 5px 0;
+            position: relative;
+            z-index: 3;
+            font-weight: 700;
+        }
+
+        .header-left p {
+            margin: 0;
+            font-size: 14px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .header-right {
+            width: 40%;
+            padding: 30px;
+            text-align: right;
+            color: #333;
+        }
+
+        .header-right .company-logo {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00A389;
+            margin-bottom: 5px;
+        }
+
+        .header-right .slogan {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Information Sections */
+        .info-section {
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .bill-to,
+        .booking-info {
+            /* Renamed for clarity */
+            width: 45%;
+        }
+
+        .info-section h3 {
+            font-size: 16px;
+            color: #555;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        .bill-details p,
+        .booking-info p {
+            margin: 5px 0;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .bill-details span:first-child {
+            font-weight: bold;
+            display: inline-block;
+            width: 100px;
+        }
+
+        .booking-info p span:first-child {
+            font-weight: bold;
+            display: inline-block;
+            width: 130px;
+            color: #333;
+        }
+
+
+        /* Item Table */
+        .item-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .item-table thead th {
+            background-color: #00A389;
+            color: #fff;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        .item-table tbody td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        /* Grouping different services */
+        .item-table tbody tr.room-charge td {
+            background-color: #e0f2f1;
+            /* Light teal for main room charge */
+            font-weight: bold;
+        }
+
+        .item-table tbody tr.deposit-applied td {
+            background-color: #ffe0b2;
+            /* Light orange for deposit */
+        }
+
+
+        .item-table tbody td:nth-child(1) {
+            width: 5%;
+            text-align: center;
+        }
+
+        .item-table tbody td:nth-child(3),
+        .item-table tbody td:nth-child(4),
+        .item-table tbody td:nth-child(5) {
+            text-align: right;
+        }
+
+        /* Summary (Total Section) */
+        .summary-section {
+            padding: 20px 30px;
+            text-align: right;
+        }
+
+        .summary-box {
+            display: inline-block;
+            width: 300px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 14px;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .summary-row.bold {
+            font-weight: bold;
+        }
+
+        .summary-row.grand-total {
+            border-top: 2px solid #00A389;
+            margin-top: 10px;
+            padding-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #00A389;
+        }
+
+        .summary-row.grand-total span:last-child {
+            font-size: 20px;
+        }
+
+
+        /* Footer */
+        .footer-section {
+            display: flex;
+            padding: 20px 30px;
+            background-color: #fff;
+        }
+
+        .signature-contact {
+            width: 50%;
+            padding-right: 20px;
+            font-size: 12px;
+            color: #555;
+        }
+
+        .signature-contact p {
+            margin: 3px 0;
+        }
+
+        .terms-conditions {
+            width: 50%;
+            border-left: 1px solid #eee;
+            padding-left: 20px;
+        }
+
+        .terms-conditions h2 {
+            font-size: 24px;
+            color: #333;
+            margin: 0 0 10px 0;
+            text-align: center;
+        }
+
+        .terms-conditions p {
+            font-size: 12px;
+            color: #777;
+            line-height: 1.6;
+        }
+
+        .thank-you-banner {
+            background-color: #00A389;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="invoice-container">
+        <div class="header">
+            <div class="header-left">
+                <h1>YASUO INVOICE</h1>
+                <p>Invoice No. INV-HK-8893A</p>
+                <p>Check-out Date. 28/12/2025</p>
+            </div>
+            <div class="header-right">
+                <div class="company-logo">Yasuo Resort</div>
+                <div class="slogan">Thank you for staying with us!</div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="bill-to">
+                <h3>Customer</h3>
+                <div class="bill-details">
+                    <p><span>Guest Name</span>: John Smith</p>
+                    <p><span>Room No.</span>: 405</p>
+                    <p><span>Email</span>: john.smith@mail.com</p>
+                    <p><span>Address</span>: 456 Palm Ave, Los Angeles, USA</p>
+                </div>
+            </div>
+            <div class="booking-info">
+                <h3>Stay Information.</h3>
+                <div class="booking-details">
+                    <p><span>Check-in Date</span>: 25/12/2025</p>
+                    <p><span>Check-out Date</span>: 28/12/2025</p>
+                    <p><span>Total Nights</span>: 3 Nights</p>
+                </div>
+            </div>
+        </div>
+
+        <table class="item-table">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>DESCRIPTION</th>
+                    <th>QTY</th>
+                    <th>UNIT PRICE</th>
+                    <th>TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="room-charge">
+                    <td>1</td>
+                    <td>Room Charge: Deluxe Sea View Room (3 Nights)</td>
+                    <td>3</td>
+                    <td>$500.00</td>
+                    <td>$1,500.00</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Service: Minibar Items (Water, Soda, Snack)</td>
+                    <td>3</td>
+                    <td>$15.00</td>
+                    <td>$45.00</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Service: Laundry Service (3 Shirts)</td>
+                    <td>3</td>
+                    <td>$5.00</td>
+                    <td>$15.00</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>Service: Spa Treatment (1-hour massage)</td>
+                    <td>1</td>
+                    <td>$120.00</td>
+                    <td>$120.00</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>Service: Room Service Dinner (2 Pax)</td>
+                    <td>1</td>
+                    <td>$85.00</td>
+                    <td>$85.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="summary-section">
+            <div class="summary-box">
+                <div class="summary-row">
+                    <span>Subtotal (before tax)</span>
+                    <span>$1,765.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Local Tax (7%)</span>
+                    <span>$123.55</span>
+                </div>
+                <div class="summary-row">
+                    <span>Service Charge (10%)</span>
+                    <span>$176.50</span>
+                </div>
+                <div class="summary-row bold deposit-applied">
+                    <span>Deposit Applied (from Booking)</span>
+                    <span>($300.00)</span>
+                </div>
+                <div class="summary-row grand-total">
+                    <span>AMOUNT DUE (USD)</span>
+                    <span>$1,765.05</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="thank-you-banner">
+            Thank you for choosing Yasuo Resort. We look forward to welcoming you back soon!
+        </div>
+    </div>
+
+</body>
+
+</html>

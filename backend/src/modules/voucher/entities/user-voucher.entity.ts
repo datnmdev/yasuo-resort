@@ -7,7 +7,6 @@ import {
   JoinColumn,
   ManyToOne,
   OneToOne,
-  PrimaryGeneratedColumn,
 } from "typeorm";
 import { Voucher } from "./voucher.entity";
 
