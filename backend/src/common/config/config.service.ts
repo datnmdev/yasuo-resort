@@ -5,6 +5,12 @@ import { ConfigService as NestConfigModule } from '@nestjs/config';
 export class ConfigService {
   constructor(private readonly nestConfigService: NestConfigModule) {}
 
+  getServerConfig() {
+    return {
+      baseUrl: this.nestConfigService.get('BASE_URL'),
+    };
+  }
+
   getJwtConfig() {
     return {
       accessTokenSecret: this.nestConfigService.get('JWT_ACCESSTOKEN_SECRET'),

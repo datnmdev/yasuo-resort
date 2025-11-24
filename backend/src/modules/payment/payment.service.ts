@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Payment } from './entities/payment.entity';
@@ -33,6 +34,29 @@ export class PaymentService {
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
   ) {}
+
+  async getReceipts(userId: number, bookingId: number) {
+    const booking = await this.dataSource.manager.findOne(Booking, {
+      where: {
+        id: bookingId,
+        userId,
+      },
+      relations: ['payments'],
+    });
+    if (!booking) {
+      throw new NotFoundException({
+        message: 'Booking ID not found',
+        error: 'BadRequest',
+      });
+    }
+    return booking.payments.map((p) =>
+      path.join(
+        this.configService.getServerConfig().baseUrl,
+        'uploads',
+        `${JSON.parse(p.gatewayResponse).vnp_OrderInfo}_Receipt.pdf`,
+      ),
+    );
+  }
 
   async pay(req: Request, body: PayDepositReqDto) {
     const booking = await this.dataSource.manager.findOne(Booking, {
@@ -270,83 +294,84 @@ export class PaymentService {
                     },
                   );
 
-                  if (vnpParams.vnp_OrderInfo.substring(0, 2) == 'DP') {
-                    // Xuất biên lai
-                    const contractHTML = await ejs.renderFile(
-                      path.join(
-                        process.cwd(),
-                        'src/assets/templates/receipt.ejs',
-                      ),
-                      {
-                        payment: {
-                          ...payment,
-                          paymentDate: {
-                            day: moment(payment.paymentDate).daysInMonth(),
-                            month: moment(payment.paymentDate).format('MMMM'),
-                            year: moment(payment.paymentDate).year(),
-                          },
-                          booking: {
-                            ...payment.booking,
-                            startDate: moment(payment.booking.startDate).format(
-                              'DD/MM/YYYY',
-                            ),
-                            endDate: moment(payment.booking.endDate).format(
-                              'DD/MM/YYYY',
-                            ),
-                            bookingServices:
-                              payment.booking.bookingServices.map((e) => ({
-                                ...e,
-                                totalPrice: (
-                                  e.quantity *
-                                  (moment(e.endDate).diff(
-                                    moment(e.startDate),
-                                    'days',
-                                  ) +
-                                    1) *
-                                  Number(e.price)
-                                ).toFixed(2),
-                              })),
-                            subTotalPrice: (
-                              payment.booking.capacity *
-                              (moment(payment.booking.endDate).diff(
-                                moment(payment.booking.startDate),
-                                'days',
-                              ) +
-                                1) *
-                              Number(payment.booking.roomPrice)
-                            ).toFixed(2),
-                          },
-                          nights:
-                            moment(payment.booking.endDate).diff(
+                  // Xuất biên lai
+                  const contractHTML = await ejs.renderFile(
+                    path.join(
+                      process.cwd(),
+                      'src/assets/templates/receipt.ejs',
+                    ),
+                    {
+                      payment: {
+                        ...payment,
+                        paymentDate: {
+                          day: moment(payment.paymentDate).daysInMonth(),
+                          month: moment(payment.paymentDate).format('MMMM'),
+                          year: moment(payment.paymentDate).year(),
+                        },
+                        booking: {
+                          ...payment.booking,
+                          startDate: moment(payment.booking.startDate).format(
+                            'DD/MM/YYYY',
+                          ),
+                          endDate: moment(payment.booking.endDate).format(
+                            'DD/MM/YYYY',
+                          ),
+                          bookingServices: payment.booking.bookingServices.map(
+                            (e) => ({
+                              ...e,
+                              totalPrice: (
+                                e.quantity *
+                                (moment(e.endDate).diff(
+                                  moment(e.startDate),
+                                  'days',
+                                ) +
+                                  1) *
+                                Number(e.price)
+                              ).toFixed(2),
+                            }),
+                          ),
+                          subTotalPrice: (
+                            payment.booking.capacity *
+                            (moment(payment.booking.endDate).diff(
                               moment(payment.booking.startDate),
                               'days',
-                            ) + 1,
+                            ) +
+                              1) *
+                            Number(payment.booking.roomPrice)
+                          ).toFixed(2),
                         },
+                        nights:
+                          moment(payment.booking.endDate).diff(
+                            moment(payment.booking.startDate),
+                            'days',
+                          ) + 1,
                       },
-                      {
-                        async: true,
-                      },
-                    );
-                    const fileName = `${vnpParams.vnp_OrderInfo}_Receipt`;
-                    const fileRelativePath = path.join(
-                      'uploads',
-                      `${fileName}.html`,
-                    );
-                    await fs.promises.writeFile(
-                      path.join(process.cwd(), fileRelativePath),
-                      contractHTML,
-                    );
-                    await htmlToPdf(
-                      path.join(process.cwd(), fileRelativePath),
-                      path.join(
-                        process.cwd(),
-                        path.join('uploads', `${fileName}.pdf`),
-                      ),
-                    );
-                    await fs.promises.unlink(
-                      path.join(process.cwd(), fileRelativePath),
-                    );
-                  } else {
+                    },
+                    {
+                      async: true,
+                    },
+                  );
+                  const fileName = `${vnpParams.vnp_OrderInfo}_Receipt`;
+                  const fileRelativePath = path.join(
+                    'uploads',
+                    `${fileName}.html`,
+                  );
+                  await fs.promises.writeFile(
+                    path.join(process.cwd(), fileRelativePath),
+                    contractHTML,
+                  );
+                  await htmlToPdf(
+                    path.join(process.cwd(), fileRelativePath),
+                    path.join(
+                      process.cwd(),
+                      path.join('uploads', `${fileName}.pdf`),
+                    ),
+                  );
+                  await fs.promises.unlink(
+                    path.join(process.cwd(), fileRelativePath),
+                  );
+
+                  if (vnpParams.vnp_OrderInfo.substring(0, 2) == 'FP') {
                     const invoices = await queryRunner.manager.findAndCount(
                       Invoice,
                       {
@@ -484,7 +509,7 @@ export class PaymentService {
                         async: true,
                       },
                     );
-                    const fileName = `${vnpParams.vnp_OrderInfo}_Invoice`;
+                    const fileName = `${newInvoice.invoiceNumber}_Invoice`;
                     const fileRelativePath = path.join(
                       'uploads',
                       `${fileName}.html`,

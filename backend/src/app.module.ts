@@ -142,7 +142,8 @@ export class AppModule implements NestModule {
           method: RequestMethod.GET,
         },
         'invoice',
-        'payment',
+        'payment/receipts',
+        'payment/pay',
       );
   }
 }
