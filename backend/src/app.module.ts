@@ -27,6 +27,8 @@ import { VoucherModule } from 'modules/voucher/voucher.module';
 import { ComboModule } from 'modules/combo/combo.module';
 import { PaymentModule } from 'modules/payment/payment.module';
 import { InvoiceModule } from 'modules/invoice/invoice.module';
+import { StatisticsModule } from 'modules/statistics/statistics.module';
+import { RecommenderModule } from 'modules/recommender/recommender.module';
 
 @Module({
   imports: [
@@ -69,6 +71,8 @@ import { InvoiceModule } from 'modules/invoice/invoice.module';
     ComboModule,
     PaymentModule,
     InvoiceModule,
+    StatisticsModule,
+    RecommenderModule
   ],
   controllers: [],
   providers: [],
@@ -144,6 +148,8 @@ export class AppModule implements NestModule {
         'invoice',
         'payment/receipts',
         'payment/pay',
+        'statistics',
+        'recommender'
       );
   }
 }
