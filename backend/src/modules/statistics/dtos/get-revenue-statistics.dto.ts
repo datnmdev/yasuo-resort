@@ -4,8 +4,8 @@ import { OneOf } from 'common/decorators/validation.decorator';
 export class GetRevenueStatisticsReqDto {
   @IsNotEmpty()
   @IsString()
-  @OneOf(['month', 'year'])
-  timeUnit: 'month' | 'year';
+  @OneOf(['day', 'month', 'year'])
+  timeUnit: 'day' | 'month' | 'year';
 
   @IsNotEmpty()
   @IsDateString()
