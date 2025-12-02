@@ -1,6 +1,6 @@
-import { Outlet } from "react-router";
-import Header from "./components/Header";
-import Sidebar from "./components/Sidebar";
+import { Outlet } from 'react-router';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
 
 export default function AdminLayout() {
   return (
@@ -9,12 +9,12 @@ export default function AdminLayout() {
         <Sidebar />
       </div>
 
-      <div className="grow">
+      <div className="grow h-[100vh] overflow-hidden flex flex-col">
         <div>
           <Header />
         </div>
 
-        <div>
+        <div className="grow overflow-auto">
           <Outlet />
         </div>
       </div>

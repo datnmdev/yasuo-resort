@@ -4,47 +4,46 @@ import {
   TagsOutlined,
   FormOutlined,
   DashboardOutlined,
-} from "@ant-design/icons";
-import TierManagement from "@src/pages/TierManagement";
-import { Menu } from "antd";
-import { useLocation, useNavigate } from "react-router";
+} from '@ant-design/icons';
+import { Menu } from 'antd';
+import { useLocation, useNavigate } from 'react-router';
 
 const items = [
-  // { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
+  { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
   {
-    key: "/admin/booking-request",
+    key: '/admin/booking-request',
     icon: <FormOutlined />,
-    label: "Booking Requests",
+    label: 'Booking Requests',
   },
   {
-    key: "/admin/room-management",
+    key: '/admin/room-management',
     icon: <BuildOutlined />,
-    label: "Rooms Management",
+    label: 'Rooms Management',
   },
   {
-    key: "/admin/room-type-management",
+    key: '/admin/room-type-management',
     icon: <TagsOutlined />,
-    label: "Room Types Management",
+    label: 'Room Types Management',
   },
   {
-    key: "/admin/service-management",
+    key: '/admin/service-management',
     icon: <CustomerServiceOutlined />,
-    label: "Services Management",
+    label: 'Services Management',
   },
   {
-    key: "/admin/combo-management",
+    key: '/admin/combo-management',
     icon: <CustomerServiceOutlined />,
-    label: "Combo Management",
+    label: 'Combo Management',
   },
   {
-    key: "/admin/voucher-management",
+    key: '/admin/voucher-management',
     icon: <CustomerServiceOutlined />,
-    label: "Voucher Management",
+    label: 'Voucher Management',
   },
   {
-    key: "/admin/tier-management",
+    key: '/admin/tier-management',
     icon: <CustomerServiceOutlined />,
-    label: "Tier Management",
+    label: 'Tier Management',
   },
 ];
 
@@ -56,12 +55,12 @@ export default function Sidebar() {
     <div>
       <img className="w-40 mx-auto" src="/logo_resort_2.png" alt="logo" />
       <Menu
-        defaultSelectedKeys={["/admin/booking-request"]}
+        defaultSelectedKeys={['/admin/dashboard']}
         selectedKeys={[location.pathname]}
         mode="inline"
         theme="light"
         items={items}
-        style={{ width: 256, height: "100%" }}
+        style={{ width: 256, height: '100%' }}
         onSelect={(info) => navigate(info.key)}
       />
     </div>

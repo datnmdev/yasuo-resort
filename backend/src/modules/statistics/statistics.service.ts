@@ -10,7 +10,7 @@ export class StatisticsService {
 
   async getRevenueStatistics(query: GetRevenueStatisticsReqDto) {
     const result = [];
-    if (query.timeUnit === 'day') {
+    if (query.timeUnit === 'date') {
       const confirmedBookings = await this.dataSource.manager.find(Booking, {
         where: {
           status: 'confirmed',
@@ -20,6 +20,8 @@ export class StatisticsService {
           'bookingServices.booking',
           'payments',
           'room',
+          'room.media',
+          'room.type',
         ],
       });
       for (
@@ -90,6 +92,8 @@ export class StatisticsService {
           'bookingServices.booking',
           'payments',
           'room',
+          'room.media',
+          'room.type',
         ],
       });
       for (
@@ -160,6 +164,8 @@ export class StatisticsService {
           'bookingServices.booking',
           'payments',
           'room',
+          'room.media',
+          'room.type',
         ],
       });
       for (
