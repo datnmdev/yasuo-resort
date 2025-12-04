@@ -33,7 +33,7 @@ export class PaymentService {
     private readonly paymentRepository: Repository<Payment>,
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   async getReceipts(userId: number, bookingId: number) {
     const booking = await this.dataSource.manager.findOne(Booking, {
@@ -421,8 +421,8 @@ export class PaymentService {
                         invoices[1] <= 0
                           ? String(1).padStart(8, '0')
                           : String(
-                              Number(invoices[0][0].invoiceNumber) + 1,
-                            ).padStart(8, '0'),
+                            Number(invoices[0][0].invoiceNumber) + 1,
+                          ).padStart(8, '0'),
                       invoiceDate: new Date(),
                       subTotalAmount: subTotalAmount.toFixed(2),
                       discountAmount: (
@@ -538,7 +538,7 @@ export class PaymentService {
                           (i) =>
                             i.status === 'pending' &&
                             i.createdAt.getTime() ===
-                              payment.booking.createdAt.getTime(),
+                            payment.booking.createdAt.getTime(),
                         )
                         .map((item) =>
                           queryRunner.manager.create(BookingServiceEntity, {
