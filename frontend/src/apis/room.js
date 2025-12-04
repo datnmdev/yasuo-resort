@@ -18,4 +18,9 @@ export default {
   getAllRoom: () => {
     return axiosInstance.get("/room");
   },
+  getRecommendRoom: (query) => {
+    return axiosInstance.get('/recommender/room', {
+      params: query,
+    });
+  },
 };

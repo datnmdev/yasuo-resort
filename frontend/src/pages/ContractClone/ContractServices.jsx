@@ -9,8 +9,6 @@ const ContractServices = ({ data, dataCombo }) => {
     const [editingKey, setEditingKey] = useState('');
     const [form] = Form.useForm();
 
-    console.log("check dataCombo", dataCombo)
-
     const isEditing = (record) => record.id === editingKey;
 
     const edit = (record) => {
@@ -262,21 +260,6 @@ const ContractServices = ({ data, dataCombo }) => {
             },
         },
     ];
-
-    const handleView = (record) => {
-        console.log('View record:', record);
-        // TODO: Implement view details logic
-    };
-
-    const handleEdit = (record) => {
-        console.log('Edit record:', record);
-        // TODO: Implement edit logic
-    };
-
-    const handleDelete = (record) => {
-        console.log('Delete record:', record);
-        // TODO: Implement delete logic
-    };
 
     return (
         <div className="mt-4">
