@@ -75,4 +75,16 @@ export default {
       params: query,
     });
   },
+  getReceipt: (req) => {
+    return axiosInstance.get('/payment/receipts', {
+      params: { bookingId: req.param.bookingId }
+    });
+  },
+  payDeposit: (req) => {
+    return axiosInstance.post('/payment/pay', {
+      bookingId: req.bookingId,
+      paymentStage: req.paymentStage || 'deposit_payment',
+      bankCode: req.bankCode || 'VNBANK'
+    });
+  }
 };

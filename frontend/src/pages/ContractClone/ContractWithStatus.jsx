@@ -20,12 +20,12 @@ const ContractWithStatus = ({ status, data }) => {
 
     const { data: listComboFromAPI } = useFetch(() => apis.booking.getCombosForAll({ page: 1, limit: 1000 }))
 
-    console.log("check listComboFromAPI", listComboFromAPI)
     const [isSignModalOpen, setIsSignModalOpen] = useState(false);
     const [currentContract, setCurrentContract] = useState(null);
 
     const [signaturePad, setSignaturePad] = useState(null);
     const [isSigning, setIsSigning] = useState(false);
+
     const signatureCanvas = useRef(null);
 
     useEffect(() => {
@@ -34,7 +34,6 @@ const ContractWithStatus = ({ status, data }) => {
                 return item.status === status
             })
             setFilteredBookings(filtered)
-            console.log("filnal", filteredBookings)
         }
     }, [data, status])
 
@@ -181,6 +180,29 @@ const ContractWithStatus = ({ status, data }) => {
         }
     };
 
+    const handleDepositPayment = async (booking) => {
+        if (!booking?.id) {
+            toast.error('Không tìm thấy thông tin đặt phòng');
+            return;
+        }
+
+        try {
+            const response = await apis.booking.payDeposit({
+                bookingId: booking.id,
+                paymentStage: 'deposit_payment',
+                bankCode: 'VNBANK'
+            });
+
+            if (response?.data?.data) {
+                window.location.href = response.data.data;
+            }
+            toast.info('Đang chuyển hướng đến trang thanh toán...');
+        } catch (error) {
+            console.error('Lỗi khi tạo thanh toán:', error);
+            toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi tạo thanh toán');
+        }
+    };
+
     return (
         <>
             {filteredBookings.map((item) => (
@@ -240,11 +262,31 @@ const ContractWithStatus = ({ status, data }) => {
                                                     Cancel Booking
                                                 </Button>
                                             )}
+                                            {item.status === 'pending' && item.contract.signedByUser && (
+                                                <Button
+                                                    type="primary"
+                                                    className="ml-2"
+                                                    onClick={() => handleDepositPayment(item)}
+                                                >
+                                                    Đặt cọc
+                                                </Button>
+                                            )}
+                                            {item.status === 'confirmed' && (
+                                                <Button
+                                                    type="primary"
+                                                    className="ml-2"
+                                                >
+                                                    Xem biên lai
+                                                </Button>
+                                            )}
                                         </>
                                     ) : (
                                         <span className="text-gray-500 text-sm">No contract available</span>
                                     )}
                                 </div>
+                                {/* {item.status === 'pending' && item.contract.signedByUser && (
+                                        <span className="text-gray-500 text-lg mt-2 text-red-400">Bạn chưa đặt cọc</span>
+                                    )} */}
                             </div>
 
                             <div className='w-[70%] '>
