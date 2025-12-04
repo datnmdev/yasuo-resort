@@ -326,7 +326,12 @@ export class RecommenderService {
         userId,
         status: 'confirmed',
       },
-      relations: ['feedbacks', 'bookingServices', 'bookingServices.booking'],
+      relations: [
+        'feedbacks',
+        'bookingServices',
+        'bookingServices.booking',
+        'bookingServices.booking.feedbacks',
+      ],
     });
     const now = moment();
     const favoriteServiceVW = favoriteServices
