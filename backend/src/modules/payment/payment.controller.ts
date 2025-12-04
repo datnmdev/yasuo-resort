@@ -27,20 +27,18 @@ export class PaymentController {
   @UseGuards(RolesGuard)
   async getReceipt(
     @Query() query: GetReceiptsReqDto,
-    @User('id') userId: number
+    @User('id') userId: number,
   ) {
-    return AppResponse.ok(await this.paymentService.getReceipts(userId, query.bookingId));
+    return AppResponse.ok(
+      await this.paymentService.getReceipts(userId, query.bookingId),
+    );
   }
 
   @Post('pay')
   @Roles(Role.CUSTOMER)
   @UseGuards(RolesGuard)
-  async payDeposit(
-    @Req() req: Request,
-    @Body() body: PayDepositReqDto,
-    @Res() res: Response,
-  ) {
-    return res.redirect(await this.paymentService.pay(req, body));
+  async pay(@Req() req: Request, @Body() body: PayDepositReqDto) {
+    return AppResponse.ok(await this.paymentService.pay(req, body));
   }
 
   @Get('vnpay-ipn')
