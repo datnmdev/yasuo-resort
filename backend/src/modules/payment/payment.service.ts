@@ -93,7 +93,7 @@ export class PaymentService {
     if (!booking.contract) {
       throw new ConflictException('Booking does not have a contract');
     }
-    if (booking.contract.signedByUser) {
+    if (!booking.contract.signedByUser) {
       throw new ConflictException("Your contract haven't signed yet");
     }
     const paymentExistings = await this.paymentRepository.find({
