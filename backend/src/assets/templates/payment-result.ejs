@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Payment Successful</title>
+    <title>Payment <%= locals.isSuccess ? `Successful` : `Failure` %></title>
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
       rel="stylesheet"
@@ -154,16 +154,16 @@
     <div class="thank-container">
       <div
         class="icon"
-        style="color: <%= locals.isSuccess ? '#14b8a6' : 'red' %>;"
+        style="color: <%= locals.isSuccess ? `#14b8a6` : `red` %>;"
       >
-        <%= locals.isSuccess ? '✔' : '❌' %>
+        <%= locals.isSuccess ? `✔` : `❌` %>
       </div>
 
-      <h2><%= locals.isSuccess ? 'Thank You!' : 'Sorry!' %></h2>
+      <h2><%= locals.isSuccess ? `Thank You!` : `Sorry!` %></h2>
       <p>
-        <%= locals.isSuccess ? 'Your payment was successful. We look forward to
-        welcoming you to your relaxing getaway.' : 'Your payment was
-        unsuccessful. Please try again or use a different payment method' %>
+        <%= locals.isSuccess ? `Your payment was successful. We look forward to
+        welcoming you to your relaxing getaway.` : `Your payment was
+        unsuccessful. Please try again or use a different payment method` %>
       </p>
       <!-- nút quay về nha -->
       <a href="<%= locals.homeLink %>" class="back-btn">Back to Homepage</a>

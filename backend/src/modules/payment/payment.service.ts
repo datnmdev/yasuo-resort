@@ -606,7 +606,7 @@ export class PaymentService {
             resolve(error.message);
           }
           resolve(html);
-        },
+        }
       );
     });
   }
