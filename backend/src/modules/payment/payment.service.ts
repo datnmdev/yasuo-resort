@@ -195,34 +195,6 @@ export class PaymentService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      // Cập nhật lại trạng thái đặt phòng
-      await queryRunner.manager.update(
-        Booking,
-        {
-          id: booking.id,
-        },
-        {
-          status: 'confirmed',
-        },
-      );
-
-      // Cập nhật lại trạng thái dịch vụ đã đặt kèm (từ combo hoặc bổ sung bởi khách hàng)
-      if (booking.bookingServices.length > 0) {
-        const bookingServiceEntities = booking.bookingServices
-          .filter(
-            (i) =>
-              i.status === 'pending' &&
-              i.createdAt.getTime() === booking.createdAt.getTime(),
-          )
-          .map((item) =>
-            queryRunner.manager.create(BookingServiceEntity, {
-              ...item,
-              status: 'confirmed',
-            }),
-          );
-        await queryRunner.manager.save(bookingServiceEntities);
-      }
-
       // Lưu thông tin payment
       const paymentEntity = queryRunner.manager.create(Payment, {
         id: orderId,
@@ -275,10 +247,10 @@ export class PaymentService {
         if (payment) {
           if (Number(payment.amount) == Number(vnpParams.vnp_Amount)) {
             if (payment.status === 'pending') {
-              if (vnpParams.vnp_ResponseCode == '00') {
-                await queryRunner.connect();
-                await queryRunner.startTransaction();
-                try {
+              await queryRunner.connect();
+              await queryRunner.startTransaction();
+              try {
+                if (vnpParams.vnp_ResponseCode == '00') {
                   await queryRunner.manager.update(
                     Payment,
                     vnpParams.vnp_TxnRef,
@@ -530,22 +502,67 @@ export class PaymentService {
                     );
                   }
 
-                  await queryRunner.commitTransaction();
+                  // Cập nhật lại trạng thái đặt phòng
+                  await queryRunner.manager.update(
+                    Booking,
+                    {
+                      id: payment.booking.id,
+                    },
+                    {
+                      status: 'confirmed',
+                    },
+                  );
+
+                  // Cập nhật lại trạng thái dịch vụ đã đặt kèm (từ combo hoặc bổ sung bởi khách hàng)
+                  if (payment.booking.bookingServices.length > 0) {
+                    const bookingServiceEntities =
+                      payment.booking.bookingServices
+                        .filter(
+                          (i) =>
+                            i.status === 'pending' &&
+                            i.createdAt.getTime() ===
+                              payment.booking.createdAt.getTime(),
+                        )
+                        .map((item) =>
+                          queryRunner.manager.create(BookingServiceEntity, {
+                            ...item,
+                            status: 'confirmed',
+                          }),
+                        );
+                    await queryRunner.manager.save(bookingServiceEntities);
+                  }
+                } else {
+                  await queryRunner.manager.update(
+                    Payment,
+                    vnpParams.vnp_TxnRef,
+                    {
+                      status: 'failed',
+                      transactionCode: vnpParams.vnp_TransactionNo,
+                      gatewayResponse: JSON.stringify(
+                        _.omit(vnpParams, [
+                          'vnp_SecureHash',
+                          'vnp_SecureHashType',
+                        ]),
+                      ),
+                    },
+                  );
+                }
+                await queryRunner.commitTransaction();
+                if (vnpParams.vnp_ResponseCode == '00') {
                   return {
                     RspCode: '00',
                     Message: 'Success',
                   };
-                } catch (error) {
-                  await queryRunner.rollbackTransaction();
-                  return error;
-                } finally {
-                  await queryRunner.release();
                 }
-              } else {
                 return {
-                  RspCode: '00',
-                  Message: 'Success',
+                  RspCode: vnpParams.vnp_ResponseCode,
+                  Message: 'Failed',
                 };
+              } catch (error) {
+                await queryRunner.rollbackTransaction();
+                return error;
+              } finally {
+                await queryRunner.release();
               }
             } else {
               return {
