@@ -49,13 +49,15 @@ export class PaymentService {
         error: 'BadRequest',
       });
     }
-    return booking.payments.map((p) =>
-      path.join(
-        this.configService.getServerConfig().baseUrl,
-        'uploads',
-        `${JSON.parse(p.gatewayResponse).vnp_OrderInfo}_Receipt.pdf`,
-      ),
-    );
+    return booking.payments
+      .filter((p) => p.status === 'success' || p.status === 'refunded')
+      .map((p) =>
+        path.join(
+          this.configService.getServerConfig().baseUrl,
+          'uploads',
+          `${JSON.parse(p.gatewayResponse).vnp_OrderInfo}_Receipt.pdf`,
+        ),
+      );
   }
 
   async pay(req: Request, body: PayDepositReqDto) {
