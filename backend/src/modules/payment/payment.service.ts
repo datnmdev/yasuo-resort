@@ -216,6 +216,8 @@ export class PaymentService {
 
   async handleVnpIpn(handleVnpayIpnDto: HandleVnpayIpnDto) {
     const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const vnpParams = handleVnpayIpnDto;
       const vnpSecureHash = vnpParams.vnp_SecureHash;
@@ -245,10 +247,23 @@ export class PaymentService {
 
       if (vnpSecureHash === signed) {
         if (payment) {
-          if (Number(payment.amount) == Number(vnpParams.vnp_Amount)) {
+          const getConvertedAmountRes = await fetch(
+            `https://v6.exchangerate-api.com/v6/f4d3e9752dc7d1cd41b4563f/pair/USD/VND/${payment.amount}`,
+            {
+              method: 'GET',
+            },
+          ).then((res) => res.json());
+          if (getConvertedAmountRes.result !== 'success') {
+            throw new InternalServerErrorException({
+              message: 'Failed to convert currency',
+              error: 'BadRequest',
+            });
+          }
+          if (
+            Math.ceil(getConvertedAmountRes.conversion_result) * 100 ==
+            Number(vnpParams.vnp_Amount)
+          ) {
             if (payment.status === 'pending') {
-              await queryRunner.connect();
-              await queryRunner.startTransaction();
               try {
                 if (vnpParams.vnp_ResponseCode == '00') {
                   await queryRunner.manager.update(
@@ -606,7 +621,7 @@ export class PaymentService {
             resolve(error.message);
           }
           resolve(html);
-        }
+        },
       );
     });
   }
