@@ -241,6 +241,7 @@ export class PaymentService {
         relations: [
           'booking',
           'booking.bookingServices',
+          'booking.bookingServices.service',
           'booking.user',
           'booking.room',
           'booking.payments',
