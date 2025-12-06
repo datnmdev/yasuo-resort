@@ -66,14 +66,14 @@ const Combos = () => {
                             </div>
                             {/* render button của card */}
                             <div className='flex justify-between items-center mt-4 gap-4'>
-                                <Button
+                                {/* <Button
                                     variant="outline"
                                     size="sm"
                                     className="flex-1 border-teal-600 text-teal-600 hover:bg-teal-50 bg-transparent"
                                 >
                                     <Eye className="w-4 h-4 mr-2" />
                                     View Details
-                                </Button>
+                                </Button> */}
                                 <Button
                                     size="sm"
                                     className="flex-1 bg-teal-600 hover:bg-teal-700"

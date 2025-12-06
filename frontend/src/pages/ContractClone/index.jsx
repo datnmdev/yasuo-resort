@@ -34,7 +34,7 @@ const Contract = () => {
 
   return (
     <>
-      <div className="container mx-auto">
+      <div className="container mx-auto min-h-screen">
         <h1 className="text-2xl font-bold mb-4">Contract</h1>
         <Tabs
           defaultActiveKey="Pending"
