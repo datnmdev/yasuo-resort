@@ -62,32 +62,33 @@ const TierManagement = () => {
             key: 'actions',
             render: (_, record) => (
                 <Space size="middle">
-                    <Button
-                        type="primary"
-                        icon={<EditOutlined />}
-                        onClick={() => {
-                            setEditingTier(record);
-                            formEdit.setFieldsValue({
-                                tierName: record.tierName,
-                                tierSlug: record.tierSlug,
-                                tierOrder: record.tierOrder,
-                                minSpending: parseFloat(record.minSpending),
-                                minBookings: record.minBookings,
-                                durationMonths: record.durationMonths,
-                                description: record.description
-                            });
-                            setIsEditTierModal(true);
-                        }}
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => handleDeleteTier(record.id)}
-                    >
-                        Delete
-                    </Button>
+                    <Tooltip title="Edit tier">
+                        <Button
+                            type="text"
+                            icon={<EditOutlined className="text-blue-500 hover:text-blue-700" />}
+                            onClick={() => {
+                                setEditingTier(record);
+                                formEdit.setFieldsValue({
+                                    tierName: record.tierName,
+                                    tierSlug: record.tierSlug,
+                                    tierOrder: record.tierOrder,
+                                    minSpending: parseFloat(record.minSpending),
+                                    minBookings: record.minBookings,
+                                    durationMonths: record.durationMonths,
+                                    description: record.description
+                                });
+                                setIsEditTierModal(true);
+                            }}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Delete tier">
+                        <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined className="hover:text-red-600" />}
+                            onClick={() => handleDeleteTier(record.id)}
+                        />
+                    </Tooltip>
                 </Space>
             ),
         },

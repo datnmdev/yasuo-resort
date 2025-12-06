@@ -75,12 +75,17 @@ export default {
       params: query,
     });
   },
-  getReceipt: (req) => {
+  getReceipt: (bookingId) => {
     return axiosInstance.get('/payment/receipts', {
-      params: { bookingId: req.param.bookingId }
+      params: { bookingId }
     });
   },
-  payDeposit: (req) => {
+  getInvoice: (bookingId) => {
+    return axiosInstance.get('/invoice', {
+      params: { bookingId }
+    });
+  },
+  paymentContract: (req) => {
     return axiosInstance.post('/payment/pay', {
       bookingId: req.bookingId,
       paymentStage: req.paymentStage || 'deposit_payment',

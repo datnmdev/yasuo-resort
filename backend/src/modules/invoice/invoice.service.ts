@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Invoice } from './entities/invoice.entity';
 import { DataSource, Repository } from 'typeorm';
 import { Booking } from 'modules/booking/entities/booking.entity';
-import path from 'path';
+import * as path from 'path';
 import { ConfigService } from 'common/config/config.service';
 
 @Injectable()
@@ -13,7 +13,7 @@ export class InvoiceService {
     private readonly invoiceRepository: Repository<Invoice>,
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   async getInvoice(userId: number, bookingId: number) {
     const booking = await this.dataSource.manager.findOne(Booking, {

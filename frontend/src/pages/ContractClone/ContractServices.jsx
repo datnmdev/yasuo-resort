@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Table, Tag, Button, Space, Form, Input, DatePicker, message } from 'antd';
+import { Table, Tag, Button, Space, Form, Input, DatePicker, message, Tooltip } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import apis from '@apis/index';
 
 const ContractServices = ({ data, dataCombo }) => {
+
+    console.log("kiểm tra data và datacombo", data, dataCombo)
 
     const [editingKey, setEditingKey] = useState('');
     const [form] = Form.useForm();
@@ -208,11 +210,25 @@ const ContractServices = ({ data, dataCombo }) => {
             title: "Status",
             dataIndex: "status",
             key: "status",
-            render: (status) => (
-                <Tag color={status === 'pending' ? 'orange' : 'green'}>
-                    {status.toUpperCase()}
-                </Tag>
-            ),
+            render: (status, record) => {
+                let tagColor = 'green';
+                if (status === 'pending') tagColor = 'orange';
+                if (status === 'rejected') tagColor = 'red';
+
+                return (
+                    <Tooltip
+                        title={status === 'rejected' && record.reasonForRejection
+                            ? <div dangerouslySetInnerHTML={{ __html: record.reasonForRejection }} />
+                            : null
+                        }
+                        overlayClassName="max-w-md"
+                    >
+                        <Tag color={tagColor} className="cursor-help">
+                            {status.toUpperCase()}
+                        </Tag>
+                    </Tooltip>
+                );
+            },
         },
         {
             title: "Actions",

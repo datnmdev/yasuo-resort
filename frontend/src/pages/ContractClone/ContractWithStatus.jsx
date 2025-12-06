@@ -10,6 +10,8 @@ import { CheckCircle } from 'lucide-react';
 import ContractRoomImg from './ContractRoomImg'
 import { useNavigate } from 'react-router-dom';
 
+import dayjs from 'dayjs';
+
 const baseUrl = import.meta.env.VITE_API_BASE_URL
 
 const ContractWithStatus = ({ status, data }) => {
@@ -18,13 +20,21 @@ const ContractWithStatus = ({ status, data }) => {
 
     const [filteredBookings, setFilteredBookings] = useState([])
 
+    console.log('kiểm tra danh sách hợp đồng', filteredBookings)
+
     const { data: listComboFromAPI } = useFetch(() => apis.booking.getCombosForAll({ page: 1, limit: 1000 }))
 
     const [isSignModalOpen, setIsSignModalOpen] = useState(false);
     const [currentContract, setCurrentContract] = useState(null);
 
+    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+    const [invoiceUrl, setInvoiceUrl] = useState('');
+
     const [signaturePad, setSignaturePad] = useState(null);
     const [isSigning, setIsSigning] = useState(false);
+
+    const [showReceiptModal, setShowReceiptModal] = useState(false);
+    const [receiptUrl, setReceiptUrl] = useState('');
 
     const signatureCanvas = useRef(null);
 
@@ -187,7 +197,7 @@ const ContractWithStatus = ({ status, data }) => {
         }
 
         try {
-            const response = await apis.booking.payDeposit({
+            const response = await apis.booking.paymentContract({
                 bookingId: booking.id,
                 paymentStage: 'deposit_payment',
                 bankCode: 'VNBANK'
@@ -203,6 +213,85 @@ const ContractWithStatus = ({ status, data }) => {
         }
     };
 
+    const handleFinalPayment = async (booking) => {
+        try {
+            const response = await apis.booking.paymentContract({
+                bookingId: booking,
+                paymentStage: 'final_payment',
+                bankCode: 'VNBANK'
+            });
+
+            if (response?.data?.data) {
+                window.location.href = response.data.data;
+            }
+            toast.info('Đang chuyển hướng đến trang thanh toán...');
+        } catch (error) {
+            console.error('Lỗi khi tạo thanh toán:', error);
+            toast.error(error.response?.data?.error?.message || 'Có lỗi xảy ra khi tạo thanh toán');
+        }
+    };
+
+    const handleShowInvoice = async (bookingId) => {
+        try {
+            const response = await apis.booking.getInvoice(bookingId);
+            const invoiceUrls = response.data.data; // Array of invoice URLs
+
+            if (invoiceUrls && invoiceUrls.length > 0) {
+                // Clean up the URL
+                let url = invoiceUrls[0]
+                    .replace(/\\/g, '/')
+                    .replace(/^\.\//, '')
+                    .replace(/^http:\/\/?/i, '')
+                    .replace(/^https:\/\/?/i, '')
+                    .replace(/^[^/]+\//, '');
+
+                const baseUrl = 'http://localhost:8080';
+                const fullUrl = `${baseUrl}/${url.replace(/^\//, '')}`;
+
+                console.log('Invoice URL:', fullUrl);
+                setInvoiceUrl(fullUrl);
+                setShowInvoiceModal(true);
+            } else {
+                toast.info('Không tìm thấy hóa đơn');
+            }
+        } catch (error) {
+            console.error('Lỗi khi lấy hóa đơn:', error);
+            toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi tải hóa đơn');
+        }
+    };
+
+    const handleShowRecepeit = async (bookingId) => {
+        try {
+            const response = await apis.booking.getReceipt(bookingId);
+            const receiptUrls = response.data.data; // Array of receipt URLs
+
+            if (receiptUrls && receiptUrls.length > 0) {
+                // Clean up the URL
+                let url = receiptUrls[0]
+                    .replace(/\\/g, '/')  // Convert backslashes to forward slashes
+                    .replace(/^\.\//, '') // Remove leading ./
+                    .replace(/^http:\/\/?/i, '') // Remove any existing http:// (case insensitive)
+                    .replace(/^https:\/\/?/i, '') // Remove any existing https:// (case insensitive)
+                    .replace(/^[^/]+\//, ''); // Remove any existing domain part
+
+                // Add the correct protocol and host
+                const baseUrl = 'http://localhost:8080'; // Always use the backend URL directly
+
+                // Construct the full URL
+                const fullUrl = `${baseUrl}/${url.replace(/^\//, '')}`;
+
+                console.log('Final URL:', fullUrl); // Should log: http://localhost:8080/api/v1/uploads/DP-16820251206162755_Receipt.pdf
+                setReceiptUrl(fullUrl);
+                setShowReceiptModal(true);
+            } else {
+                toast.info('Không tìm thấy biên lai thanh toán');
+            }
+        } catch (error) {
+            console.error('Lỗi khi lấy biên lai:', error);
+            toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi tải biên lai');
+        }
+    }
+
     return (
         <>
             {filteredBookings.map((item) => (
@@ -216,8 +305,19 @@ const ContractWithStatus = ({ status, data }) => {
                         </div>
                         <div className='flex gap-4 mt-2'>
                             <div className='w-[30%] '>
+
+                                {dayjs().isBefore(dayjs(item.endDate)) && (
+                                    <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4 rounded">
+                                        <div className="flex items-center">
+                                            <svg className="h-5 w-5 text-amber-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            <p className="text-amber-700 font-medium">It's a pity that we can no longer accompany you. Thank you for staying with us, and we hope to see you again soon!</p>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className='flex gap-4 mb-2'>
-                                    {/* ảnh khách phòng */}
+                                    {/* ảnh phòng */}
                                     <ContractRoomImg data={item.roomId} />
 
                                     {/* thông tin phòng */}
@@ -275,24 +375,45 @@ const ContractWithStatus = ({ status, data }) => {
                                                 <Button
                                                     type="primary"
                                                     className="ml-2"
+                                                    onClick={() => handleShowRecepeit(item.id)}
                                                 >
                                                     Xem biên lai
                                                 </Button>
+                                            )}
+                                            {/* {&& dayjs().isSame(dayjs(item.endDate), 'day') } */}
+                                            {item.status === 'confirmed' && dayjs().isSame(dayjs(item.endDate), 'day') && (
+                                                <div>
+                                                    <Button
+                                                        type="primary"
+                                                        className="mt-2"
+                                                        onClick={() => handleFinalPayment(item.id)}
+                                                    >
+                                                        Thanh toán toàn bộ
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            {item.status === 'confirmed' && (
+                                                <div>
+                                                    <Button
+                                                        type="primary"
+                                                        className="mt-2"
+                                                        onClick={() => handleShowInvoice(item.id)}
+                                                    >
+                                                        Xem hóa đơn
+                                                    </Button>
+                                                </div>
                                             )}
                                         </>
                                     ) : (
                                         <span className="text-gray-500 text-sm">No contract available</span>
                                     )}
                                 </div>
-                                {/* {item.status === 'pending' && item.contract.signedByUser && (
-                                        <span className="text-gray-500 text-lg mt-2 text-red-400">Bạn chưa đặt cọc</span>
-                                    )} */}
                             </div>
 
                             <div className='w-[70%] '>
 
                                 {/*dịch vụ trong combo */}
-                                {item.comboId && (
+                                {/* {item.comboId && (
                                     <div className="w-full">
                                         <h3 className="font-semibold mb-3">Service in combo (person/day)</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -325,7 +446,7 @@ const ContractWithStatus = ({ status, data }) => {
                                                 ))}
                                         </div>
                                     </div>
-                                )}
+                                )} */}
                                 {/* dịch vụ đặt thêm */}
                                 <div className='mt-2 w-full'>
                                     <div className='flex items-center justify-between'>
@@ -354,6 +475,54 @@ const ContractWithStatus = ({ status, data }) => {
                 </div>
             ))}
             {renderSignModal()}
+
+            {/* biên lai */}
+            {showReceiptModal && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] flex flex-col">
+                        <div className="flex justify-between items-center p-4 border-b">
+                            <h3 className="text-lg font-semibold">Biên lai thanh toán</h3>
+                            <button
+                                onClick={() => setShowReceiptModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="flex-1">
+                            <iframe
+                                src={`${receiptUrl}#view=fitH`}
+                                className="w-full h-full border-0"
+                                title="Biên lai thanh toán"
+                                type="application/pdf"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* hóa đơn */}
+            {showInvoiceModal && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] flex flex-col">
+                        <div className="flex justify-between items-center p-4 border-b">
+                            <h3 className="text-lg font-semibold">Hóa đơn thanh toán</h3>
+                            <button
+                                onClick={() => setShowInvoiceModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="flex-1">
+                            <iframe
+                                src={`${invoiceUrl}#view=fitH`}
+                                className="w-full h-full border-0"
+                                title="Hóa đơn thanh toán"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 }

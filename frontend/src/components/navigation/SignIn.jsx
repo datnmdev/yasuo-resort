@@ -115,7 +115,7 @@ const SignIn = () => {
       <div className="hidden md:flex items-center space-x-4 mt-12">
         {isLoggedIn ? (
           <div className="center-both gap-4">
-            <Popover open={isOpen} onOpenChange={setIsOpen}>
+            {/* <Popover open={isOpen} onOpenChange={setIsOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -155,7 +155,7 @@ const SignIn = () => {
                   </ScrollArea>
                 )}
               </PopoverContent>
-            </Popover>
+            </Popover> */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

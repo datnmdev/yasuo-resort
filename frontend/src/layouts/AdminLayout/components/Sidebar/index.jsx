@@ -1,6 +1,11 @@
 import {
   BuildOutlined,
-  CustomerServiceOutlined,
+  HomeOutlined,
+  ToolOutlined,
+  GiftOutlined,
+  TrophyOutlined,
+  AppstoreAddOutlined,
+  AuditOutlined,
   TagsOutlined,
   FormOutlined,
   DashboardOutlined,
@@ -10,39 +15,46 @@ import { useLocation, useNavigate } from 'react-router';
 
 const items = [
   { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
+
   {
     key: '/admin/booking-request',
-    icon: <FormOutlined />,
+    icon: <AuditOutlined />,
     label: 'Booking Requests',
   },
+
   {
     key: '/admin/room-management',
-    icon: <BuildOutlined />,
+    icon: <HomeOutlined />,
     label: 'Rooms Management',
   },
+
   {
     key: '/admin/room-type-management',
     icon: <TagsOutlined />,
     label: 'Room Types Management',
   },
+
   {
     key: '/admin/service-management',
-    icon: <CustomerServiceOutlined />,
+    icon: <ToolOutlined />,
     label: 'Services Management',
   },
+
   {
     key: '/admin/combo-management',
-    icon: <CustomerServiceOutlined />,
+    icon: <AppstoreAddOutlined />,
     label: 'Combo Management',
   },
+
   {
     key: '/admin/voucher-management',
-    icon: <CustomerServiceOutlined />,
+    icon: <GiftOutlined />,
     label: 'Voucher Management',
   },
+
   {
     key: '/admin/tier-management',
-    icon: <CustomerServiceOutlined />,
+    icon: <TrophyOutlined />,
     label: 'Tier Management',
   },
 ];

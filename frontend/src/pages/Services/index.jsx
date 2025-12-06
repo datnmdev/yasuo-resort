@@ -85,7 +85,6 @@ export default function ServicePage() {
   });
 
   const services = data?.data?.data[0] || [];
-  console.log('Services data:', data);
   const totalPages = Math.ceil((data?.data?.data[1] || 1) / limit);
 
   return (

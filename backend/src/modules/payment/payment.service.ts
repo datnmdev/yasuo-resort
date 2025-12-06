@@ -107,7 +107,7 @@ export class PaymentService {
     if (
       body.paymentStage === 'deposit_payment' &&
       paymentExistings.some((e) =>
-        JSON.parse(e.gatewayResponse).vnp_TxnRef.startWiths('DP'),
+        JSON.parse(e.gatewayResponse).vnp_TxnRef.startsWith('DP'),
       )
     ) {
       throw new BadRequestException({
@@ -115,10 +115,13 @@ export class PaymentService {
         error: 'BadRequest',
       });
     }
+    if (body.paymentStage === 'final_payment' && moment().isBefore(moment(booking.endDate))) {
+      throw new ConflictException("The contract payment is not yet due. Please come back later!")
+    }
     if (
       body.paymentStage === 'final_payment' &&
       paymentExistings.some((e) =>
-        JSON.parse(e.gatewayResponse).vnp_TxnRef.startWiths('FP'),
+        JSON.parse(e.gatewayResponse)?.vnp_TxnRef?.startsWith('FP'),
       )
     ) {
       throw new BadRequestException({
@@ -153,7 +156,7 @@ export class PaymentService {
       for (const sv of newServicesAfterBookingRoom) {
         totalNewServicesAfterBookingRoom +=
           sv.quantity *
-          (moment(sv.endDate).diff(moment(sv.startDate)) + 1) *
+          (moment(sv.endDate).diff(moment(sv.startDate), "days") + 1) *
           Number(sv.price);
       }
       amount = Number(booking.totalPrice) + totalNewServicesAfterBookingRoom;
@@ -202,7 +205,7 @@ export class PaymentService {
         id: orderId,
         bookingId: body.bookingId,
         paymentDate: date.toDate(),
-        amount: (Number(booking.totalPrice) * 0.2).toFixed(2),
+        amount: amount.toFixed(2),
         status: 'pending',
       });
       await queryRunner.manager.save(paymentEntity);
@@ -378,7 +381,7 @@ export class PaymentService {
                     subTotalAmount +=
                       Number(payment.booking.roomPrice) *
                       (moment(payment.booking.endDate).diff(
-                        moment(payment.booking.startDate),
+                        moment(payment.booking.startDate), "days"
                       ) +
                         1);
                     // Tiền dịch vụ gốc
@@ -393,7 +396,7 @@ export class PaymentService {
                     for (const sv of services) {
                       subTotalAmount +=
                         sv.quantity *
-                        (moment(sv.endDate).diff(moment(sv.startDate)) + 1) *
+                        (moment(sv.endDate).diff(moment(sv.startDate), "days") + 1) *
                         Number(sv.price);
                     }
 
@@ -411,7 +414,7 @@ export class PaymentService {
                     for (const sv of newServicesAfterBookingRoom) {
                       totalNewServicesAfterBookingRoom +=
                         sv.quantity *
-                        (moment(sv.endDate).diff(moment(sv.startDate)) + 1) *
+                        (moment(sv.endDate).diff(moment(sv.startDate), "days") + 1) *
                         Number(sv.price);
                     }
 
@@ -582,7 +585,8 @@ export class PaymentService {
               } finally {
                 await queryRunner.release();
               }
-            } else {
+            }
+            else {
               return {
                 RspCode: '02',
                 Message: 'This order has been updated to the payment status',
