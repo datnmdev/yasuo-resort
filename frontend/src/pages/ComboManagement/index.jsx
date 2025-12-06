@@ -198,14 +198,38 @@ const ComboManagement = () => {
 
     const handleTogglePublication = async (record) => {
         try {
+            setLoading(true);
             // Giá trị 1 là active (Publish), 0 là inactive (Unpublish)
             const newStatus = record.isActive ? 0 : 1;
+
+            // Make the API call and wait for it to complete
             await apis.booking.toggleComboPublication(record.id, newStatus);
+
+            // Show success message
             toast.success(`Combo ${record.isActive ? 'unpublished' : 'published'} successfully!`);
-            setComboReq(prev => ({ ...prev, _t: Date.now() })); // Trigger re-fetch
+
+            // Update the local state immediately for better UX
+            setTableData(prev => {
+                const [data] = prev;
+                const updatedData = data.map(item =>
+                    item.id === record.id
+                        ? { ...item, isActive: !record.isActive }
+                        : item
+                );
+                return [updatedData, prev[1]];
+            });
+
+            // Then trigger a full refresh from the server
+            setComboReq(prev => ({
+                ...prev,
+                _t: Date.now() // This will force a refetch
+            }));
+
         } catch (error) {
             console.error('Error toggling combo publication:', error);
             toast.error(`Failed to ${record.isActive ? 'unpublish' : 'publish'} combo`);
+        } finally {
+            setLoading(false);
         }
     };
 

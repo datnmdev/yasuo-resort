@@ -119,12 +119,10 @@ const RoomPage = () => {
   });
 
   const rooms = roomData?.data?.data[0] ?? [];
-  console.log('check rooms', rooms);
   const totalPages = Math.ceil((roomData?.data?.data[1] || 1) / limit);
 
   // Read access token from cookies for display/use in this page
   const accessToken = Cookies.get('accessToken') || null;
-  console.log('Access Token:', accessToken);
 
   const onHandleSelectFavoriteRoom = async () => {
     try {
