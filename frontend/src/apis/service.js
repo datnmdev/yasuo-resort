@@ -21,4 +21,9 @@ export default {
   updateBookedService: (param, body) => {
     return axiosInstance.put(`/booking/service/${param.serviceId}`, body);
   },
+  getReCommendServices: (query) => {
+    return axiosInstance.get('/recommender/service', {
+      params: query
+    })
+  }
 };

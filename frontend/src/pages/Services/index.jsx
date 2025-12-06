@@ -19,10 +19,13 @@ import { useLocation } from 'react-router';
 import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 
+import RecommendServiceDrawer from './RecommendServiceDrawer';
+
 export default function ServicePage() {
   const location = useLocation();
   const { bookingId } = location.state || {};
   const [hasSetFromBookingId, setHasSetFromBookingId] = useState(false);
+  const [isRecommendDrawerOpen, setIsRecommendDrawerOpen] = useState(false);
 
   // States for Combobox
   const { booking, setBooking } = useCart();
@@ -167,6 +170,16 @@ export default function ServicePage() {
               </PopoverContent>
             </Popover>
           </div>
+          <div className="flex items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-teal-600 hover:bg-teal-700 text-white p-4"
+              onClick={() => setIsRecommendDrawerOpen(true)}
+            >
+              Recommend Service
+            </Button>
+          </div>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1">
               <CalendarDays className="w-4 h-4" />
@@ -261,6 +274,10 @@ export default function ServicePage() {
           <BookedServices />
         </div>
       </div>
+      <RecommendServiceDrawer
+        open={isRecommendDrawerOpen}
+        setOpen={setIsRecommendDrawerOpen}
+      />
     </div>
   );
 }
