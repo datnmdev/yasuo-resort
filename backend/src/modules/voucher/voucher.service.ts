@@ -20,6 +20,8 @@ import { UserTier } from 'modules/user/entities/user-tier.entity';
 import { GetVoucherReqDto } from './dtos/get-voucher.dto';
 import { User } from 'modules/user/entities/user.entity';
 import * as _ from 'lodash';
+import { ConfigService } from 'common/config/config.service';
+import { MailService } from 'common/mail/mail.service';
 
 @Injectable()
 export class VoucherService {
@@ -29,6 +31,8 @@ export class VoucherService {
     @InjectRepository(UserVoucher)
     private readonly userVoucherRepository: Repository<UserVoucher>,
     private readonly dataSource: DataSource,
+    private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   async getPublishedVouchers(query: GetVoucherReqDto) {
@@ -254,10 +258,25 @@ export class VoucherService {
       where: {
         id: voucherId,
       },
+      relations: ['userTiers', 'userTiers.users'],
     });
     if (!voucher) {
       throw new NotFoundException('Voucher not found');
     }
+
+    if (isActive) {
+      // Gửi thông báo mail đến các đối tượng được săn voucher này
+      for (const user of voucher.userTiers.map((ut) => ut.users).flat()) {
+        await this.mailService.voucherReleasedNotify(user.email, {
+          ...voucher,
+          startDate: moment(voucher.startDate).format('MMMM D, YYYY'),
+          endDate: moment(voucher.endDate).format('MMMM D, YYYY'),
+          appliedObjects: voucher.userTiers.map((ut) => ut.tierName).join(', '),
+          host: this.configService.getServerConfig().frontendUrl,
+        });
+      }
+    }
+
     return this.voucherRepository.update(voucherId, { isActive });
   }
 }

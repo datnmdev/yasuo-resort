@@ -25,6 +25,7 @@ import * as ejs from 'ejs';
 import { Invoice } from 'modules/invoice/entities/invoice.entity';
 import { BookingService } from 'modules/booking/entities/booking-service.entity';
 import { BookingService as BookingServiceEntity } from 'modules/booking/entities/booking-service.entity';
+import { MailService } from 'common/mail/mail.service';
 
 @Injectable()
 export class PaymentService {
@@ -33,7 +34,8 @@ export class PaymentService {
     private readonly paymentRepository: Repository<Payment>,
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
-  ) { }
+    private readonly mailService: MailService,
+  ) {}
 
   async getReceipts(userId: number, bookingId: number) {
     const booking = await this.dataSource.manager.findOne(Booking, {
@@ -115,8 +117,13 @@ export class PaymentService {
         error: 'BadRequest',
       });
     }
-    if (body.paymentStage === 'final_payment' && moment().isBefore(moment(booking.endDate))) {
-      throw new ConflictException("The contract payment is not yet due. Please come back later!")
+    if (
+      body.paymentStage === 'final_payment' &&
+      moment().isBefore(moment(booking.endDate))
+    ) {
+      throw new ConflictException(
+        'The contract payment is not yet due. Please come back later!',
+      );
     }
     if (
       body.paymentStage === 'final_payment' &&
@@ -156,7 +163,7 @@ export class PaymentService {
       for (const sv of newServicesAfterBookingRoom) {
         totalNewServicesAfterBookingRoom +=
           sv.quantity *
-          (moment(sv.endDate).diff(moment(sv.startDate), "days") + 1) *
+          (moment(sv.endDate).diff(moment(sv.startDate), 'days') + 1) *
           Number(sv.price);
       }
       amount = Number(booking.totalPrice) + totalNewServicesAfterBookingRoom;
@@ -381,7 +388,8 @@ export class PaymentService {
                     subTotalAmount +=
                       Number(payment.booking.roomPrice) *
                       (moment(payment.booking.endDate).diff(
-                        moment(payment.booking.startDate), "days"
+                        moment(payment.booking.startDate),
+                        'days',
                       ) +
                         1);
                     // Tiền dịch vụ gốc
@@ -396,7 +404,8 @@ export class PaymentService {
                     for (const sv of services) {
                       subTotalAmount +=
                         sv.quantity *
-                        (moment(sv.endDate).diff(moment(sv.startDate), "days") + 1) *
+                        (moment(sv.endDate).diff(moment(sv.startDate), 'days') +
+                          1) *
                         Number(sv.price);
                     }
 
@@ -414,7 +423,8 @@ export class PaymentService {
                     for (const sv of newServicesAfterBookingRoom) {
                       totalNewServicesAfterBookingRoom +=
                         sv.quantity *
-                        (moment(sv.endDate).diff(moment(sv.startDate), "days") + 1) *
+                        (moment(sv.endDate).diff(moment(sv.startDate), 'days') +
+                          1) *
                         Number(sv.price);
                     }
 
@@ -425,8 +435,8 @@ export class PaymentService {
                         invoices[1] <= 0
                           ? String(1).padStart(8, '0')
                           : String(
-                            Number(invoices[0][0].invoiceNumber) + 1,
-                          ).padStart(8, '0'),
+                              Number(invoices[0][0].invoiceNumber) + 1,
+                            ).padStart(8, '0'),
                       invoiceDate: new Date(),
                       subTotalAmount: subTotalAmount.toFixed(2),
                       discountAmount: (
@@ -521,6 +531,16 @@ export class PaymentService {
                     await fs.promises.unlink(
                       path.join(process.cwd(), fileRelativePath),
                     );
+
+                    // Gửi mail thông báo
+                    await this.mailService.invoiceNotify(
+                      payment.booking.user.email,
+                      path.join(
+                        this.configService.getServerConfig().baseUrl,
+                        'uploads',
+                        fileRelativePath,
+                      ),
+                    );
                   }
 
                   // Cập nhật lại trạng thái đặt phòng
@@ -542,7 +562,7 @@ export class PaymentService {
                           (i) =>
                             i.status === 'pending' &&
                             i.createdAt.getTime() ===
-                            payment.booking.createdAt.getTime(),
+                              payment.booking.createdAt.getTime(),
                         )
                         .map((item) =>
                           queryRunner.manager.create(BookingServiceEntity, {
@@ -552,6 +572,19 @@ export class PaymentService {
                         );
                     await queryRunner.manager.save(bookingServiceEntities);
                   }
+
+                  // Gửi mail thông báo
+                  await this.mailService.paySuccessNotify(
+                    payment.booking.user.email,
+                    {
+                      ...payment,
+                      paymentDate: moment(payment.paymentDate).format(
+                        'MMMM D, YYYY',
+                      ),
+                      transactionCode: vnpParams.vnp_TransactionNo,
+                      host: this.configService.getServerConfig().frontendUrl,
+                    },
+                  );
                 } else {
                   await queryRunner.manager.update(
                     Payment,
@@ -585,8 +618,7 @@ export class PaymentService {
               } finally {
                 await queryRunner.release();
               }
-            }
-            else {
+            } else {
               return {
                 RspCode: '02',
                 Message: 'This order has been updated to the payment status',

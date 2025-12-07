@@ -29,6 +29,8 @@ import { RoomChangeHistory } from './entities/room-change-history.entity';
 import { UpdateServiceBookingReqDto } from './dtos/update-service-booking.dto';
 import { UserVoucher } from 'modules/voucher/entities/user-voucher.entity';
 import { Combo } from 'modules/combo/entities/combo.entity';
+import { MailService } from 'common/mail/mail.service';
+import { ConfigService } from 'common/config/config.service';
 
 @Injectable()
 export class BookingService {
@@ -38,6 +40,8 @@ export class BookingService {
     @InjectRepository(BookingServiceEntity)
     private readonly bookingServiceRepository: Repository<BookingServiceEntity>,
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getBookings(query: GetBookingReqDto) {
@@ -427,7 +431,7 @@ export class BookingService {
         where: {
           id: bookingId,
         },
-        relations: ['bookingServices'],
+        relations: ['bookingServices', 'user'],
       });
       if (booking) {
         if (booking.status === 'pending' && !booking.contract) {
@@ -453,6 +457,15 @@ export class BookingService {
             );
             await queryRunner.manager.save(bookingServiceEntities);
           }
+
+          // Gửi mail thông báo
+          await this.mailService.bookingRejectNotify(booking.user.email, {
+            ...booking,
+            startDate: moment(booking.startDate).format('MMMM D, YYYY'),
+            endDate: moment(booking.endDate).format('MMMM D, YYYY'),
+            host: this.configService.getServerConfig().frontendUrl,
+            reasonForRejection: reason,
+          });
 
           await queryRunner.commitTransaction();
           return result;
@@ -667,6 +680,16 @@ export class BookingService {
           contractUrl: path.join('uploads', `${fileName}.pdf`),
         });
         const newContract = await queryRunner.manager.save(contractEntity);
+
+        // Gửi mail thông báo
+        await this.mailService.signContractNotify(booking.user.email, {
+          host: this.configService.getServerConfig().frontendUrl,
+          contract: {
+            ...newContract,
+            createdAt: moment(newContract.createdAt).format('MMMM D, YYYY'),
+          },
+          user: booking.user,
+        });
 
         await queryRunner.commitTransaction();
         return _.omit(newContract, ['signedByAdmin', 'signedByUser']);

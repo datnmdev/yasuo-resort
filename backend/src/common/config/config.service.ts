@@ -8,6 +8,7 @@ export class ConfigService {
   getServerConfig() {
     return {
       baseUrl: this.nestConfigService.get('BASE_URL'),
+      frontendUrl: this.nestConfigService.get('FRONTEND_HOST')
     };
   }
 

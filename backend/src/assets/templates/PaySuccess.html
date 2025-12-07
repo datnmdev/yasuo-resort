@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Dark overlay for readability */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 0;
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.95);
+            max-width: 600px;
+            width: 90%;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.6s ease;
+            text-align: center;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #059669;
+            /* green-600 */
+            font-size: 32px;
+        }
+
+        p {
+            color: #555;
+            font-size: 17px;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+
+        .invoice-box {
+            background: #ecfdf5;
+            /* green-50 */
+            border-left: 5px solid #10b981;
+            /* green-500 */
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .invoice-box strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #047857;
+            /* green-700 */
+            font-size: 16px;
+        }
+
+        .invoice-btn {
+            margin-top: 25px;
+            width: 100%;
+            display: inline-block;
+            text-align: center;
+            padding: 14px 0;
+            background: #10b981;
+            /* green-500 */
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 17px;
+            transition: 0.2s;
+        }
+
+        .invoice-btn:hover {
+            background: #047857;
+            /* green-700 */
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Payment Successful ✅</h1>
+
+        <p>Thank you! Your payment has been successfully processed. We appreciate your trust in our services.</p>
+        <p>Please go to contract page for more details</p>
+
+        <div class="invoice-box">
+            <strong>Transaction Details</strong>
+            <p>Invoice ID: <b>INV2025-045</b></p>
+            <p>Amount Paid: $450.00</p>
+            <p>Payment Date: December 7, 2025</p>
+        </div>
+
+        <a class="invoice-btn" href="/contract">Go to contract page</a>
+    </div>
+</body>
+
+</html>
